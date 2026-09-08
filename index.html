@@ -50,7 +50,39 @@ body::after {
 }
 @keyframes drift { 0%{transform:translate3d(0,0,0)} 100%{transform:translate3d(-22px,14px,0)} }
 
-.page { max-width: 1100px; margin: 0 auto; }
+/* ===== Vitality atmospheric backdrop — same aurora/mountains/particles
+   system as the Finance page (ported, toned down), so moving between
+   the hub and Finance doesn't feel like leaving the app. Layers sit
+   at z-index 0/1/2, below .page (z-index 5). ===== */
+.vty-atmosphere {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    radial-gradient(60% 50% at 50% 30%, rgba(110, 231, 183, 0.11) 0%, rgba(110, 231, 183, 0.04) 32%, rgba(110, 231, 183, 0) 65%),
+    radial-gradient(28% 22% at 50% 38%, rgba(255, 226, 181, 0.05) 0%, rgba(255, 226, 181, 0) 70%),
+    radial-gradient(120% 80% at 50% 100%, rgba(14, 38, 30, 0.4) 0%, rgba(4, 6, 10, 0.9) 75%);
+  background-repeat: no-repeat; background-size: 100% 100%;
+}
+.vty-mountains {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 1;
+  height: 26vh; min-height: 150px; pointer-events: none; opacity: 0.65;
+}
+.vty-mountains svg { width: 100%; height: 100%; display: block; }
+.vty-particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.vty-particles span {
+  position: absolute; width: 1.5px; height: 1.5px;
+  background: rgba(233, 239, 233, 0.6); border-radius: 50%;
+  animation: vty-backdrop-drift linear infinite;
+  box-shadow: 0 0 6px rgba(167, 243, 208, 0.45);
+}
+@keyframes vty-backdrop-drift {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.45; }
+  100% { transform: translate3d(var(--dx, 12px), var(--dy, -100vh), 0); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .vty-particles span { animation: none; } }
+
+.page { position: relative; z-index: 5; max-width: 1100px; margin: 0 auto; }
 .dash-title {
   margin: 0 0 18px; font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
   background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
@@ -63,7 +95,7 @@ body::after {
 .bento {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 168px;
+  grid-auto-rows: minmax(168px, auto);
   grid-auto-flow: dense;
   gap: 14px;
 }
@@ -125,14 +157,17 @@ body::after {
 .stock-snapshot-chg.up   { color: #6BE3A4; }
 .stock-snapshot-chg.down { color: #FF8A8A; }
 
-/* A tile that needs an interactive control floating on top of its
-   link (e.g. the creatine check on the Main tile) gets wrapped —
-   <button> can't nest inside <a>, so the wrapper takes over the grid
-   placement and the <a> just fills it, freeing the button to sit
-   absolutely positioned above it. */
+/* A tile that needs an interactive control floating on top of it
+   (e.g. the creatine check on the Main tile) gets wrapped — the
+   wrapper takes over the grid placement, stretches the tile to fill
+   it via flex (not absolute+inset:0 — that took the tile out of flow
+   entirely, so its real content height never reached the grid track,
+   which silently clipped it on mobile since grid-auto-rows was a
+   fixed length shorter than the actual content), and the button sits
+   absolutely positioned on top of the now-normal-flow tile. */
 .tile-wrap { position: relative; }
-.tile-wrap-big { grid-column: span 2; grid-row: span 2; }
-.tile-wrap-big .tile.big { position: absolute; inset: 0; grid-column: unset; grid-row: unset; }
+.tile-wrap-big { grid-column: span 2; grid-row: span 2; display: flex; flex-direction: column; }
+.tile-wrap-big .tile.big { flex: 1; grid-column: unset; grid-row: unset; }
 .creatine-btn {
   position: absolute; z-index: 5; top: 20px; right: 20px;
   display: inline-flex; align-items: center; gap: 7px;
@@ -183,6 +218,19 @@ body::after {
   color: var(--text-primary); margin: 0 0 4px;
 }
 .tile.big .tile-title { font-size: 28px; }
+/* Hero stat — a real live number (today's split, handicap index)
+   instead of a static one-line description, matching Finance's
+   hero-number treatment for its net worth figure. */
+.tile-hero-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.tile-hero-val {
+  font-size: 20px; font-weight: 800; color: var(--text-primary);
+  line-height: 1.15; margin: 1px 0 2px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .tile-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .tile-sub {
   font-size: 13px; color: var(--text-tertiary);
@@ -252,14 +300,15 @@ body::after {
 
 /* ===== Responsive: collapse the bento on small screens ===== */
 @media (max-width: 720px) {
-  .bento { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 150px; }
+  .bento { grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(150px, auto); }
   .tile.big { grid-column: span 2; grid-row: span 1; }
   .tile.big .tile-title { font-size: 22px; }
   .tile-wrap-big { grid-column: span 2; grid-row: span 1; }
 }
 @media (max-width: 440px) {
   body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
-  .bento { grid-template-columns: 1fr; grid-auto-rows: 132px; }
+  .bento { grid-template-columns: 1fr; grid-auto-rows: minmax(132px, auto); }
+  .tile { padding: 16px; }
   .tile.big, .tile.wide { grid-column: span 1; }
   .tile-wrap-big { grid-column: span 1; }
 }
@@ -420,6 +469,32 @@ body::after {
 </style>
 </head>
 <body>
+<!-- ===== Vitality atmospheric backdrop (aurora · mountains · particles) —
+     same system as the Finance page, toned down, so the hub and
+     Finance feel like one app. ===== -->
+<div id="vty-backdrop" aria-hidden="true">
+  <div class="vty-atmosphere"></div>
+  <div class="vty-mountains">
+    <svg viewBox="0 0 1600 420" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="vty-mt-far" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0d1a17" stop-opacity="0"></stop>
+          <stop offset="55%" stop-color="#0d1a17" stop-opacity=".55"></stop>
+          <stop offset="100%" stop-color="#0d1a17" stop-opacity=".95"></stop>
+        </linearGradient>
+        <linearGradient id="vty-mt-near" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#050a09" stop-opacity=".4"></stop>
+          <stop offset="60%" stop-color="#050a09" stop-opacity=".95"></stop>
+          <stop offset="100%" stop-color="#050a09" stop-opacity="1"></stop>
+        </linearGradient>
+      </defs>
+      <path d="M0,300 L120,230 L210,260 L320,180 L430,220 L560,150 L680,210 L820,170 L960,220 L1100,180 L1240,240 L1380,200 L1500,250 L1600,220 L1600,420 L0,420 Z" fill="url(#vty-mt-far)"></path>
+      <path d="M0,360 L100,320 L220,340 L340,290 L460,330 L590,300 L720,340 L860,310 L1000,350 L1140,310 L1280,355 L1420,320 L1540,360 L1600,340 L1600,420 L0,420 Z" fill="url(#vty-mt-near)"></path>
+    </svg>
+  </div>
+  <div class="vty-particles" id="vty-particles"></div>
+</div>
+
 <div class="page">
 
   <div class="hub-head">
@@ -487,8 +562,10 @@ body::after {
       </div>
       <div class="tile-spacer"></div>
       <h2 class="tile-title">Fitness</h2>
+      <div class="tile-hero-label">Today</div>
+      <div class="tile-hero-val" id="fitnessHeroStat">—</div>
       <div class="tile-foot">
-        <span class="tile-sub" id="tileInsightFitness">Workouts, splits, sessions</span>
+        <span class="tile-sub">Workouts &amp; splits</span>
         <span class="tile-arrow">→</span>
       </div>
     </a>
@@ -500,8 +577,10 @@ body::after {
       </div>
       <div class="tile-spacer"></div>
       <h2 class="tile-title">Golf</h2>
+      <div class="tile-hero-label">Handicap</div>
+      <div class="tile-hero-val" id="golfHeroStat">—</div>
       <div class="tile-foot">
-        <span class="tile-sub" id="tileInsightGolf">Rounds & handicap</span>
+        <span class="tile-sub">Rounds &amp; trend</span>
         <span class="tile-arrow">→</span>
       </div>
     </a>
@@ -819,7 +898,7 @@ body::after {
 
   // ---- Fitness: today's split day, from gym.html's rotation state ----
   (function () {
-    const wideEl = document.getElementById('tileInsightFitness');
+    const heroEl = document.getElementById('fitnessHeroStat');
     const statEl = document.getElementById('mainStatFitness');
     const s = readJSON('po_coach_v1');
     if (!s || !Array.isArray(s.splitRotation) || !s.splitRotation.length || !s.splitAnchor) return;
@@ -830,17 +909,17 @@ body::after {
       a.setHours(0,0,0,0); t.setHours(0,0,0,0);
       const diffDays = Math.round((t - a) / 86400000);
       const idx = ((s.splitAnchor.index + diffDays) % rot.length + rot.length) % rot.length;
-      if (wideEl) wideEl.textContent = 'Today: ' + rot[idx];
+      if (heroEl) heroEl.textContent = rot[idx];
       if (statEl) statEl.textContent = rot[idx];
     } catch (e) {}
   })();
 
   // ---- Golf: rough handicap index, same calc as golf.html ----
   (function () {
-    const wideEl = document.getElementById('tileInsightGolf');
+    const heroEl = document.getElementById('golfHeroStat');
     const statEl = document.getElementById('mainStatGolf');
     const rounds = readJSON('golf:rounds');
-    if (!Array.isArray(rounds) || !rounds.length) return;
+    if (!Array.isArray(rounds) || !rounds.length) { if (heroEl) heroEl.textContent = 'No rounds yet'; return; }
     const comparable = rounds
       .slice()
       .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0))
@@ -848,13 +927,13 @@ body::after {
       .map(r => typeof r.differential === 'number' ? (r.holes === 9 ? r.differential * 2 : r.differential) : null)
       .filter(d => typeof d === 'number');
     if (comparable.length < 3) {
-      if (wideEl) wideEl.textContent = comparable.length + '/3 rounds logged';
+      if (heroEl) heroEl.textContent = comparable.length + '/3 rounds';
       if (statEl) statEl.textContent = comparable.length + '/3';
       return;
     }
     const best = comparable.slice().sort((a, b) => a - b).slice(0, Math.min(8, comparable.length));
     const avg = Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
-    if (wideEl) wideEl.textContent = 'Handicap: ~' + avg;
+    if (heroEl) heroEl.textContent = '~' + avg;
     if (statEl) statEl.textContent = '~' + avg;
   })();
 
@@ -954,6 +1033,36 @@ body::after {
     wrap.removeAttribute('hidden');
     if (empty) empty.hidden = true;
   })();
+})();
+</script>
+
+<!-- ===== Vitality backdrop — particle spawner (same as Finance) ===== -->
+<script id="vty-backdrop-js">
+(function () {
+  function spawnParticles() {
+    var root = document.getElementById('vty-particles');
+    if (!root) return;
+    root.innerHTML = '';
+    var N = window.innerWidth < 640 ? 10 : 18;
+    for (var i = 0; i < N; i++) {
+      var s = document.createElement('span');
+      s.style.left = (Math.random() * 100) + '%';
+      s.style.top = (60 + Math.random() * 40) + '%';
+      var size = 1.2 + Math.random() * 1.2;
+      s.style.width = s.style.height = size + 'px';
+      var dur = 22 + Math.random() * 28;
+      s.style.animationDuration = dur + 's';
+      s.style.animationDelay = (-Math.random() * dur) + 's';
+      s.style.setProperty('--dx', (Math.random() * 30 - 15) + 'px');
+      s.style.setProperty('--dy', -(60 + Math.random() * 50) + 'vh');
+      root.appendChild(s);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', spawnParticles);
+  } else {
+    spawnParticles();
+  }
 })();
 </script>
 </body>
