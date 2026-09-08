@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('dash_theme_v1')||'dark');}catch(e){}</script>
 <script src="lock.js"></script>
 <script src="/api/config"></script>
 <meta charset="UTF-8">
@@ -1264,6 +1265,40 @@ img, video, canvas, svg { max-width: 100%; }
 }
 
 .hidden { display: none !important; }
+
+/* ===== Light theme overrides =====
+   Additive only. NOTE: this covers the page shell, cards, text, and
+   borders via the --bg/--text-*/--border vars, which is most of the
+   page. A handful of tinted status badges (the up/down/hold "rx" tags,
+   progress pills) use raw rgba() tied to the old dark colors rather
+   than the vars, so those specific badges may look a bit low-contrast
+   in light mode until a follow-up polish pass. The floating Nova
+   assistant widget (#nvFab/#nvPanel) is left dark-styled on purpose —
+   it's a self-contained branded widget, not part of the page surface. */
+:root[data-theme="light"] {
+  --bg: #F5F3EF;
+  --bg-card: #FFFFFF;
+  --text-1: #1C1B17;
+  --text-2: #5B584E;
+  --text-3: #8A8676;
+  --text-4: #B7B3A4;
+  --border: rgba(20, 18, 15, 0.08);
+  --border-strong: rgba(20, 18, 15, 0.16);
+  --accent: #1C1B17;
+  --good: #12805A;
+  --warn: #9A6B00;
+  --bad: #C23B3B;
+  color-scheme: light;
+}
+[data-theme="light"] html,
+[data-theme="light"] body {
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, #FBFAF7 0%, #F5F3EF 60%);
+}
+[data-theme="light"] .po-modal-seg { background: rgba(20,18,15,0.04); }
+[data-theme="light"] .po-modal-seg button.active {
+  background: linear-gradient(180deg, #1C1B17 0%, #33312A 100%);
+  color: #FAFAF8;
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>

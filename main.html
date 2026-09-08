@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('dash_theme_v1')||'dark');}catch(e){}</script>
 <script src="lock.js"></script>
 <script src="/api/config"></script>
 <meta charset="UTF-8">
@@ -595,6 +596,31 @@ body::after {
   .gm-card { padding: 16px; }
   .gm-progress-num { font-size: 36px; }
 }
+
+/* ===== Light theme overrides =====
+   Additive only. NOTE: the Goals section (.gm-*, .goal-ticker-*) isn't
+   themed here since it's slated to be removed in the next pass — no
+   point polishing something about to be deleted. */
+:root[data-theme="light"] {
+  --text-primary: #1C1B17;
+  --text-secondary: #5B584E;
+  --text-tertiary: #8A8676;
+  color-scheme: light;
+}
+[data-theme="light"] body { background: #F5F3EF; }
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(circle at 82% 14%, rgba(224, 118, 88, 0.14), transparent 45%),
+    radial-gradient(circle at 18% 90%, rgba(120, 120, 140, 0.08), transparent 50%);
+}
+[data-theme="light"] body::after {
+  background-image: radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+}
+[data-theme="light"] .dash-title {
+  background: linear-gradient(180deg, #1C1B17 0%, #5B584E 120%);
+  -webkit-background-clip: text; background-clip: text;
+}
+[data-theme="light"] .day-ring-track { stroke: rgba(20,18,15,0.10); }
 </style>
 </head>
 <body>

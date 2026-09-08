@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('dash_theme_v1')||'dark');}catch(e){}</script>
 <script src="lock.js"></script>
 <script src="/api/config"></script>
 <meta charset="UTF-8">
@@ -1569,6 +1570,66 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 @media (max-width: 600px) {
   .sub-auto-toggle { width: 100%; justify-content: space-between; padding: 12px 14px; }
+}
+
+/* ===== Light theme overrides =====
+   Additive only — covers the page shell, back button, and bottom tab
+   bar fully. Card rows further down (Subs/Orders/Wishlist add-forms,
+   input fields) mostly inherit via the --glass-bg/--text-* vars below,
+   but a handful of one-off rgba(255,255,255,x) accents in those rows
+   weren't hand-converted — flag anything that looks off once it's live
+   and I'll do a follow-up polish pass. */
+:root[data-theme="light"] {
+  --bg: #F5F3EF;
+  --bg-deep: #EDEAE4;
+  --bg-card: rgba(20, 18, 15, 0.035);
+  --bg-secondary: rgba(20, 18, 15, 0.03);
+  --glass-bg: rgba(20, 18, 15, 0.035);
+  --glass-border: rgba(20, 18, 15, 0.08);
+  --glass-border-strong: rgba(20, 18, 15, 0.14);
+  --glass-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.6) inset,
+    0 12px 32px rgba(20, 18, 15, 0.10),
+    0 1px 2px rgba(20, 18, 15, 0.06);
+  --text-primary: #1C1B17;
+  --text-secondary: #5B584E;
+  --text-tertiary: #8A8676;
+  --text-quaternary: #B7B3A4;
+  --border: rgba(20, 18, 15, 0.08);
+  --border-soft: rgba(20, 18, 15, 0.05);
+  --accent: #B85436;
+  --success: #1F9D6B;
+  --warning: #B4790A;
+  --danger: #D23F3F;
+  color-scheme: light;
+}
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(60% 45% at 82% 14%, rgba(224, 118, 88, 0.14) 0%, transparent 55%),
+    radial-gradient(55% 45% at 18% 90%, rgba(120, 120, 140, 0.08) 0%, transparent 55%),
+    linear-gradient(180deg, #F7F5F1 0%, #EDEAE4 100%);
+}
+[data-theme="light"] body::after {
+  background-image: radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+}
+[data-theme="light"] .fin-back-btn {
+  background: rgba(20,18,15,0.035);
+  border-color: rgba(20,18,15,0.10);
+}
+[data-theme="light"] .fin-back-btn:hover,
+[data-theme="light"] .fin-back-btn:active {
+  background: rgba(20,18,15,0.06);
+}
+[data-theme="light"] .bottom-tabs {
+  background: linear-gradient(180deg, transparent, rgba(245,243,239,0.94) 30%);
+}
+[data-theme="light"] .bottom-tabs::before {
+  background: linear-gradient(90deg, transparent, rgba(20,18,15,0.12), transparent);
+}
+[data-theme="light"] .bot-tab:hover { background: rgba(20,18,15,0.03); }
+[data-theme="light"] .bot-tab.active {
+  background: rgba(20,18,15,0.06);
+  border-color: rgba(20,18,15,0.12);
 }
 </style>
 </head>

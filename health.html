@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('dash_theme_v1')||'dark');}catch(e){}</script>
 <script src="lock.js"></script>
 <script src="/api/config"></script>
 <meta charset="UTF-8">
@@ -498,6 +499,45 @@ main {
   .stack-search-results { width: 100%; }
 }
 
+/* ===== Light theme overrides =====
+   Additive only. NOTE: the Daily Stack (supplement tracker) and Water
+   Tracker sections below aren't themed — both are slated for removal
+   in the next pass, so it's not worth polishing UI about to be deleted. */
+:root[data-theme="light"] {
+  --bg: #F5F3EF;
+  --bg-card: #FFFFFF;
+  --bg-secondary: rgba(20, 18, 15, 0.03);
+  --bg-input: rgba(20, 18, 15, 0.04);
+  --bg-input-focus: rgba(20, 18, 15, 0.06);
+  --bg-dropdown: #FFFFFF;
+
+  --border: rgba(20, 18, 15, 0.08);
+  --border-soft: rgba(20, 18, 15, 0.05);
+  --border-strong: rgba(20, 18, 15, 0.14);
+
+  --text-primary: #1C1B17;
+  --text-secondary: #5B584E;
+  --text-tertiary: #8A8676;
+  --text-quaternary: #B7B3A4;
+
+  --accent: #157A5A;
+  --accent-glow: rgba(21, 122, 90, 0.25);
+  --warning: #B4550F;
+  --tag-stack: #9C7A1E;
+  --tag-stack-bg: rgba(156, 122, 30, 0.12);
+  color-scheme: light;
+}
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(60% 50% at 82% 14%, rgba(224, 118, 88, 0.14) 0%, transparent 60%),
+    radial-gradient(50% 40% at 18% 90%, rgba(120, 120, 140, 0.08) 0%, transparent 60%);
+}
+[data-theme="light"] body::after {
+  background-image: radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(20, 18, 15, 0.14); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(20, 18, 15, 0.22); }
+
 ::selection { background: rgba(224, 118, 88, 0.3); color: var(--text-primary); }
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -601,6 +641,19 @@ main {
     .wh-disconnect-link { display:block; margin:16px auto 0; padding:6px 14px; background:transparent; border:none; color:var(--text-tertiary); font-family:inherit; font-size:11px; text-align:center; cursor:pointer; letter-spacing:0.04em; }
     .wh-disconnect-link:hover { color:var(--text-secondary); text-decoration:underline; }
     .wh-err { background:rgba(255,107,107,0.08); border:1px solid rgba(255,107,107,0.28); color:#FF8A8A; padding:10px 12px; border-radius:10px; font-size:11.5px; font-family:var(--font-mono); margin-bottom:14px; }
+
+    /* Light theme — Whoop card surfaces (this widget stays long-term,
+       unlike the Daily Stack / Water sections above). */
+    [data-theme="light"] .wh-stat,
+    [data-theme="light"] .wh-bio-item { background: rgba(20,18,15,0.025); border-color: rgba(20,18,15,0.08); }
+    [data-theme="light"] .wh-legend { background: rgba(20,18,15,0.03); border-color: rgba(20,18,15,0.08); }
+    [data-theme="light"] .wh-verdict { background: rgba(20,18,15,0.025); border-color: rgba(20,18,15,0.08); border-left-color: rgba(20,18,15,0.30); }
+    [data-theme="light"] .wh-zone { background: rgba(20,18,15,0.14); }
+    [data-theme="light"] .wh-zone.z-norm { background: rgba(20,18,15,0.35); }
+    [data-theme="light"] .wh-stage-light { background: #B8B6B0; }
+    [data-theme="light"] .wh-stage-awake { background: #5B584E; }
+    [data-theme="light"] .wh-leg-dot.d-rem { background: #1C1B17; }
+    [data-theme="light"] .wh-leg-dot.d-awake { border-color: rgba(20,18,15,0.14); }
   </style>
   <div class="whoop-section">
     <div class="section-title">Whoop</div>
