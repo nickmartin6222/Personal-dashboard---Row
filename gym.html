@@ -86,11 +86,15 @@ const CONFIG = {
   //   optionSet   — for accessories with preset A/B/C option sets: which
   //                 set this one belongs to. Hold one set for 2-3 weeks
   //                 before switching to another for the same slot.
-  //   repMin      — bottom of your target rep range
-  //   repMax      — top of your target rep range
+  //   repMin      — bottom of your target range (reps, or seconds if
+  //                 holdSeconds: true)
+  //   repMax      — top of your target range
   //   step        — how much weight you add when progressing (kg/lb)
   //   startWeight — starting weight (ignored when bw: true)
   //   bw          — true for bodyweight movements (logs reps only)
+  //   holdSeconds — true for a timed hold (e.g. a plank) — repMin/repMax
+  //                 are seconds, and every "reps" label in the UI shows
+  //                 "seconds" instead for this exercise
   //
   // First-run defaults. Once a user logs anything, they edit through
   // the in-app + / gear buttons; this block stays as the seed. Existing
@@ -100,12 +104,14 @@ const CONFIG = {
     // ---- Lower A ----
     { name: "Barbell RDL",                gym: "comm", day: "lowerA", tag: "primary",   slot: "RDL",                 repMin: 6,  repMax: 10, step: 5,    startWeight: 60 },
     { name: "Single-Leg Machine Hip Thrust", gym: "comm", day: "lowerA", tag: "primary", slot: "Hip Thrust",          repMin: 8,  repMax: 12, step: 5,    startWeight: 40 },
-    { name: "Machine Hip Adductor",       gym: "comm", day: "lowerA", tag: "rehab",     slot: "Hip Adductor",        repMin: 15, repMax: 20, step: 2.5,  startWeight: 30 },
-    { name: "Copenhagen Plank",           gym: "comm", day: "lowerA", tag: "rehab",     slot: "Copenhagen Plank",    repMin: 20, repMax: 40, step: 1,    startWeight: 0,  bw: true },
+    { name: "Machine Hip Adductor",       gym: "comm", day: "lowerA", tag: "rehab",     slot: "Hip Adductor",        repMin: 10, repMax: 15, step: 2.5,  startWeight: 30 },
+    { name: "Copenhagen Plank",           gym: "comm", day: "lowerA", tag: "rehab",     slot: "Copenhagen Plank",    repMin: 20, repMax: 40, step: 1,    startWeight: 0,  bw: true, holdSeconds: true },
     { name: "Leg Press",                  gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "A", repMin: 8,  repMax: 12, step: 10,  startWeight: 120 },
     { name: "Hack Squat",                 gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "B", repMin: 8,  repMax: 12, step: 10,  startWeight: 80 },
     { name: "Walking Lunge",              gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "C", repMin: 10, repMax: 14, step: 2.5, startWeight: 20 },
-    { name: "Core Finisher",              gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core",       repMin: 10, repMax: 20, step: 1,   startWeight: 0,  bw: true },
+    { name: "Pallof Press",               gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
+    { name: "Hanging Leg Raise",          gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "B", repMin: 8,  repMax: 15, step: 1,   startWeight: 0,  bw: true },
+    { name: "Plank",                      gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "C", repMin: 30, repMax: 60, step: 5,   startWeight: 0,  bw: true, holdSeconds: true },
 
     // ---- Push (chest / triceps / shoulders) ----
     { name: "Barbell Bench Press",        gym: "comm", day: "push", tag: "primary",   slot: "Horizontal Press",     repMin: 5,  repMax: 8,  step: 2.5, startWeight: 60 },
@@ -125,19 +131,23 @@ const CONFIG = {
     { name: "Overhead DB Extension",      gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
     { name: "Skull Crusher",              gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "B", repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
     { name: "Close-Grip Bench or Dip",    gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "C", repMin: 8,  repMax: 12, step: 2.5, startWeight: 40 },
-    { name: "Core Finisher",              gym: "comm", day: "push", tag: "accessory", slot: "Push Core",            repMin: 10, repMax: 20, step: 1,   startWeight: 0,  bw: true },
+    { name: "Cable Crunch",               gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "A", repMin: 10, repMax: 15, step: 5,   startWeight: 20 },
+    { name: "Ab Wheel Rollout",           gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "B", repMin: 6,  repMax: 12, step: 1,   startWeight: 0, bw: true },
+    { name: "Weighted Sit-Up",            gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "C", repMin: 10, repMax: 15, step: 2.5, startWeight: 5 },
 
     // ---- Lower B ----
     { name: "Goblet / Front Squat",       gym: "comm", day: "lowerB", tag: "primary",   slot: "Squat",               repMin: 6,  repMax: 10, step: 2.5, startWeight: 20 },
     { name: "Bulgarian Split Squat",      gym: "comm", day: "lowerB", tag: "primary",   slot: "Split Squat",         repMin: 8,  repMax: 12, step: 2.5, startWeight: 15 },
-    { name: "Hip External Rotation",      gym: "comm", day: "lowerB", tag: "rehab",     slot: "Hip External Rotation", repMin: 15, repMax: 20, step: 1, startWeight: 0, bw: true },
+    { name: "Hip External Rotation",      gym: "comm", day: "lowerB", tag: "rehab",     slot: "Hip External Rotation", repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true },
     { name: "Seated Leg Curl",            gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "A", repMin: 10, repMax: 15, step: 5,  startWeight: 30 },
     { name: "Lying Leg Curl",             gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "B", repMin: 10, repMax: 15, step: 5,  startWeight: 25 },
     { name: "Nordic Curl or GHR",         gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "C", repMin: 5,  repMax: 10, step: 1,  startWeight: 0, bw: true },
     { name: "Standing Calf Raise",        gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "A", repMin: 12, repMax: 18, step: 5,  startWeight: 60 },
     { name: "Seated Calf Raise",          gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "B", repMin: 12, repMax: 18, step: 5,  startWeight: 40 },
     { name: "Calf Press on Leg Press",    gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "C", repMin: 12, repMax: 18, step: 10, startWeight: 80 },
-    { name: "Core Finisher",              gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core",       repMin: 10, repMax: 20, step: 1,   startWeight: 0, bw: true },
+    { name: "Dead Bug",                   gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "A", repMin: 8,  repMax: 15, step: 1, startWeight: 0, bw: true },
+    { name: "Side Plank",                 gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "B", repMin: 20, repMax: 45, step: 5, startWeight: 0, bw: true, holdSeconds: true },
+    { name: "Russian Twist",              gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "C", repMin: 10, repMax: 20, step: 2.5, startWeight: 5 },
 
     // ---- Pull (back / biceps / shoulders) ----
     { name: "Lat Pulldown",               gym: "comm", day: "pull", tag: "primary",   slot: "Vertical Pull",        repMin: 6,  repMax: 10, step: 5,   startWeight: 50 },
@@ -157,7 +167,9 @@ const CONFIG = {
     { name: "Hammer Curl",                gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "A", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
     { name: "Incline DB Curl",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "B", repMin: 8,  repMax: 12, step: 1.25,startWeight: 10 },
     { name: "Cross-Body Hammer Curl",     gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "C", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
-    { name: "Core Finisher",              gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core",            repMin: 10, repMax: 20, step: 1,   startWeight: 0, bw: true }
+    { name: "Hanging Knee Raise",         gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "A", repMin: 8,  repMax: 15, step: 1,   startWeight: 0, bw: true },
+    { name: "Pallof Press",               gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "B", repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
+    { name: "Cable Woodchop",             gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "C", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 }
   ]
 };
 </script>
@@ -327,6 +339,10 @@ img, video, canvas, svg { max-width: 100%; }
   text-transform: uppercase; color: var(--text-3);
   min-width: 36px;
 }
+.po-next-day-info {
+  font-size: 11.5px; color: var(--text-3); margin: -2px 0 12px 46px;
+}
+.po-next-day-info b { color: var(--text-1); font-weight: 700; }
 .po-seg-control {
   display: flex; flex: 1;
   background: rgba(255,255,255,0.04);
@@ -1555,6 +1571,7 @@ img, video, canvas, svg { max-width: 100%; }
         <span class="po-seg-label">Day</span>
         <div class="po-seg-control" id="daySeg"></div>
       </div>
+      <div class="po-next-day-info" id="nextDayInfo"></div>
     </div>
 
     <!-- Exercise -->
@@ -1591,7 +1608,7 @@ img, video, canvas, svg { max-width: 100%; }
           </div>
         </div>
         <div class="po-field">
-          <label>Reps</label>
+          <label id="repsLabel">Reps</label>
           <div class="po-reps-row" id="repsRow" data-value="8">
             <button type="button" class="po-reps-pill" data-v="4">4</button>
             <button type="button" class="po-reps-pill" data-v="5">5</button>
@@ -1903,6 +1920,39 @@ img, video, canvas, svg { max-width: 100%; }
       };
       s.programVersion = 2;
     }
+
+    // Third additive migration: the named core-finisher options
+    // (Pallof Press, Plank, etc, replacing the old one generic "Core
+    // Finisher" placeholder) plus tightened rep ranges on a couple of
+    // rehab exercises that started too high to log honestly. Merges
+    // in new exercises only — doesn't touch splitRotation/splitAnchor
+    // again, and doesn't delete the old "Core Finisher" entries (any
+    // history logged against them stays put, just no longer seeded).
+    if ((s.programVersion || 0) < 3) {
+      const existingExKeys3 = new Set(s.exercises.map(e => (e.name + '|' + e.day).toLowerCase()));
+      (CONFIG.defaultExercises || []).forEach((e, i) => {
+        const key = (e.name + '|' + e.day).toLowerCase();
+        if (!existingExKeys3.has(key)) {
+          s.exercises.push(Object.assign({ id: 'seed3_' + i + '_' + Date.now() }, e));
+          existingExKeys3.add(key);
+        }
+      });
+      // The merge above only adds new exercises — it won't touch ones
+      // that already exist under the same name+day, so directly patch
+      // the few whose default range/unit changed (the user's actual
+      // complaint: Hip Adductor/Hip External Rotation started too high
+      // to log an honest under-performance, Copenhagen Plank should be
+      // timed, not counted in reps).
+      [
+        { day: 'lowerA', name: 'Machine Hip Adductor',  patch: { repMin: 10, repMax: 15 } },
+        { day: 'lowerB', name: 'Hip External Rotation', patch: { repMin: 10, repMax: 15 } },
+        { day: 'lowerA', name: 'Copenhagen Plank',      patch: { holdSeconds: true } }
+      ].forEach(({ day, name, patch }) => {
+        const ex = s.exercises.find(e => e.day === day && (e.name || '').toLowerCase() === name.toLowerCase());
+        if (ex) Object.assign(ex, patch);
+      });
+      s.programVersion = 3;
+    }
     return s;
   }
   function saveState() {
@@ -1947,15 +1997,16 @@ img, video, canvas, svg { max-width: 100%; }
     const last = logs[logs.length - 1];
     const { weight, reps } = last;
     const { repMin, repMax, step, bw } = ex;
+    const unitWord = ex.holdSeconds ? 'seconds' : 'reps';
     const upgradeAt = Math.min(CONFIG.upgradeAtReps || 8, repMax);
     let stuck = 0;
     for (let i = logs.length - 1; i >= 0; i--) {
       if (logs[i].weight === weight) stuck++; else break;
     }
     if (bw) {
-      if (reps >= upgradeAt) return { type: 'up', weight: 0, reps: reps + 1, tag: 'Push for more', reason: reps + ' reps — strong. Push for ' + (reps + 1) + ' next time.', bw: true };
-      if (reps >= repMin) return { type: 'hold', weight: 0, reps: reps + 1, tag: 'Add a rep', reason: reps + ' reps. Push for ' + (reps + 1) + ' next session.', bw: true };
-      return { type: 'hold', weight: 0, reps: repMin, tag: 'Repeat', reason: reps + ' reps fell short. Repeat until you hit ' + repMin + '+.', bw: true };
+      if (reps >= upgradeAt) return { type: 'up', weight: 0, reps: reps + 1, tag: 'Push for more', reason: reps + ' ' + unitWord + ' — strong. Push for ' + (reps + 1) + ' next time.', bw: true };
+      if (reps >= repMin) return { type: 'hold', weight: 0, reps: reps + 1, tag: 'Add a rep', reason: reps + ' ' + unitWord + '. Push for ' + (reps + 1) + ' next session.', bw: true };
+      return { type: 'hold', weight: 0, reps: repMin, tag: 'Repeat', reason: reps + ' ' + unitWord + ' fell short. Repeat until you hit ' + repMin + '+.', bw: true };
     }
     if (stuck >= 3 && reps < repMin) {
       const dl = roundToStep(weight * 0.9, step);
@@ -1988,6 +2039,31 @@ img, video, canvas, svg { max-width: 100%; }
         saveState(); renderAll();
       });
     });
+    renderNextDayInfo();
+  }
+  // "Next Lower A: in 4 days" — how long until the currently-filtered
+  // day comes back around in the rotation, so you know the actual
+  // rest cadence for this muscle group instead of guessing.
+  function renderNextDayInfo() {
+    const el = $('nextDayInfo');
+    if (!el) return;
+    const name = dayName(state.filterDay);
+    if (!name || isRestName(name)) { el.textContent = ''; return; }
+    const rot = state.splitRotation;
+    if (!rot || !rot.length) { el.textContent = ''; return; }
+    const today = todaySplit();
+    if (rot[today.index] && rot[today.index].toLowerCase() === name.toLowerCase()) {
+      el.innerHTML = '<b>Today</b> is ' + escape(name) + ' day.';
+      return;
+    }
+    let daysAway = null;
+    for (let offset = 1; offset <= rot.length; offset++) {
+      const idx = (today.index + offset) % rot.length;
+      if (rot[idx] && rot[idx].toLowerCase() === name.toLowerCase()) { daysAway = offset; break; }
+    }
+    el.innerHTML = daysAway == null
+      ? ''
+      : 'Next ' + escape(name) + ': in <b>' + daysAway + '</b> day' + (daysAway === 1 ? '' : 's') + '.';
   }
   function renderSelect() {
     const sel = $('exSelect');
@@ -2053,7 +2129,7 @@ img, video, canvas, svg { max-width: 100%; }
     const logs = ex ? getLogs() : [];
     if (!ex || !logs.length) { wrap.classList.remove('show'); return; }
     const last = logs[logs.length - 1];
-    const setStr = ex.bw ? (last.reps + ' reps') : (last.weight + unit() + ' × ' + last.reps);
+    const setStr = ex.bw ? (last.reps + (ex.holdSeconds ? 's' : ' reps')) : (last.weight + unit() + ' × ' + last.reps);
     const d = new Date(last.date);
     const da = Math.floor((Date.now() - d.getTime()) / 86400000);
     const ago = da === 0 ? 'today' : da === 1 ? 'yesterday' : da + ' days ago';
@@ -2067,20 +2143,21 @@ img, video, canvas, svg { max-width: 100%; }
     if (!ex) { wrap.innerHTML = '<div class="po-rx-empty">Pick a gym and day above.</div>'; return; }
     const logs = getLogs();
     const rx = getRx(ex, logs);
+    const unitWord = ex.holdSeconds ? 'seconds' : 'reps';
     if (!rx) {
       const sw = ex.startWeight, sr = ex.repMin;
       const head = ex.bw
-        ? '<span class="po-accent">' + sr + '</span> reps'
-        : '<span class="po-accent">' + (sw || 0) + unit() + '</span> × ' + sr + ' reps';
+        ? '<span class="po-accent">' + sr + '</span> ' + unitWord
+        : '<span class="po-accent">' + (sw || 0) + unit() + '</span> × ' + sr + ' ' + unitWord;
       const reason = ex.bw
-        ? 'Aim for ' + ex.repMin + '-' + ex.repMax + ' clean reps. Once you hit ' + ex.repMax + '+, push for more.'
+        ? 'Aim for ' + ex.repMin + '-' + ex.repMax + ' clean ' + unitWord + '. Once you hit ' + ex.repMax + '+, push for more.'
         : 'Hit ' + ex.repMin + '-' + ex.repMax + ' reps. Once logged, the coach will start prescribing.';
       wrap.innerHTML = '<div class="po-rx-card"><div class="po-rx-label">' + escape(ex.name) + ' · starting point</div><div class="po-rx-headline">' + head + '</div><span class="po-rx-tag hold">Start here</span><p class="po-rx-reason">' + reason + '</p></div>';
       return;
     }
     const head = rx.bw
-      ? '<span class="po-accent">' + rx.reps + '</span> reps'
-      : '<span class="po-accent">' + rx.weight + unit() + '</span> × ' + rx.reps + ' reps';
+      ? '<span class="po-accent">' + rx.reps + '</span> ' + unitWord
+      : '<span class="po-accent">' + rx.weight + unit() + '</span> × ' + rx.reps + ' ' + unitWord;
     wrap.innerHTML = '<div class="po-rx-card po-rx-' + rx.type + '"><div class="po-rx-label">' + escape(ex.name) + '</div><div class="po-rx-headline">' + head + '</div><span class="po-rx-tag ' + rx.type + '">' + rx.tag + '</span><p class="po-rx-reason">' + rx.reason + '</p></div>';
   }
   function renderStats() {
@@ -2147,7 +2224,7 @@ img, video, canvas, svg { max-width: 100%; }
     wrap.innerHTML = logs.slice(0, 12).map((l, i) => {
       const d = new Date(l.date);
       const dStr = (d.getMonth() + 1) + '/' + d.getDate();
-      const setStr = ex.bw ? (l.reps + ' reps') : (l.weight + unit() + ' × ' + l.reps);
+      const setStr = ex.bw ? (l.reps + (ex.holdSeconds ? 's' : ' reps')) : (l.weight + unit() + ' × ' + l.reps);
       const realIdx = logs.length - 1 - i; // since we reversed
       return '<div class="po-hist-row">'
         + '<div class="po-hist-date">' + dStr + '</div>'
@@ -2212,6 +2289,8 @@ img, video, canvas, svg { max-width: 100%; }
     const row = document.getElementById('repsRow');
     if (!row) return;
     const ex = getCurrentEx();
+    const label = document.getElementById('repsLabel');
+    if (label) label.textContent = (ex && ex.holdSeconds) ? 'Seconds' : 'Reps';
     let repMin, repMax;
     if (ex) {
       repMin = Math.max(1, parseInt(ex.repMin, 10) || 1);
@@ -2219,16 +2298,21 @@ img, video, canvas, svg { max-width: 100%; }
     } else {
       repMin = 4; repMax = 12;
     }
+    // The pill range used to start exactly at repMin, so an exercise
+    // with a high target minimum (e.g. 15) had no way to log an
+    // honest under-performance below that. Never start higher than 6,
+    // regardless of the exercise's own repMin.
+    const start = Math.min(repMin, 6);
     const upper = Math.max(repMax + 2, repMin + 5);
-    const end = Math.min(upper, repMin + 15);
+    const end = Math.min(upper, start + 20);
 
     // Preserve the previously-selected rep if it still fits in the new
     // range; otherwise default to the target (repMax).
     const prev = parseInt(row.dataset.value, 10);
-    const active = (prev >= repMin && prev <= end) ? prev : repMax;
+    const active = (prev >= start && prev <= end) ? prev : repMax;
 
     let html = '';
-    for (let i = repMin; i <= end; i++) {
+    for (let i = start; i <= end; i++) {
       html += '<button type="button" class="po-reps-pill' +
         (i === active ? ' active' : '') +
         '" data-v="' + i + '">' + i + '</button>';
