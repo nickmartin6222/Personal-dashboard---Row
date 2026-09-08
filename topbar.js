@@ -179,7 +179,7 @@ body.topbar-modal-open {
   // -------- HTML --------
   const topbarHtml = `
 <header class="topbar" id="topbar" role="navigation" aria-label="Quick actions">
-  <a href="finance.html" class="topbar-finance-btn" id="topbarFinance" aria-label="Finance">
+  <a href="FROK-finance-standalone.html" class="topbar-finance-btn" id="topbarFinance" aria-label="Finance">
     <span class="topbar-finance-icon">📊</span>
   </a>
 </header>
@@ -203,10 +203,10 @@ body.topbar-modal-open {
 `;
 
   // Pages where we suppress the app chrome: finance has its own internal
-  // 4-tab bottom nav and self-contained back button.
+  // bottom nav and self-contained back button.
   function isFinancePage() {
     const p = (window.location.pathname || '').toLowerCase();
-    return p.endsWith('/finance.html') || p.endsWith('finance.html');
+    return p.endsWith('finance.html') || p.endsWith('frok-finance-standalone.html');
   }
   // When the water tracker is iframed inside health.html, the embedded
   // page shouldn't render its own chrome again.
