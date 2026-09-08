@@ -1605,6 +1605,17 @@ img, video, canvas, svg { max-width: 100%; }
             <button type="button" class="po-reps-pill" data-v="12">12</button>
           </div>
         </div>
+        <div class="po-field">
+          <label>Sets <span style="opacity:.6;text-transform:none;font-weight:500">(logs each one the same)</span></label>
+          <div class="po-reps-row" id="setsRow" data-value="1">
+            <button type="button" class="po-reps-pill active" data-v="1">1</button>
+            <button type="button" class="po-reps-pill" data-v="2">2</button>
+            <button type="button" class="po-reps-pill" data-v="3">3</button>
+            <button type="button" class="po-reps-pill" data-v="4">4</button>
+            <button type="button" class="po-reps-pill" data-v="5">5</button>
+            <button type="button" class="po-reps-pill" data-v="6">6</button>
+          </div>
+        </div>
       </div>
       <button class="po-btn-primary" id="logBtn">Log set</button>
     </div>
@@ -2442,19 +2453,42 @@ img, video, canvas, svg { max-width: 100%; }
     p.classList.add('active');
     $('repsRow').dataset.value = p.dataset.v;
   });
+  function updateLogBtnLabel() {
+    const sets = parseInt($('setsRow').dataset.value, 10) || 1;
+    $('logBtn').textContent = sets > 1 ? 'Log ' + sets + ' sets' : 'Log set';
+  }
+  $('setsRow').addEventListener('click', (e) => {
+    const p = e.target.closest('.po-reps-pill');
+    if (!p) return;
+    $('setsRow').querySelectorAll('.po-reps-pill').forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    $('setsRow').dataset.value = p.dataset.v;
+    updateLogBtnLabel();
+  });
   $('logBtn').addEventListener('click', () => {
     const ex = getCurrentEx();
     if (!ex) return;
     const reps = parseInt($('repsRow').dataset.value, 10) || 0;
     if (reps <= 0) { alert('Pick a rep count.'); return; }
+    const sets = parseInt($('setsRow').dataset.value, 10) || 1;
     const w = ex.bw ? 0 : (parseFloat($('weightInput').value) || 0);
     if (!ex.bw && w <= 0) { alert('Enter a weight.'); return; }
     const arr = state.logs[ex.id] || [];
-    arr.push({ weight: w, reps: reps, date: new Date().toISOString() });
+    const now = Date.now();
+    for (let i = 0; i < sets; i++) {
+      arr.push({ weight: w, reps: reps, date: new Date(now + i).toISOString() });
+    }
     state.logs[ex.id] = arr;
     saveState(); renderAll();
     // Strength changed → composition estimate may shift
     if (typeof wtRender === 'function') wtRender();
+    // Reset the sets picker back to 1 so the next tap doesn't silently
+    // re-log a multi-set count from a different exercise.
+    if (sets !== 1) {
+      $('setsRow').dataset.value = '1';
+      $('setsRow').querySelectorAll('.po-reps-pill').forEach(x => x.classList.toggle('active', x.dataset.v === '1'));
+      updateLogBtnLabel();
+    }
     // Tiny pulse on the button so the user feels the save
     const btn = $('logBtn');
     btn.style.transition = 'transform 0.15s';
