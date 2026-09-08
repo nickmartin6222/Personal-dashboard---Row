@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('dash_theme_v1')||'dark');}catch(e){}</script>
+<script src="lock.js"></script>
+<script src="/api/config"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<title>Golf</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
+<script src="topbar.js" defer></script>
+<style>
+:root {
+  --bg: #050506;
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-secondary: rgba(255, 255, 255, 0.035);
+  --bg-input: rgba(0, 0, 0, 0.28);
+  --bg-input-focus: rgba(0, 0, 0, 0.36);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --text-primary: #FAFAFA;
+  --text-secondary: #B8B6B0;
+  --text-tertiary: #76746E;
+  --text-quaternary: #4D4B47;
+  --accent: #6EE7B7;
+  --warning: #F2C063;
+  --danger: #FF6B6B;
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  min-height: 100vh; position: relative; overflow-x: hidden;
+  padding: max(28px, env(safe-area-inset-top)) 20px 60px;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background:
+    radial-gradient(circle at 82% 14%, rgba(110, 231, 183, 0.14), transparent 45%),
+    radial-gradient(circle at 18% 90%, rgba(180, 180, 200, 0.06), transparent 50%);
+  filter: blur(40px); pointer-events: none; z-index: -2;
+  animation: drift 36s ease-in-out infinite alternate;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.014) 1px, transparent 1px);
+  background-size: 3px 3px; pointer-events: none; z-index: -1;
+}
+@keyframes drift { 0%{transform:translate3d(0,0,0)} 100%{transform:translate3d(-22px,14px,0)} }
+
+.page { max-width: 720px; margin: 0 auto; }
+.dash-title {
+  margin: 0 0 18px; font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
+  background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+@media (max-width: 480px) { .dash-title { font-size: 22px; } }
+
+/* ===== Stats row ===== */
+.stat-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin-bottom: 22px;
+}
+.stat-tile {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 10px;
+  text-align: center;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+}
+.stat-tile-val {
+  font-size: 22px; font-weight: 700; color: var(--text-primary);
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.stat-tile-label {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-top: 6px;
+}
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ===== Section title (shared look with the rest of the dashboard) ===== */
+.section-title {
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 0 12px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent);
+}
+
+/* ===== Log-a-round card ===== */
+.golf-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 22px;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+.golf-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.golf-form-row.full { grid-template-columns: 1fr; }
+.golf-field-label {
+  display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px;
+}
+.golf-input {
+  width: 100%; box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: inherit; font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.golf-input::placeholder { color: var(--text-tertiary); }
+.golf-input:focus { border-color: rgba(255,255,255,0.28); background: var(--bg-input-focus); }
+.golf-diff-hint {
+  font-size: 11px; color: var(--text-tertiary); margin: 2px 0 14px;
+  font-family: var(--font-mono);
+}
+.golf-diff-hint b { color: var(--accent); font-weight: 700; }
+.golf-save-btn {
+  width: 100%; padding: 13px; border: 0; border-radius: 12px;
+  background: linear-gradient(180deg,#FFFFFF,#E8E5DD); color: #0A0A0B;
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 22px rgba(0,0,0,0.25);
+  transition: filter 0.15s, transform 0.1s;
+}
+.golf-save-btn:hover { filter: brightness(1.05); }
+.golf-save-btn:active { transform: translateY(1px); }
+
+/* ===== Rounds history ===== */
+.golf-round-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 14px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+}
+.golf-round-score {
+  width: 42px; height: 42px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  font-size: 16px; font-weight: 800; color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.golf-round-body { flex: 1; min-width: 0; }
+.golf-round-course {
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.golf-round-meta {
+  font-size: 11.5px; color: var(--text-tertiary);
+  font-family: var(--font-mono); margin-top: 2px;
+}
+.golf-round-diff {
+  flex-shrink: 0; text-align: right;
+  font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+  color: var(--accent);
+}
+.golf-round-diff-label { display: block; font-size: 9px; color: var(--text-tertiary); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.golf-round-del {
+  border: 0; background: transparent; color: var(--text-tertiary);
+  font-size: 18px; cursor: pointer; padding: 0 2px; opacity: 0.5;
+  transition: opacity 0.2s, color 0.2s;
+}
+.golf-round-row:hover .golf-round-del { opacity: 1; }
+.golf-round-del:hover { color: var(--danger); }
+
+.golf-empty {
+  text-align: center; font-size: 12px; font-style: italic;
+  color: var(--text-tertiary); padding: 20px 0;
+}
+
+/* ===== Light theme overrides =====
+   Additive only, same pattern as the rest of the dashboard. */
+:root[data-theme="light"] {
+  --bg: #F5F3EF;
+  --bg-card: #FFFFFF;
+  --bg-secondary: rgba(20, 18, 15, 0.03);
+  --bg-input: rgba(20, 18, 15, 0.04);
+  --bg-input-focus: rgba(20, 18, 15, 0.06);
+  --border: rgba(20, 18, 15, 0.08);
+  --border-strong: rgba(20, 18, 15, 0.14);
+  --text-primary: #1C1B17;
+  --text-secondary: #5B584E;
+  --text-tertiary: #8A8676;
+  --text-quaternary: #B7B3A4;
+  --accent: #12805A;
+  --warning: #B4790A;
+  --danger: #D23F3F;
+  color-scheme: light;
+}
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(circle at 82% 14%, rgba(18, 128, 90, 0.10), transparent 45%),
+    radial-gradient(circle at 18% 90%, rgba(120, 120, 140, 0.08), transparent 50%);
+}
+[data-theme="light"] body::after {
+  background-image: radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+}
+[data-theme="light"] .dash-title {
+  background: linear-gradient(180deg, #1C1B17 0%, #5B584E 120%);
+  -webkit-background-clip: text; background-clip: text;
+}
+[data-theme="light"] .section-title::after {
+  background: linear-gradient(90deg, rgba(20,18,15,0.10), transparent);
+}
+[data-theme="light"] .golf-card,
+[data-theme="light"] .stat-tile { box-shadow: 0 12px 32px rgba(20,18,15,0.10); }
+[data-theme="light"] .golf-round-row {
+  background: rgba(20,18,15,0.03);
+  border-color: rgba(20,18,15,0.08);
+}
+[data-theme="light"] .golf-round-score { background: rgba(20,18,15,0.06); }
+[data-theme="light"] .golf-save-btn {
+  background: linear-gradient(180deg,#1C1B17,#33312A);
+  color: #FAFAF8;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 20px rgba(20,18,15,0.18);
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1 class="dash-title">Golf</h1>
+
+  <div class="stat-grid">
+    <div class="stat-tile"><div class="stat-tile-val" id="statRounds">0</div><div class="stat-tile-label">Rounds</div></div>
+    <div class="stat-tile"><div class="stat-tile-val" id="statBest">—</div><div class="stat-tile-label">Best score</div></div>
+    <div class="stat-tile"><div class="stat-tile-val" id="statAvg">—</div><div class="stat-tile-label">Avg score</div></div>
+    <div class="stat-tile"><div class="stat-tile-val" id="statDiff">—</div><div class="stat-tile-label">Avg diff.</div></div>
+  </div>
+
+  <div class="golf-card">
+    <div class="section-title">Log a round</div>
+
+    <div class="golf-form-row">
+      <div>
+        <label class="golf-field-label">Date</label>
+        <input type="date" id="gInputDate" class="golf-input">
+      </div>
+      <div>
+        <label class="golf-field-label">Score</label>
+        <input type="number" inputmode="numeric" min="18" max="200" id="gInputScore" class="golf-input" placeholder="e.g. 88">
+      </div>
+    </div>
+
+    <div class="golf-form-row full">
+      <div>
+        <label class="golf-field-label">Course</label>
+        <input type="text" id="gInputCourse" class="golf-input" placeholder="Course name" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="golf-form-row">
+      <div>
+        <label class="golf-field-label">Course rating</label>
+        <input type="number" inputmode="decimal" step="0.1" id="gInputRating" class="golf-input" placeholder="e.g. 72.0">
+      </div>
+      <div>
+        <label class="golf-field-label">Slope rating</label>
+        <input type="number" inputmode="numeric" id="gInputSlope" class="golf-input" placeholder="e.g. 113">
+      </div>
+    </div>
+    <div class="golf-diff-hint" id="gDiffHint">Differential = (Score − Rating) × 113 / Slope — fill in rating &amp; slope to see it.</div>
+
+    <div class="golf-form-row">
+      <div>
+        <label class="golf-field-label">Fairways hit <span style="opacity:.6">(optional)</span></label>
+        <input type="text" id="gInputFairways" class="golf-input" placeholder="e.g. 9/14">
+      </div>
+      <div>
+        <label class="golf-field-label">Putts <span style="opacity:.6">(optional)</span></label>
+        <input type="number" inputmode="numeric" id="gInputPutts" class="golf-input" placeholder="e.g. 32">
+      </div>
+    </div>
+
+    <button type="button" class="golf-save-btn" id="gSaveBtn">Save round</button>
+  </div>
+
+  <div class="section-title">Rounds</div>
+  <div id="gRoundsList"></div>
+  <div class="golf-empty" id="gEmpty">No rounds logged yet — add your first one above.</div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const KEY = 'golf:rounds';
+
+  function loadRounds() {
+    try { const r = JSON.parse(localStorage.getItem(KEY)); return Array.isArray(r) ? r : []; }
+    catch (e) { return []; }
+  }
+  function saveRounds(rounds) {
+    try { localStorage.setItem(KEY, JSON.stringify(rounds)); } catch (e) {}
+  }
+
+  function computeDifferential(score, rating, slope) {
+    if (!(score > 0) || !(rating > 0) || !(slope > 0)) return null;
+    return Math.round(((score - rating) * 113 / slope) * 10) / 10;
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const parts = iso.split('-').map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+    return mo + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+
+  function renderStats(rounds) {
+    $('statRounds').textContent = rounds.length;
+    if (!rounds.length) {
+      $('statBest').textContent = '—';
+      $('statAvg').textContent = '—';
+      $('statDiff').textContent = '—';
+      return;
+    }
+    const scores = rounds.map(r => r.score).filter(s => typeof s === 'number');
+    const best = Math.min(...scores);
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    $('statBest').textContent = best;
+    $('statAvg').textContent = avg.toFixed(1);
+
+    const diffs = rounds.map(r => r.differential).filter(d => typeof d === 'number');
+    if (diffs.length) {
+      const avgDiff = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+      $('statDiff').textContent = avgDiff.toFixed(1);
+    } else {
+      $('statDiff').textContent = '—';
+    }
+  }
+
+  function renderRounds() {
+    const rounds = loadRounds().slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0));
+    renderStats(rounds);
+
+    const list = $('gRoundsList');
+    const empty = $('gEmpty');
+    list.innerHTML = '';
+    empty.style.display = rounds.length ? 'none' : 'block';
+
+    rounds.forEach((r) => {
+      const row = document.createElement('div');
+      row.className = 'golf-round-row';
+
+      const scoreEl = document.createElement('div');
+      scoreEl.className = 'golf-round-score';
+      scoreEl.textContent = r.score != null ? r.score : '—';
+      row.appendChild(scoreEl);
+
+      const body = document.createElement('div');
+      body.className = 'golf-round-body';
+      const course = document.createElement('div');
+      course.className = 'golf-round-course';
+      course.textContent = r.course || 'Unnamed course';
+      body.appendChild(course);
+      const metaBits = [fmtDate(r.date)];
+      if (r.fairways) metaBits.push(r.fairways + ' FW');
+      if (r.putts != null) metaBits.push(r.putts + ' putts');
+      const meta = document.createElement('div');
+      meta.className = 'golf-round-meta';
+      meta.textContent = metaBits.filter(Boolean).join(' · ');
+      body.appendChild(meta);
+      row.appendChild(body);
+
+      const diff = document.createElement('div');
+      diff.className = 'golf-round-diff';
+      diff.innerHTML = '<span class="golf-round-diff-label">Diff</span>' + (r.differential != null ? (r.differential > 0 ? '+' : '') + r.differential : '—');
+      row.appendChild(diff);
+
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'golf-round-del';
+      del.setAttribute('aria-label', 'Delete round');
+      del.textContent = '×';
+      del.addEventListener('click', () => {
+        const all = loadRounds();
+        const idx = all.findIndex(x => x.id === r.id);
+        if (idx !== -1) { all.splice(idx, 1); saveRounds(all); renderRounds(); }
+      });
+      row.appendChild(del);
+
+      list.appendChild(row);
+    });
+  }
+
+  function updateDiffHint() {
+    const score = parseFloat($('gInputScore').value);
+    const rating = parseFloat($('gInputRating').value);
+    const slope = parseFloat($('gInputSlope').value);
+    const d = computeDifferential(score, rating, slope);
+    const hint = $('gDiffHint');
+    if (d != null) {
+      hint.innerHTML = 'Differential: <b>' + (d > 0 ? '+' : '') + d + '</b> — (Score − Rating) × 113 / Slope';
+    } else {
+      hint.innerHTML = 'Differential = (Score − Rating) × 113 / Slope — fill in rating &amp; slope to see it.';
+    }
+  }
+
+  ['gInputScore', 'gInputRating', 'gInputSlope'].forEach(id => {
+    $(id).addEventListener('input', updateDiffHint);
+  });
+
+  $('gInputDate').valueAsDate = new Date();
+
+  $('gSaveBtn').addEventListener('click', () => {
+    const score = parseInt($('gInputScore').value, 10);
+    if (!score || score < 18) { $('gInputScore').focus(); return; }
+    const rating = parseFloat($('gInputRating').value);
+    const slope = parseFloat($('gInputSlope').value);
+    const round = {
+      id: 'r' + Date.now() + Math.random().toString(36).slice(2, 7),
+      date: $('gInputDate').value || new Date().toISOString().slice(0, 10),
+      course: $('gInputCourse').value.trim(),
+      score: score,
+      rating: rating > 0 ? rating : null,
+      slope: slope > 0 ? slope : null,
+      differential: computeDifferential(score, rating, slope),
+      fairways: $('gInputFairways').value.trim(),
+      putts: parseInt($('gInputPutts').value, 10) || null,
+      ts: Date.now()
+    };
+    const all = loadRounds();
+    all.push(round);
+    saveRounds(all);
+
+    $('gInputCourse').value = '';
+    $('gInputScore').value = '';
+    $('gInputFairways').value = '';
+    $('gInputPutts').value = '';
+    $('gInputDate').valueAsDate = new Date();
+    updateDiffHint();
+    renderRounds();
+  });
+
+  renderRounds();
+  window.addEventListener('storage', renderRounds);
+})();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof initCloudSync !== 'function') return;
+  initCloudSync({
+    appKey: 'golf',
+    syncedKeys: ['golf:rounds'],
+    onApplied: function () {
+      window.dispatchEvent(new Event('storage'));
+    }
+  });
+});
+</script>
+</body>
+</html>

@@ -199,6 +199,10 @@ body.topbar-modal-open {
     <span class="bottombar-tab-icon">💪</span>
     <span>Fitness</span>
   </a>
+  <a href="golf.html" class="bottombar-tab" data-page="golf">
+    <span class="bottombar-tab-icon">⛳</span>
+    <span>Golf</span>
+  </a>
 </nav>
 `;
 
@@ -208,8 +212,7 @@ body.topbar-modal-open {
     const p = (window.location.pathname || '').toLowerCase();
     return p.endsWith('finance.html') || p.endsWith('frok-finance-standalone.html');
   }
-  // When the water tracker is iframed inside health.html, the embedded
-  // page shouldn't render its own chrome again.
+  // Pages embedded in an iframe shouldn't render their own chrome again.
   function isEmbedded() {
     try { return window.self !== window.top; } catch (e) { return true; }
   }
@@ -220,6 +223,7 @@ body.topbar-modal-open {
     const p = (window.location.pathname || '').toLowerCase();
     if (p.endsWith('health.html')) return 'health';
     if (p.endsWith('gym.html')) return 'fitness';
+    if (p.endsWith('golf.html')) return 'golf';
     return 'main'; // index.html, /, or anything else falls back to main
   }
 
