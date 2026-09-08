@@ -376,6 +376,37 @@ img, video, canvas, svg { max-width: 100%; }
   content: ''; width: 24px; height: 1px; background: var(--border-strong);
 }
 
+/* ----- Today's picks panel ----- */
+.po-plan-panel {
+  margin: 0 0 22px; padding: 14px 14px 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.po-plan-title {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text-3);
+  margin-bottom: 10px;
+}
+.po-plan-row { margin-bottom: 12px; }
+.po-plan-slot {
+  font-size: 11px; font-weight: 600; color: var(--text-2);
+  margin-bottom: 6px;
+}
+.po-plan-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.po-plan-opt {
+  border: 1px solid var(--border-strong);
+  background: transparent; color: var(--text-2);
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  padding: 7px 11px; border-radius: 9px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.po-plan-opt:hover { border-color: var(--text-3); }
+.po-plan-opt.active {
+  background: var(--accent); border-color: var(--accent); color: var(--bg);
+}
+
 /* ----- Exercise picker ----- */
 .po-exercise-bar { display: flex; gap: 8px; align-items: center; }
 .po-ex-select {
@@ -1574,6 +1605,11 @@ img, video, canvas, svg { max-width: 100%; }
       <div class="po-next-day-info" id="nextDayInfo"></div>
     </div>
 
+    <!-- Today's picks — which accessory option / primary variation is
+         "on" for this training day. Persists per day, not per date, so
+         it can be set ahead of time. -->
+    <div class="po-plan-panel" id="planPanel" style="display:none"></div>
+
     <!-- Exercise -->
     <div class="po-sub-section">
       <div class="po-sub-title">Exercise</div>
@@ -1953,6 +1989,37 @@ img, video, canvas, svg { max-width: 100%; }
       });
       s.programVersion = 3;
     }
+
+    // Fourth migration: delete the 9 leftover exercises from the
+    // original pre-rebuild 3-day split (push/pull/legs) — they never
+    // got removed since the migration only ever adds, never deletes,
+    // so they'd been sitting in the exercise list (and dropdown)
+    // alongside the current program ever since. Removes their logged
+    // history too, at the user's explicit request.
+    if ((s.programVersion || 0) < 4) {
+      const legacy = [
+        { day: 'push', name: 'Bench press' },
+        { day: 'push', name: 'Overhead press' },
+        { day: 'push', name: 'Tricep pushdown' },
+        { day: 'pull', name: 'Pull-ups' },
+        { day: 'pull', name: 'Barbell row' },
+        { day: 'pull', name: 'Bicep curl' },
+        { day: 'legs', name: 'Back squat' },
+        { day: 'legs', name: 'Romanian deadlift' },
+        { day: 'legs', name: 'Leg press' }
+      ];
+      s.exercises = s.exercises.filter(e => {
+        const isLegacy = legacy.some(l => l.day === e.day && (e.name || '').toLowerCase() === l.name.toLowerCase());
+        if (isLegacy) delete s.logs[e.id];
+        return !isLegacy;
+      });
+      s.programVersion = 4;
+    }
+
+    // Plan picks per training day (which accessory option / primary
+    // variation is "on" for that day) — lives in state so it persists
+    // and can be set ahead of time, not just on the day itself.
+    s.dayPlan = (s.dayPlan && typeof s.dayPlan === 'object') ? s.dayPlan : {};
     return s;
   }
   function saveState() {
@@ -1972,9 +2039,90 @@ img, video, canvas, svg { max-width: 100%; }
   function estimate1RM(w, r) { if (r < 2) return w; return w * (1 + r / 30); }
   function roundToStep(v, s) { return Math.round(v / s) * s; }
   const TAG_ORDER = { primary: 0, accessory: 1, rehab: 2 };
+
+  // ---------- Today's picks (which accessory option / primary variation
+  // is "on" for a given training day) ----------
+  // A slot is only "selectable" if 2+ exercises share it — a single
+  // exercise per slot (most primaries, all rehab) has nothing to pick
+  // between and is just always shown.
+  function slotMembers(day, slot) {
+    return state.exercises.filter(e => e.day === day && e.slot === slot);
+  }
+  function getSelectableSlots(day) {
+    const seen = {};
+    const slots = [];
+    state.exercises.filter(e => e.day === day && e.slot).forEach(e => {
+      if (seen[e.slot]) return;
+      seen[e.slot] = true;
+      const members = slotMembers(day, e.slot);
+      if (members.length >= 2) slots.push({ slot: e.slot, members });
+    });
+    return slots;
+  }
+  function getActivePickForSlot(day, slot, members) {
+    const plan = (state.dayPlan && state.dayPlan[day]) || {};
+    const saved = plan[slot];
+    const usesOptionSet = members.some(m => m.optionSet);
+    if (usesOptionSet) {
+      if (saved && members.some(m => m.optionSet === saved)) return saved;
+      return 'A';
+    }
+    if (saved && members.some(m => m.id === saved)) return saved;
+    return members[0] ? members[0].id : null;
+  }
+  function isExerciseActiveToday(ex) {
+    if (!ex.slot) return true;
+    const members = slotMembers(ex.day, ex.slot);
+    if (members.length < 2) return true;
+    const pick = getActivePickForSlot(ex.day, ex.slot, members);
+    return ex.optionSet ? ex.optionSet === pick : ex.id === pick;
+  }
+  function setPlanPick(day, slot, value) {
+    state.dayPlan = state.dayPlan || {};
+    state.dayPlan[day] = state.dayPlan[day] || {};
+    state.dayPlan[day][slot] = value;
+    // The exercise that was selected may no longer be part of today's
+    // active picks — let getCurrentEx() fall back to whatever's active.
+    state.currentEx = null;
+    saveState();
+    renderAll();
+  }
+  function renderPlanPanel() {
+    const panel = $('planPanel');
+    if (!panel) return;
+    const slots = getSelectableSlots(state.filterDay);
+    if (!slots.length) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
+    panel.style.display = '';
+    let html = '<div class="po-plan-title">Today’s picks</div>';
+    slots.forEach(({ slot, members }) => {
+      const usesOptionSet = members.some(m => m.optionSet);
+      const active = getActivePickForSlot(state.filterDay, slot, members);
+      // Short label: strip the day-name prefix that's usually baked
+      // into the slot string (e.g. "Push Fly" -> "Fly") since the
+      // panel's already scoped to the current day.
+      const shortLabel = slot.replace(new RegExp('^' + dayName(state.filterDay) + '\\s*', 'i'), '') || slot;
+      html += '<div class="po-plan-row"><div class="po-plan-slot">' + escape(shortLabel) + '</div><div class="po-plan-opts">';
+      members.forEach(m => {
+        const value = usesOptionSet ? m.optionSet : m.id;
+        const isActive = value === active;
+        html += '<button type="button" class="po-plan-opt' + (isActive ? ' active' : '') +
+          '" data-day="' + state.filterDay + '" data-slot="' + escape(slot) + '" data-value="' + escape(String(value)) + '">' +
+          escape(m.name) + '</button>';
+      });
+      html += '</div></div>';
+    });
+    panel.innerHTML = html;
+    panel.querySelectorAll('.po-plan-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setPlanPick(btn.dataset.day, btn.dataset.slot, btn.dataset.value);
+      });
+    });
+  }
+
   function getFiltered() {
     return state.exercises
       .filter(e => (e.gym === state.filterGym || e.gym === 'both') && e.day === state.filterDay)
+      .filter(isExerciseActiveToday)
       .slice()
       .sort((a, b) => (TAG_ORDER[a.tag] ?? 3) - (TAG_ORDER[b.tag] ?? 3));
   }
@@ -2323,7 +2471,7 @@ img, video, canvas, svg { max-width: 100%; }
 
   function renderAll() {
     renderDayPill();
-    renderFilters(); renderSelect(); renderForm(); renderLastSet();
+    renderFilters(); renderPlanPanel(); renderSelect(); renderForm(); renderLastSet();
     renderRepsRow();
     renderRx(); renderStats(); renderSparkline(); renderHistory();
     renderTodaysWorkout();
