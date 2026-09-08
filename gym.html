@@ -464,6 +464,38 @@ img, video, canvas, svg { max-width: 100%; }
   background: var(--accent); border-color: var(--accent); color: var(--bg);
 }
 
+/* ----- Muscles-trained body diagram ----- */
+.po-body-panel {
+  margin: 0 0 22px; padding: 14px 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.po-body-wrap {
+  display: flex; justify-content: center; gap: 28px; flex-wrap: wrap;
+}
+.po-body-figure { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.po-body-figure svg { width: 100%; max-width: 118px; height: auto; }
+.po-body-caption {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-3);
+}
+.po-body-region {
+  fill: rgba(255,255,255,0.06);
+  stroke: rgba(255,255,255,0.14);
+  stroke-width: 1;
+  transition: fill 0.2s ease;
+}
+.po-body-region.po-body-base { fill: rgba(255,255,255,0.045); }
+.po-body-region.is-active { stroke: rgba(0,0,0,0.35); }
+.po-body-legend {
+  display: flex; flex-wrap: wrap; gap: 10px 16px;
+  justify-content: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
 /* ----- Exercise picker ----- */
 .po-exercise-bar { display: flex; gap: 8px; align-items: center; }
 .po-ex-select {
@@ -1667,6 +1699,66 @@ img, video, canvas, svg { max-width: 100%; }
          it can be set ahead of time. -->
     <div class="po-plan-panel" id="planPanel" style="display:none"></div>
 
+    <!-- Muscles trained today — front/back body diagram, colored regions
+         match the muscle-group dots used everywhere else. Purely a
+         simplified/stylized figure (named regions, not real anatomy). -->
+    <div class="po-body-panel" id="bodyPanel" style="display:none">
+      <div class="po-plan-title" id="bodyPanelTitle">Muscles trained</div>
+      <div class="po-body-wrap">
+        <div class="po-body-figure">
+          <svg viewBox="0 0 100 220" aria-hidden="true">
+            <circle class="po-body-region po-body-base" cx="50" cy="16" r="13"/>
+            <rect class="po-body-region po-body-base" x="44" y="27" width="12" height="8"/>
+            <rect class="po-body-region" data-muscle="Chest" x="30" y="38" width="40" height="26" rx="8"/>
+            <rect class="po-body-region" data-muscle="Core" x="32" y="66" width="36" height="32" rx="8"/>
+            <circle class="po-body-region" data-muscle="Shoulders" cx="24" cy="44" r="10"/>
+            <circle class="po-body-region" data-muscle="Shoulders" cx="76" cy="44" r="10"/>
+            <rect class="po-body-region" data-muscle="Biceps" x="10" y="46" width="14" height="40" rx="6"/>
+            <rect class="po-body-region" data-muscle="Biceps" x="76" y="46" width="14" height="40" rx="6"/>
+            <rect class="po-body-region po-body-base" x="8" y="86" width="13" height="38" rx="6"/>
+            <rect class="po-body-region po-body-base" x="79" y="86" width="13" height="38" rx="6"/>
+            <circle class="po-body-region po-body-base" cx="14" cy="128" r="7"/>
+            <circle class="po-body-region po-body-base" cx="86" cy="128" r="7"/>
+            <rect class="po-body-region po-body-base" x="34" y="100" width="32" height="18" rx="6"/>
+            <rect class="po-body-region" data-muscle="Quads" x="30" y="118" width="17" height="50" rx="8"/>
+            <rect class="po-body-region" data-muscle="Quads" x="53" y="118" width="17" height="50" rx="8"/>
+            <rect class="po-body-region" data-muscle="Adductors" x="46" y="122" width="8" height="42" rx="4"/>
+            <rect class="po-body-region po-body-base" x="31" y="170" width="15" height="40" rx="6"/>
+            <rect class="po-body-region po-body-base" x="54" y="170" width="15" height="40" rx="6"/>
+            <ellipse class="po-body-region po-body-base" cx="38" cy="214" rx="10" ry="6"/>
+            <ellipse class="po-body-region po-body-base" cx="62" cy="214" rx="10" ry="6"/>
+          </svg>
+          <div class="po-body-caption">Front</div>
+        </div>
+        <div class="po-body-figure">
+          <svg viewBox="0 0 100 220" aria-hidden="true">
+            <circle class="po-body-region po-body-base" cx="50" cy="16" r="13"/>
+            <rect class="po-body-region po-body-base" x="44" y="27" width="12" height="8"/>
+            <rect class="po-body-region" data-muscle="Back" x="30" y="38" width="40" height="50" rx="8"/>
+            <circle class="po-body-region" data-muscle="Rear Delts" cx="24" cy="44" r="10"/>
+            <circle class="po-body-region" data-muscle="Rear Delts" cx="76" cy="44" r="10"/>
+            <rect class="po-body-region" data-muscle="Triceps" x="10" y="46" width="14" height="40" rx="6"/>
+            <rect class="po-body-region" data-muscle="Triceps" x="76" y="46" width="14" height="40" rx="6"/>
+            <rect class="po-body-region po-body-base" x="8" y="86" width="13" height="38" rx="6"/>
+            <rect class="po-body-region po-body-base" x="79" y="86" width="13" height="38" rx="6"/>
+            <circle class="po-body-region po-body-base" cx="14" cy="128" r="7"/>
+            <circle class="po-body-region po-body-base" cx="86" cy="128" r="7"/>
+            <rect class="po-body-region" data-muscle="Glutes" x="32" y="90" width="36" height="26" rx="10"/>
+            <circle class="po-body-region" data-muscle="Hips" cx="28" cy="100" r="8"/>
+            <circle class="po-body-region" data-muscle="Hips" cx="72" cy="100" r="8"/>
+            <rect class="po-body-region" data-muscle="Hamstrings" x="30" y="118" width="17" height="50" rx="8"/>
+            <rect class="po-body-region" data-muscle="Hamstrings" x="53" y="118" width="17" height="50" rx="8"/>
+            <rect class="po-body-region" data-muscle="Calves" x="31" y="170" width="15" height="40" rx="6"/>
+            <rect class="po-body-region" data-muscle="Calves" x="54" y="170" width="15" height="40" rx="6"/>
+            <ellipse class="po-body-region po-body-base" cx="38" cy="214" rx="10" ry="6"/>
+            <ellipse class="po-body-region po-body-base" cx="62" cy="214" rx="10" ry="6"/>
+          </svg>
+          <div class="po-body-caption">Back</div>
+        </div>
+      </div>
+      <div class="po-body-legend" id="bodyLegend"></div>
+    </div>
+
     <!-- Exercise -->
     <div class="po-sub-section">
       <div class="po-sub-title">Exercise</div>
@@ -2287,6 +2379,32 @@ img, video, canvas, svg { max-width: 100%; }
   }
   function getLogs() { return (state.logs[state.currentEx] || []).slice(); }
 
+  // Simplified/stylized figure, not real anatomy — just enough named
+  // regions to show which muscle groups today's confirmed plan hits.
+  // Driven by getFiltered() (the same committed picks the dropdown
+  // uses), so it updates in step with it, not with in-progress taps.
+  function renderBodyDiagram() {
+    const panel = $('bodyPanel');
+    if (!panel) return;
+    const active = new Set();
+    getFiltered().forEach(ex => { if (ex.muscle) active.add(ex.muscle); });
+    if (!active.size) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+    $('bodyPanelTitle').textContent = 'Muscles trained — ' + dayName(state.filterDay);
+    panel.querySelectorAll('.po-body-region[data-muscle]').forEach(el => {
+      const m = el.dataset.muscle;
+      if (active.has(m)) {
+        el.setAttribute('fill', (CONFIG.muscleColors && CONFIG.muscleColors[m]) || '#888');
+        el.classList.add('is-active');
+      } else {
+        el.removeAttribute('fill');
+        el.classList.remove('is-active');
+      }
+    });
+    const legend = $('bodyLegend');
+    if (legend) legend.innerHTML = Array.from(active).sort().map(muscleDotHtml).join('');
+  }
+
   // Prescription engine — "what should I do next session?"
   // Upgrade trigger: hits CONFIG.upgradeAtReps (default 8) OR the
   // exercise's repMax, whichever fires first. So a 5-8 lifter hits
@@ -2623,7 +2741,7 @@ img, video, canvas, svg { max-width: 100%; }
 
   function renderAll() {
     renderDayPill();
-    renderFilters(); renderPlanPanel(); renderSelect(); renderForm(); renderLastSet();
+    renderFilters(); renderPlanPanel(); renderBodyDiagram(); renderSelect(); renderForm(); renderLastSet();
     renderRepsRow();
     renderRx(); renderStats(); renderSparkline(); renderHistory();
     renderTodaysWorkout();
