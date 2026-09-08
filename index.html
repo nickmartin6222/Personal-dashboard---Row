@@ -94,6 +94,10 @@ body::after {
   box-shadow: 0 16px 48px rgba(0,0,0,0.55);
 }
 .tile:hover::before { opacity: 1; }
+/* Main is a snapshot panel, not a link — no hover lift, no pointer cursor. */
+.tile-noclick { cursor: default; }
+.tile-noclick:hover { transform: none; box-shadow: 0 12px 40px rgba(0,0,0,0.45); }
+.tile-noclick:hover::before { opacity: 0.7; }
 
 /* Tile sizes */
 .tile.big  { grid-column: span 2; grid-row: span 2; }
@@ -189,6 +193,63 @@ body::after {
 }
 .tile:hover .tile-arrow { transform: translateX(4px); }
 
+/* ===== Main snapshot panel widgets ===== */
+.tile-top:has(.tile-title-inline) { justify-content: flex-start; gap: 10px; }
+.tile-title-inline { font-size: 20px; margin: 0; }
+
+.main-stat-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin: 16px 0;
+}
+.main-stat {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.main-stat-val {
+  font-size: 17px; font-weight: 700; color: var(--text-primary);
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.main-stat-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-top: 5px;
+}
+
+.main-section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary); margin: 16px 0 8px;
+}
+
+.main-nw-row { display: flex; align-items: center; gap: 14px; }
+.main-nw-pie {
+  width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,255,255,0.06);
+  position: relative;
+}
+.main-nw-pie::after {
+  content: ''; position: absolute; inset: 14px;
+  border-radius: 50%; background: #0b0b0c;
+}
+.main-nw-info { min-width: 0; flex: 1; }
+.main-nw-total {
+  font-size: 20px; font-weight: 700; color: var(--text-primary);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+}
+.main-nw-legend { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+.main-nw-legend-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text-tertiary);
+}
+.main-nw-legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.main-empty {
+  font-size: 11px; font-style: italic; color: var(--text-tertiary);
+  padding: 4px 0 2px;
+}
+.main-empty[hidden] { display: none; }
+
 /* ===== Responsive: collapse the bento on small screens ===== */
 @media (max-width: 720px) {
   .bento { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 150px; }
@@ -203,9 +264,10 @@ body::after {
   .tile-wrap-big { grid-column: span 1; }
 }
 
-/* ===== Desktop: 50/50 split — Main fills the left half, Fitness/
-   Finance/Golf stack on the right with Finance bigger than the
-   other two. ===== */
+/* ===== Desktop: 50/50 split — Main (snapshot panel) fills the left
+   half. The right half is Fitness + Golf side by side on top (each
+   a quarter of the page width) with Finance spanning full width
+   underneath. ===== */
 @media (min-width: 900px) {
   .bento {
     grid-template-columns: 1fr 1fr;
@@ -216,12 +278,15 @@ body::after {
   }
   .tile-wrap-big { grid-column: 1; grid-row: 1; }
   .bento-right {
-    display: flex; flex-direction: column; gap: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 14px;
     grid-column: 2; grid-row: 1;
     min-height: 0;
   }
-  .bento-right .tile { flex: 1; min-height: 0; }
-  .bento-right .tile-right-big { flex: 2; }
+  .bento-right .tile { min-height: 0; }
+  .bento-right .tile-right-big { grid-column: 1 / -1; grid-row: 2; }
 }
 
 /* ===== Header row + gear ===== */
@@ -369,20 +434,43 @@ body::after {
 
   <div class="bento">
 
-    <!-- Big tile -->
+    <!-- Big tile — a snapshot panel, not a link (yet) -->
     <div class="tile-wrap tile-wrap-big">
-      <a class="tile big" href="main.html" style="--accent:#6BE3A4">
+      <div class="tile big tile-noclick" style="--accent:#6BE3A4">
         <div class="tile-top">
           <span class="tile-num">·01</span>
           <span class="tile-emoji">🏠</span>
+          <h2 class="tile-title tile-title-inline">Main</h2>
         </div>
-        <div class="tile-spacer"></div>
-        <h2 class="tile-title">Main</h2>
-        <div class="tile-foot">
-          <span class="tile-sub" id="tileInsightMain">Your day at a glance</span>
-          <span class="tile-arrow">→</span>
+
+        <div class="main-stat-row">
+          <div class="main-stat">
+            <div class="main-stat-val" id="mainStatDay">—</div>
+            <div class="main-stat-label">Day</div>
+          </div>
+          <div class="main-stat">
+            <div class="main-stat-val" id="mainStatFitness">—</div>
+            <div class="main-stat-label">Fitness</div>
+          </div>
+          <div class="main-stat">
+            <div class="main-stat-val" id="mainStatGolf">—</div>
+            <div class="main-stat-label">Golf HCP</div>
+          </div>
         </div>
-      </a>
+
+        <div class="main-section-label">Net worth</div>
+        <div class="main-nw-row">
+          <div class="main-nw-pie" id="mainNwPie"></div>
+          <div class="main-nw-info">
+            <div class="main-nw-total" id="mainNwTotal">—</div>
+            <div class="main-nw-legend" id="mainNwLegend"></div>
+          </div>
+        </div>
+
+        <div class="main-section-label">Stocks</div>
+        <div class="stock-snapshot" id="stockSnapshot" hidden></div>
+        <div class="main-empty" id="mainStockEmpty">No live-priced holdings yet</div>
+      </div>
       <button type="button" class="creatine-btn" id="creatineBtn" aria-label="Mark today's creatine as taken">
         <span class="creatine-check" id="creatineCheck"></span>
         <span>Creatine 5g</span>
@@ -391,8 +479,8 @@ body::after {
 
     <div class="bento-right">
 
-    <!-- Wide tile -->
-    <a class="tile wide tile-right-small" href="gym.html" style="--accent:#7DD3FC">
+    <!-- Top-right: Fitness + Golf side by side -->
+    <a class="tile tile-right-small" href="gym.html" style="--accent:#7DD3FC">
       <div class="tile-top">
         <span class="tile-num">·02</span>
         <span class="tile-emoji">💪</span>
@@ -405,22 +493,6 @@ body::after {
       </div>
     </a>
 
-    <!-- Wide tile -->
-    <a class="tile wide tile-right-big" href="FROK-finance-standalone.html" style="--accent:#F2C063">
-      <div class="tile-top">
-        <span class="tile-num">·03</span>
-        <span class="tile-emoji">📊</span>
-      </div>
-      <div class="stock-snapshot" id="stockSnapshot" hidden></div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Finance</h2>
-      <div class="tile-foot">
-        <span class="tile-sub" id="tileInsightFinance">Net worth & spending</span>
-        <span class="tile-arrow">→</span>
-      </div>
-    </a>
-
-    <!-- Small tile -->
     <a class="tile tile-right-small" href="golf.html" style="--accent:#6EE7B7">
       <div class="tile-top">
         <span class="tile-num">·04</span>
@@ -430,6 +502,20 @@ body::after {
       <h2 class="tile-title">Golf</h2>
       <div class="tile-foot">
         <span class="tile-sub" id="tileInsightGolf">Rounds & handicap</span>
+        <span class="tile-arrow">→</span>
+      </div>
+    </a>
+
+    <!-- Bottom: Finance, full width of the right column -->
+    <a class="tile wide tile-right-big" href="FROK-finance-standalone.html" style="--accent:#F2C063">
+      <div class="tile-top">
+        <span class="tile-num">·03</span>
+        <span class="tile-emoji">📊</span>
+      </div>
+      <div class="tile-spacer"></div>
+      <h2 class="tile-title">Finance</h2>
+      <div class="tile-foot">
+        <span class="tile-sub" id="tileInsightFinance">Net worth & spending</span>
         <span class="tile-arrow">→</span>
       </div>
     </a>
@@ -718,28 +804,23 @@ body::after {
     render();
   })();
 
-  // ---- Main: time-of-day phase (mirrors main.html's day ring) ----
+  // ---- Day progress (mirrors main.html's day ring) ----
   (function () {
     const WAKE_HOUR = 6, SLEEP_HOUR = 21.5; // 6:00 AM – 9:30 PM
     const now = new Date();
     const hours = now.getHours() + now.getMinutes() / 60;
-    const el = document.getElementById('tileInsightMain');
+    const el = document.getElementById('mainStatDay');
     if (!el) return;
-    if (hours < WAKE_HOUR) { el.textContent = '😴 Still sleeping'; return; }
-    if (hours >= SLEEP_HOUR) { el.textContent = '⚠️ Past bedtime'; return; }
+    if (hours < WAKE_HOUR) { el.textContent = '😴'; return; }
+    if (hours >= SLEEP_HOUR) { el.textContent = '🌙'; return; }
     const percent = (hours - WAKE_HOUR) / (SLEEP_HOUR - WAKE_HOUR) * 100;
-    let phase = 'Morning';
-    if (percent >= 90) phase = 'Bedtime soon';
-    else if (percent >= 75) phase = 'Evening';
-    else if (percent >= 50) phase = 'Afternoon';
-    else if (percent >= 25) phase = 'Midday';
-    el.textContent = phase + ' · ' + Math.floor(percent) + '% through your day';
+    el.textContent = Math.floor(percent) + '%';
   })();
 
   // ---- Fitness: today's split day, from gym.html's rotation state ----
   (function () {
-    const el = document.getElementById('tileInsightFitness');
-    if (!el) return;
+    const wideEl = document.getElementById('tileInsightFitness');
+    const statEl = document.getElementById('mainStatFitness');
     const s = readJSON('po_coach_v1');
     if (!s || !Array.isArray(s.splitRotation) || !s.splitRotation.length || !s.splitAnchor) return;
     try {
@@ -749,31 +830,15 @@ body::after {
       a.setHours(0,0,0,0); t.setHours(0,0,0,0);
       const diffDays = Math.round((t - a) / 86400000);
       const idx = ((s.splitAnchor.index + diffDays) % rot.length + rot.length) % rot.length;
-      el.textContent = 'Today: ' + rot[idx];
+      if (wideEl) wideEl.textContent = 'Today: ' + rot[idx];
+      if (statEl) statEl.textContent = rot[idx];
     } catch (e) {}
-  })();
-
-  // ---- Finance: net worth total, summed across categories (CHF base) ----
-  (function () {
-    const el = document.getElementById('tileInsightFinance');
-    if (!el) return;
-    const cats = ['bank', 'stocks', 'crypto', 'other'];
-    let total = 0, any = false;
-    cats.forEach(c => {
-      const items = readJSON('nw:' + c);
-      if (Array.isArray(items) && items.length) {
-        any = true;
-        items.forEach(it => { total += Number(it.amount) || 0; });
-      }
-    });
-    if (!any) return;
-    el.textContent = 'Net worth: CHF ' + Math.round(total).toLocaleString('en-US');
   })();
 
   // ---- Golf: rough handicap index, same calc as golf.html ----
   (function () {
-    const el = document.getElementById('tileInsightGolf');
-    if (!el) return;
+    const wideEl = document.getElementById('tileInsightGolf');
+    const statEl = document.getElementById('mainStatGolf');
     const rounds = readJSON('golf:rounds');
     if (!Array.isArray(rounds) || !rounds.length) return;
     const comparable = rounds
@@ -782,22 +847,73 @@ body::after {
       .slice(0, 20)
       .map(r => typeof r.differential === 'number' ? (r.holes === 9 ? r.differential * 2 : r.differential) : null)
       .filter(d => typeof d === 'number');
-    if (comparable.length < 3) { el.textContent = comparable.length + '/3 rounds logged'; return; }
+    if (comparable.length < 3) {
+      if (wideEl) wideEl.textContent = comparable.length + '/3 rounds logged';
+      if (statEl) statEl.textContent = comparable.length + '/3';
+      return;
+    }
     const best = comparable.slice().sort((a, b) => a - b).slice(0, Math.min(8, comparable.length));
     const avg = Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
-    el.textContent = 'Handicap: ~' + avg;
+    if (wideEl) wideEl.textContent = 'Handicap: ~' + avg;
+    if (statEl) statEl.textContent = '~' + avg;
   })();
 
-  // ---- Finance: stock snapshot, from whatever the Finance page last
-  // fetched (stocks:snapshot, written by FROK-finance-standalone.html
-  // whenever it refreshes live prices). Shows up to 3 tickers. ----
+  // ---- Net worth: total + category breakdown, for both the Finance
+  // tile's one-liner and Main's pie chart ----
+  (function () {
+    const finEl = document.getElementById('tileInsightFinance');
+    const pieEl = document.getElementById('mainNwPie');
+    const totalEl = document.getElementById('mainNwTotal');
+    const legendEl = document.getElementById('mainNwLegend');
+    const CATS = [
+      { key: 'bank',   name: 'Bank',   color: '#7DD3FC' },
+      { key: 'stocks', name: 'Stocks', color: '#6EE7B7' },
+      { key: 'crypto', name: 'Crypto', color: '#C9B8FF' },
+      { key: 'other',  name: 'Other',  color: '#F2C063' }
+    ];
+    let total = 0;
+    const sums = CATS.map(c => {
+      const items = readJSON('nw:' + c.key);
+      const sum = Array.isArray(items) ? items.reduce((s, it) => s + (Number(it.amount) || 0), 0) : 0;
+      total += sum;
+      return Object.assign({}, c, { sum });
+    });
+    if (total <= 0) return;
+
+    if (finEl) finEl.textContent = 'Net worth: CHF ' + Math.round(total).toLocaleString('en-US');
+    if (totalEl) totalEl.textContent = 'CHF ' + Math.round(total).toLocaleString('en-US');
+
+    if (pieEl) {
+      let acc = 0;
+      const stops = sums.filter(c => c.sum > 0).map(c => {
+        const from = (acc / total) * 100;
+        acc += c.sum;
+        const to = (acc / total) * 100;
+        return c.color + ' ' + from.toFixed(2) + '% ' + to.toFixed(2) + '%';
+      });
+      if (stops.length) pieEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
+    }
+    if (legendEl) {
+      legendEl.innerHTML = sums.filter(c => c.sum > 0).map(c => {
+        const pct = Math.round((c.sum / total) * 100);
+        return '<div class="main-nw-legend-row">' +
+          '<span class="main-nw-legend-dot" style="background:' + c.color + '"></span>' +
+          '<span>' + c.name + ' ' + pct + '%</span>' +
+        '</div>';
+      }).join('');
+    }
+  })();
+
+  // ---- Stocks: snapshot from whatever the Finance page last fetched
+  // (stocks:snapshot, written by FROK-finance-standalone.html whenever
+  // it refreshes live prices). Shows up to 3 tickers, on the Main tile. ----
   (function () {
     const wrap = document.getElementById('stockSnapshot');
+    const empty = document.getElementById('mainStockEmpty');
     if (!wrap) return;
     const snap = readJSON('stocks:snapshot');
-    if (!snap || typeof snap !== 'object') return;
-    const rows = Object.entries(snap).slice(0, 3);
-    if (!rows.length) return;
+    const rows = (snap && typeof snap === 'object') ? Object.entries(snap).slice(0, 3) : [];
+    if (!rows.length) { if (empty) empty.hidden = false; return; }
     wrap.innerHTML = rows.map(([ticker, q]) => {
       const up = (q.changePercent || 0) >= 0;
       const price = (typeof q.price === 'number') ? q.price.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—';
@@ -809,6 +925,7 @@ body::after {
       '</div>';
     }).join('');
     wrap.removeAttribute('hidden');
+    if (empty) empty.hidden = true;
   })();
 })();
 </script>
