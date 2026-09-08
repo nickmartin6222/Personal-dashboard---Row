@@ -728,6 +728,13 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 }
 .nw-chart-label { color: var(--text-tertiary); }
 .nw-chart-delta { font-variant-numeric: tabular-nums; color: var(--text-tertiary); }
+.nw-history-reset {
+  border: 0; background: transparent; color: var(--text-tertiary);
+  font-family: inherit; font-size: 9.5px; font-weight: 800; letter-spacing: 0.10em;
+  cursor: pointer; padding: 2px 4px; opacity: 0.65;
+  transition: opacity 0.15s, color 0.15s;
+}
+.nw-history-reset:hover { opacity: 1; color: var(--danger); }
 .nw-chart-delta.up   { color: #6BE3A4; }
 .nw-chart-delta.down { color: #FF8A8A; }
 .nw-chart-svg {
@@ -2016,7 +2023,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           <option value="USD">USD</option>
           <option value="EUR">EUR</option>
           <option value="GBP">GBP</option>
-          <option value="AUD">AUD</option>
+          <option value="AUD" selected>AUD</option>
         </select>
       </div>
     </div>
@@ -2071,7 +2078,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
                 <option value="GBP">GBP</option>
-                <option value="AUD">AUD</option>
+                <option value="AUD" selected>AUD</option>
               </select>
             </div>
             <div class="rcpt-field">
@@ -2108,6 +2115,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <div class="nw-chart-head">
           <span class="nw-chart-label">All-time</span>
           <span class="nw-chart-delta" id="nwChartDelta">—</span>
+          <button type="button" class="nw-history-reset" id="nwHistoryReset" title="Clear chart history — fixes a stuck All-Time High left over from a corrected data-entry mistake">↺ Reset</button>
         </div>
         <svg class="nw-chart-svg" id="nwChartSvg" viewBox="0 0 600 200" preserveAspectRatio="none" aria-hidden="true">
           <defs>
@@ -2252,7 +2260,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="GBP">GBP</option>
-          <option value="AUD">AUD</option>
+          <option value="AUD" selected>AUD</option>
       </select>
       <select id="subPeriod" style="padding:6px 10px;border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary);max-width:100px">
         <option value="monthly">Monthly</option>
@@ -2290,7 +2298,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="GBP">GBP</option>
-          <option value="AUD">AUD</option>
+          <option value="AUD" selected>AUD</option>
       </select>
       <select id="ordFromCat" class="ord-input ord-input-from" title="Which net worth account this comes out of">
         <option value="">No accounts yet</option>
@@ -2348,7 +2356,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="GBP">GBP</option>
-          <option value="AUD">AUD</option>
+          <option value="AUD" selected>AUD</option>
       </select>
       <button class="wish-add-btn" id="wishAddBtn" onclick="window.__addWish && window.__addWish()">+ Add</button>
     </div>
@@ -2936,6 +2944,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   // Net-worth history chart
   const NW_HISTORY_KEY = 'nw:history';
   const NW_HISTORY_MAX = 500;
+
+  // One-time automatic reset: history is an append-only log, so a past
+  // data-entry mistake (e.g. an extra zero) that got corrected still
+  // leaves its inflated snapshot sitting in history forever, permanently
+  // skewing "All-time high". This clears it once so today's real value
+  // becomes the new baseline. The ↺ Reset button below does the same
+  // thing on demand if it ever happens again.
+  if (!storeGet('nw:history_reset_v1')) {
+    storeSet(NW_HISTORY_KEY, []);
+    storeSet('nw:history_reset_v1', true);
+  }
+
   function logNetWorthSnapshot(grandCHF) {
     const v = Number(grandCHF) || 0;
     const hist = storeGet(NW_HISTORY_KEY) || [];
@@ -3051,6 +3071,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     highEl.textContent  = fmtMoney(high);
     lowEl.textContent   = fmtMoney(low);
     countEl.textContent = String(hist.length);
+  }
+
+  const nwHistoryResetBtn = document.getElementById('nwHistoryReset');
+  if (nwHistoryResetBtn) {
+    nwHistoryResetBtn.addEventListener('click', () => {
+      if (!confirm('Clear the net worth chart history? This resets All-time high/low and the trend line to start fresh from today’s current value — your actual accounts/holdings are untouched.')) return;
+      storeSet(NW_HISTORY_KEY, []);
+      renderAllNetWorth();
+    });
   }
 
   NW_CATS.forEach(cat => {
