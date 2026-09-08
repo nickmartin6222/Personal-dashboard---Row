@@ -2744,8 +2744,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       if (neverPriced) amt.style.opacity = '0.55';
       if (it.ticker) {
         amt.title = neverPriced
-          ? 'No live price yet — check EODHD_API_TOKEN is set in Vercel, and that ' + it.ticker + ' is a valid symbol. Tap to edit units held.'
-          : 'Tap to edit units held (' + (it.units || 0) + ' now) — value recalculates from the live price';
+          ? 'No live price yet — check EODHD_API_TOKEN is set in Vercel, and that ' + it.ticker + ' is a valid symbol. Tap to edit units/value.'
+          : 'Tap to edit units held or override the value manually';
         amt.addEventListener('click', () => beginNwUnitsEdit(amt, items, idx, cat.key));
       } else {
         amt.title = 'Tap to edit · type +500 to add, -200 to subtract, or a new total';
@@ -2755,7 +2755,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       del.addEventListener('click', () => {
         const removed = items[idx];
         items.splice(idx, 1); storeSet('nw:' + cat.key, items);
-        if (removed) logActivity(cat.key, removed.name, -(Number(removed.amount) || 0), 'delete');
+        if (removed) {
+          logActivity(cat.key, removed.name, -(Number(removed.amount) || 0), 'delete');
+          // Deleting shouldn't read as a decline on the net worth chart —
+          // subtract this holding's value from every history point from
+          // when it was added onward (or all of history if it predates
+          // dateAdded), so the trend line continues smoothly instead of
+          // stepping down. Only meaningfully accurate for a holding whose
+          // value didn't swing wildly during its lifetime, which is a
+          // reasonable trade-off for "don't show a cliff from a removal."
+          retroactivelyRemoveFromHistory(Number(removed.amount) || 0, removed.dateAdded);
+        }
         renderAllNetWorth();
       });
       row.appendChild(swatch);
@@ -2814,28 +2824,50 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     });
     input.addEventListener('blur', save);
   }
+  // Editing the name also surfaces "date added" right there (a date
+  // picker next to the name field) rather than as a separate always-
+  // visible badge that would clutter an already-busy row.
   function beginNwNameEdit(nameEl, items, idx, catKey) {
     if (nameEl.querySelector('input')) return;
-    const cur = String(items[idx].name || '');
+    const curName = String(items[idx].name || '');
+    const curDate = String(items[idx].dateAdded || '');
+
+    const wrap = document.createElement('span');
+    wrap.style.cssText = 'display:inline-flex; gap:4px; align-items:center; width:100%;';
     const input = document.createElement('input');
     input.type = 'text';
-    input.value = cur;
-    input.style.cssText = 'width:100%;padding:4px 8px;font-family:inherit;font-size:13px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;outline:none;';
+    input.value = curName;
+    input.style.cssText = 'flex:1;min-width:0;padding:4px 8px;font-family:inherit;font-size:13px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;outline:none;';
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.value = curDate;
+    dateInput.title = 'Date added';
+    dateInput.style.cssText = 'flex-shrink:0;padding:4px 6px;font-family:inherit;font-size:11px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;outline:none;color-scheme:dark;';
+    wrap.appendChild(input);
+    wrap.appendChild(dateInput);
     nameEl.textContent = '';
-    nameEl.appendChild(input);
+    nameEl.appendChild(wrap);
     setTimeout(() => { input.focus(); input.select(); }, 0);
     let saved = false;
     function save() {
       if (saved) return; saved = true;
       const v = input.value.trim();
-      if (v) { items[idx].name = v; storeSet('nw:' + catKey, items); }
+      let changed = false;
+      if (v && v !== curName) { items[idx].name = v; changed = true; }
+      if (dateInput.value && dateInput.value !== curDate) { items[idx].dateAdded = dateInput.value; changed = true; }
+      if (changed) storeSet('nw:' + catKey, items);
       renderAllNetWorth();
     }
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); save(); }
-      else if (e.key === 'Escape') { saved = true; renderAllNetWorth(); }
+    function cancel() { saved = true; renderAllNetWorth(); }
+    [input, dateInput].forEach(el => {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); save(); }
+        else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+      });
     });
-    input.addEventListener('blur', save);
+    wrap.addEventListener('focusout', () => {
+      setTimeout(() => { if (!wrap.contains(document.activeElement)) save(); }, 0);
+    });
   }
 
   function beginNwTickerEdit(tickerEl, items, idx, catKey) {
@@ -2866,33 +2898,65 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     input.addEventListener('blur', saveTicker);
   }
 
+  // Combined units + value editor for ticker holdings. Units is the
+  // "correct" lever (drives the auto-priced value), but Value is also
+  // editable directly as a manual override — useful as a fallback
+  // while live pricing isn't working, or just to nudge the number
+  // yourself. A manual Value gets overwritten by the next successful
+  // live-price refresh, same as it always would.
   function beginNwUnitsEdit(amtEl, items, idx, catKey) {
     if (amtEl.querySelector('input')) return;
-    const cur = Number(items[idx].units) || 0;
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.inputMode = 'decimal';
-    input.value = String(cur);
-    input.style.cssText = 'width:90px;padding:4px 8px;font-family:var(--font-mono);font-size:12px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    const curUnits = Number(items[idx].units) || 0;
+    const symbol = currencyEl ? currencyEl.value : 'CHF';
+    const rate = exchangeRates[symbol] || 1;
+    const curValueDisplay = (Number(items[idx].amount) || 0) * rate;
+
+    const wrap = document.createElement('span');
+    wrap.style.cssText = 'display:inline-flex;gap:4px;align-items:center;';
+    const unitsInput = document.createElement('input');
+    unitsInput.type = 'text'; unitsInput.inputMode = 'decimal';
+    unitsInput.value = String(curUnits);
+    unitsInput.title = 'Units held';
+    unitsInput.style.cssText = 'width:60px;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    const valueInput = document.createElement('input');
+    valueInput.type = 'text'; valueInput.inputMode = 'decimal';
+    valueInput.value = String(curValueDisplay.toFixed(curValueDisplay % 1 === 0 ? 0 : 2));
+    valueInput.title = 'Value (' + symbol + ') — manual override, replaced by the next successful live price';
+    valueInput.style.cssText = 'width:80px;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    wrap.appendChild(unitsInput);
+    wrap.appendChild(valueInput);
     amtEl.textContent = '';
-    amtEl.appendChild(input);
-    setTimeout(() => { input.focus(); input.select(); }, 0);
-    let savedUnits = false;
-    function saveUnits() {
-      if (savedUnits) return; savedUnits = true;
-      const v = parseFloat(input.value);
-      if (v > 0 && v !== cur) {
-        items[idx].units = v;
+    amtEl.appendChild(wrap);
+    setTimeout(() => { unitsInput.focus(); unitsInput.select(); }, 0);
+
+    let saved = false;
+    function save() {
+      if (saved) return; saved = true;
+      const newUnits = parseFloat(unitsInput.value);
+      const newValueDisplay = parseFloat(valueInput.value);
+      let changed = false;
+      if (newUnits > 0 && newUnits !== curUnits) { items[idx].units = newUnits; changed = true; }
+      if (!isNaN(newValueDisplay) && Math.abs(newValueDisplay - curValueDisplay) > 0.005) {
+        items[idx].amount = newValueDisplay / rate;
+        changed = true;
+      }
+      if (changed) {
         storeSet('nw:' + catKey, items);
         refreshStockPrices(true);
       }
       renderAllNetWorth();
     }
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); saveUnits(); }
-      else if (e.key === 'Escape') { savedUnits = true; renderAllNetWorth(); }
+    function cancel() { saved = true; renderAllNetWorth(); }
+    [unitsInput, valueInput].forEach(inp => {
+      inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); save(); }
+        else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+      });
     });
-    input.addEventListener('blur', saveUnits);
+    // Only save once focus leaves BOTH inputs (not on tab between them).
+    wrap.addEventListener('focusout', () => {
+      setTimeout(() => { if (!wrap.contains(document.activeElement)) save(); }, 0);
+    });
   }
 
   function renderAllNetWorth() {
@@ -3118,6 +3182,27 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     hist.push({ t: Date.now(), v: v });
     if (hist.length > NW_HISTORY_MAX) hist.splice(0, hist.length - NW_HISTORY_MAX);
     storeSet(NW_HISTORY_KEY, hist);
+  }
+  // Deleting a holding shouldn't look like a decline on the chart — this
+  // subtracts its value from every history point from its dateAdded
+  // onward (or the whole history if dateAdded is unknown, e.g. an item
+  // added before that field existed), floored at 0. Not perfectly
+  // accurate for a holding whose value fluctuated a lot during its
+  // lifetime (it uses today's value throughout), but avoids a visible
+  // cliff for what's effectively "this was never really there."
+  function retroactivelyRemoveFromHistory(amountCHF, sinceDateStr) {
+    if (!(amountCHF > 0)) return;
+    const hist = storeGet(NW_HISTORY_KEY) || [];
+    if (!hist.length) return;
+    const sinceTs = sinceDateStr ? new Date(sinceDateStr + 'T00:00:00').getTime() : 0;
+    let changed = false;
+    hist.forEach(p => {
+      if (!sinceTs || p.t >= sinceTs) {
+        p.v = Math.max(0, (p.v || 0) - amountCHF);
+        changed = true;
+      }
+    });
+    if (changed) storeSet(NW_HISTORY_KEY, hist);
   }
   function nwSmoothPath(points) {
     if (points.length < 2) return '';
