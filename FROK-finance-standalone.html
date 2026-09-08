@@ -2010,6 +2010,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           <option value="USD">USD</option>
           <option value="EUR">EUR</option>
           <option value="GBP">GBP</option>
+          <option value="AUD">AUD</option>
         </select>
       </div>
     </div>
@@ -2064,6 +2065,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
                 <option value="GBP">GBP</option>
+                <option value="AUD">AUD</option>
               </select>
             </div>
             <div class="rcpt-field">
@@ -2237,6 +2239,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="GBP">GBP</option>
+          <option value="AUD">AUD</option>
       </select>
       <select id="subPeriod" style="padding:6px 10px;border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary);max-width:100px">
         <option value="monthly">Monthly</option>
@@ -2274,6 +2277,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="GBP">GBP</option>
+          <option value="AUD">AUD</option>
       </select>
       <select id="ordFromCat" class="ord-input ord-input-from" title="Which net worth account this comes out of">
         <option value="">No accounts yet</option>
@@ -2331,6 +2335,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="GBP">GBP</option>
+          <option value="AUD">AUD</option>
       </select>
       <button class="wish-add-btn" id="wishAddBtn" onclick="window.__addWish && window.__addWish()">+ Add</button>
     </div>
@@ -2524,7 +2529,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   const netWorthTotal = document.getElementById('netWorthTotal');
   const netWorthBreakdown = document.getElementById('netWorthBreakdown');
 
-  let exchangeRates = { CHF: 1, USD: 1, EUR: 1, GBP: 1 };
+  let exchangeRates = { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 };
   async function loadExchangeRates() {
     try {
       const res = await fetch('https://open.er-api.com/v6/latest/CHF');
@@ -2534,7 +2539,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           CHF: 1,
           USD: data.rates.USD || 1,
           EUR: data.rates.EUR || 1,
-          GBP: data.rates.GBP || 1
+          GBP: data.rates.GBP || 1,
+          AUD: data.rates.AUD || 1
         };
         renderAllNetWorth();
         if (typeof renderSubs === 'function') renderSubs();
@@ -3228,7 +3234,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const periodOpts = ['monthly','yearly','weekly'].map(p =>
       '<option value="' + p + '"' + (p === it.period ? ' selected' : '') + '>' + p.charAt(0).toUpperCase() + p.slice(1) + '</option>'
     ).join('');
-    const ccyOpts = ['CHF','USD','EUR','GBP'].map(c =>
+    const ccyOpts = ['CHF','USD','EUR','GBP','AUD'].map(c =>
       '<option value="' + c + '"' + (c === enteredCcy ? ' selected' : '') + '>' + c + '</option>'
     ).join('');
     // Build From-account options from the live NW accounts
@@ -4093,7 +4099,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const applyBtn   = document.getElementById('rcptApply');
     const discardBtn = document.getElementById('rcptDiscard');
 
-    const VALID_CCY  = ['CHF', 'USD', 'EUR', 'GBP'];
+    const VALID_CCY  = ['CHF', 'USD', 'EUR', 'GBP', 'AUD'];
     const CAT_NAMES  = { bank: 'Bank', stocks: 'Stocks', crypto: 'Crypto', other: 'Other' };
     let receiptDate  = '';
     let acctIndex    = {}; // lowercased account name -> { cat }
@@ -4109,7 +4115,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           readable: { type: 'boolean', description: 'True if the image contains any legible monetary amount at all.' },
           kind:     { type: 'string', enum: ['balance', 'expense', 'income', 'other'], description: 'balance = an account balance/total on a banking screen; expense = money spent; income = money received; other = anything else.' },
           source:   { type: 'string', description: 'Best label: the bank/app/account name for a balance (e.g. Revolut), or the merchant/payee for a transaction (e.g. Migros). Empty if unknown.' },
-          currency: { type: 'string', description: 'ISO 4217 code (CHF, USD, EUR, GBP, ...). Infer from symbols (Fr/CHF, $, €, £) or language. Default CHF if unclear.' },
+          currency: { type: 'string', description: 'ISO 4217 code (CHF, USD, EUR, GBP, AUD, ...). Infer from symbols (Fr/CHF, $, €, £, A$) or language. Default CHF if unclear.' },
           amount:   { type: 'number', description: 'The single most important amount: the account balance on a balance screen, or the total on a receipt/transaction. Always positive. 0 if none.' },
           date:     { type: 'string', description: 'Date as YYYY-MM-DD if visible, else empty string.' },
           items:    { type: 'array', description: 'Individual transactions or line items if the image is a list/receipt. Best effort, omit if none.', items: { type: 'object', properties: { name: { type: 'string' }, amount: { type: 'number' } }, required: ['name', 'amount'] } }
