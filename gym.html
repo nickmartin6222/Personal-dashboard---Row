@@ -35,8 +35,7 @@ const CONFIG = {
     { id: "lowerA", name: "Lower A" },
     { id: "push",   name: "Push" },
     { id: "lowerB", name: "Lower B" },
-    { id: "pull",   name: "Pull" },
-    { id: "legs",   name: "Legs" }  // kept so any exercises/logs from the old 3-day split stay reachable
+    { id: "pull",   name: "Pull" }
   ],
 
   // Split rotation — the order your training days cycle through. Use day
@@ -102,75 +101,86 @@ const CONFIG = {
   // programVersion 2 migration) — nothing you've already logged is lost.
   defaultExercises: [
     // ---- Lower A ----
-    { name: "Barbell RDL",                gym: "comm", day: "lowerA", tag: "primary",   slot: "RDL",                 repMin: 6,  repMax: 10, step: 5,    startWeight: 60 },
-    { name: "Single-Leg Machine Hip Thrust", gym: "comm", day: "lowerA", tag: "primary", slot: "Hip Thrust",          repMin: 8,  repMax: 12, step: 5,    startWeight: 40 },
-    { name: "Machine Hip Adductor",       gym: "comm", day: "lowerA", tag: "rehab",     slot: "Hip Adductor",        repMin: 10, repMax: 15, step: 2.5,  startWeight: 30 },
-    { name: "Copenhagen Plank",           gym: "comm", day: "lowerA", tag: "rehab",     slot: "Copenhagen Plank",    repMin: 20, repMax: 40, step: 1,    startWeight: 0,  bw: true, holdSeconds: true },
-    { name: "Leg Press",                  gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "A", repMin: 8,  repMax: 12, step: 10,  startWeight: 120 },
-    { name: "Hack Squat",                 gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "B", repMin: 8,  repMax: 12, step: 10,  startWeight: 80 },
-    { name: "Walking Lunge",              gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "C", repMin: 10, repMax: 14, step: 2.5, startWeight: 20 },
-    { name: "Pallof Press",               gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
-    { name: "Hanging Leg Raise",          gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "B", repMin: 8,  repMax: 15, step: 1,   startWeight: 0,  bw: true },
-    { name: "Plank",                      gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "C", repMin: 30, repMax: 60, step: 5,   startWeight: 0,  bw: true, holdSeconds: true },
+    { name: "Barbell RDL",                gym: "comm", day: "lowerA", tag: "primary",   slot: "RDL",                 muscle: "Hamstrings", repMin: 6,  repMax: 10, step: 5,    startWeight: 60 },
+    { name: "Single-Leg Machine Hip Thrust", gym: "comm", day: "lowerA", tag: "primary", slot: "Hip Thrust",          muscle: "Glutes", repMin: 8,  repMax: 12, step: 5,    startWeight: 40 },
+    { name: "Machine Hip Adductor",       gym: "comm", day: "lowerA", tag: "rehab",     slot: "Hip Adductor",        muscle: "Adductors", repMin: 10, repMax: 15, step: 2.5,  startWeight: 30 },
+    { name: "Copenhagen Plank",           gym: "comm", day: "lowerA", tag: "rehab",     slot: "Copenhagen Plank",    muscle: "Adductors", repMin: 20, repMax: 40, step: 1,    startWeight: 0,  bw: true, holdSeconds: true },
+    { name: "Leg Press",                  gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "A", muscle: "Quads", repMin: 8,  repMax: 12, step: 10,  startWeight: 120 },
+    { name: "Hack Squat",                 gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "B", muscle: "Quads", repMin: 8,  repMax: 12, step: 10,  startWeight: 80 },
+    { name: "Walking Lunge",              gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "C", muscle: "Glutes", repMin: 10, repMax: 14, step: 2.5, startWeight: 20 },
+    { name: "Pallof Press",               gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "A", muscle: "Core", repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
+    { name: "Hanging Leg Raise",          gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "B", muscle: "Core", repMin: 8,  repMax: 15, step: 1,   startWeight: 0,  bw: true },
+    { name: "Plank",                      gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "C", muscle: "Core", repMin: 30, repMax: 60, step: 5,   startWeight: 0,  bw: true, holdSeconds: true },
 
     // ---- Push (chest / triceps / shoulders) ----
-    { name: "Barbell Bench Press",        gym: "comm", day: "push", tag: "primary",   slot: "Horizontal Press",     repMin: 5,  repMax: 8,  step: 2.5, startWeight: 60 },
-    { name: "Incline Barbell Press",      gym: "comm", day: "push", tag: "primary",   slot: "Incline Press",        repMin: 5,  repMax: 8,  step: 2.5, startWeight: 45 },
-    { name: "Cable Fly",                  gym: "comm", day: "push", tag: "accessory", slot: "Push Fly",             optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
-    { name: "Pec Deck",                   gym: "comm", day: "push", tag: "accessory", slot: "Push Fly",             optionSet: "B", repMin: 10, repMax: 15, step: 5,   startWeight: 40 },
-    { name: "Incline Cable Fly",          gym: "comm", day: "push", tag: "accessory", slot: "Push Fly",             optionSet: "C", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 },
-    { name: "DB Shoulder Press",          gym: "comm", day: "push", tag: "accessory", slot: "Push Shoulder Press",  optionSet: "A", repMin: 8,  repMax: 12, step: 2.5, startWeight: 17.5 },
-    { name: "Arnold Press",               gym: "comm", day: "push", tag: "accessory", slot: "Push Shoulder Press",  optionSet: "B", repMin: 8,  repMax: 12, step: 2.5, startWeight: 15 },
-    { name: "Landmine Press",             gym: "comm", day: "push", tag: "accessory", slot: "Push Shoulder Press",  optionSet: "C", repMin: 8,  repMax: 12, step: 5,   startWeight: 20 },
-    { name: "Lateral Raise",              gym: "comm", day: "push", tag: "accessory", slot: "Push Lateral Raise",   optionSet: "A", repMin: 12, repMax: 15, step: 1.25,startWeight: 7.5 },
-    { name: "Cable Lateral Raise",        gym: "comm", day: "push", tag: "accessory", slot: "Push Lateral Raise",   optionSet: "B", repMin: 12, repMax: 15, step: 2.5, startWeight: 7.5 },
-    { name: "Machine Lateral Raise",      gym: "comm", day: "push", tag: "accessory", slot: "Push Lateral Raise",   optionSet: "C", repMin: 12, repMax: 15, step: 5,   startWeight: 20 },
-    { name: "Cable Pushdown",             gym: "comm", day: "push", tag: "accessory", slot: "Push Pushdown",        optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 25 },
-    { name: "Rope Pushdown",              gym: "comm", day: "push", tag: "accessory", slot: "Push Pushdown",        optionSet: "B", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 },
-    { name: "Single-Arm Pushdown",        gym: "comm", day: "push", tag: "accessory", slot: "Push Pushdown",        optionSet: "C", repMin: 10, repMax: 15, step: 1.25,startWeight: 12.5 },
-    { name: "Overhead DB Extension",      gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
-    { name: "Skull Crusher",              gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "B", repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
-    { name: "Close-Grip Bench or Dip",    gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "C", repMin: 8,  repMax: 12, step: 2.5, startWeight: 40 },
-    { name: "Cable Crunch",               gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "A", repMin: 10, repMax: 15, step: 5,   startWeight: 20 },
-    { name: "Ab Wheel Rollout",           gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "B", repMin: 6,  repMax: 12, step: 1,   startWeight: 0, bw: true },
-    { name: "Weighted Sit-Up",            gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "C", repMin: 10, repMax: 15, step: 2.5, startWeight: 5 },
+    { name: "Barbell Bench Press",        gym: "comm", day: "push", tag: "primary",   slot: "Horizontal Press",     muscle: "Chest", repMin: 5,  repMax: 8,  step: 2.5, startWeight: 60 },
+    { name: "Incline Barbell Press",      gym: "comm", day: "push", tag: "primary",   slot: "Incline Press",        muscle: "Chest", repMin: 5,  repMax: 8,  step: 2.5, startWeight: 45 },
+    { name: "Cable Fly",                  gym: "comm", day: "push", tag: "accessory", slot: "Push Fly",             optionSet: "A", muscle: "Chest", repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
+    { name: "Pec Deck",                   gym: "comm", day: "push", tag: "accessory", slot: "Push Fly",             optionSet: "B", muscle: "Chest", repMin: 10, repMax: 15, step: 5,   startWeight: 40 },
+    { name: "Incline Cable Fly",          gym: "comm", day: "push", tag: "accessory", slot: "Push Fly",             optionSet: "C", muscle: "Chest", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 },
+    { name: "DB Shoulder Press",          gym: "comm", day: "push", tag: "accessory", slot: "Push Shoulder Press",  optionSet: "A", muscle: "Shoulders", repMin: 8,  repMax: 12, step: 2.5, startWeight: 17.5 },
+    { name: "Arnold Press",               gym: "comm", day: "push", tag: "accessory", slot: "Push Shoulder Press",  optionSet: "B", muscle: "Shoulders", repMin: 8,  repMax: 12, step: 2.5, startWeight: 15 },
+    { name: "Landmine Press",             gym: "comm", day: "push", tag: "accessory", slot: "Push Shoulder Press",  optionSet: "C", muscle: "Shoulders", repMin: 8,  repMax: 12, step: 5,   startWeight: 20 },
+    { name: "Lateral Raise",              gym: "comm", day: "push", tag: "accessory", slot: "Push Lateral Raise",   optionSet: "A", muscle: "Shoulders", repMin: 12, repMax: 15, step: 1.25,startWeight: 7.5 },
+    { name: "Cable Lateral Raise",        gym: "comm", day: "push", tag: "accessory", slot: "Push Lateral Raise",   optionSet: "B", muscle: "Shoulders", repMin: 12, repMax: 15, step: 2.5, startWeight: 7.5 },
+    { name: "Machine Lateral Raise",      gym: "comm", day: "push", tag: "accessory", slot: "Push Lateral Raise",   optionSet: "C", muscle: "Shoulders", repMin: 12, repMax: 15, step: 5,   startWeight: 20 },
+    { name: "Cable Pushdown",             gym: "comm", day: "push", tag: "accessory", slot: "Push Pushdown",        optionSet: "A", muscle: "Triceps", repMin: 10, repMax: 15, step: 2.5, startWeight: 25 },
+    { name: "Rope Pushdown",              gym: "comm", day: "push", tag: "accessory", slot: "Push Pushdown",        optionSet: "B", muscle: "Triceps", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 },
+    { name: "Single-Arm Pushdown",        gym: "comm", day: "push", tag: "accessory", slot: "Push Pushdown",        optionSet: "C", muscle: "Triceps", repMin: 10, repMax: 15, step: 1.25,startWeight: 12.5 },
+    { name: "Overhead DB Extension",      gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "A", muscle: "Triceps", repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
+    { name: "Skull Crusher",              gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "B", muscle: "Triceps", repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
+    { name: "Close-Grip Bench or Dip",    gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "C", muscle: "Triceps", repMin: 8,  repMax: 12, step: 2.5, startWeight: 40 },
+    { name: "Cable Crunch",               gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "A", muscle: "Core", repMin: 10, repMax: 15, step: 5,   startWeight: 20 },
+    { name: "Ab Wheel Rollout",           gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "B", muscle: "Core", repMin: 6,  repMax: 12, step: 1,   startWeight: 0, bw: true },
+    { name: "Weighted Sit-Up",            gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "C", muscle: "Core", repMin: 10, repMax: 15, step: 2.5, startWeight: 5 },
 
     // ---- Lower B ----
-    { name: "Goblet / Front Squat",       gym: "comm", day: "lowerB", tag: "primary",   slot: "Squat",               repMin: 6,  repMax: 10, step: 2.5, startWeight: 20 },
-    { name: "Bulgarian Split Squat",      gym: "comm", day: "lowerB", tag: "primary",   slot: "Split Squat",         repMin: 8,  repMax: 12, step: 2.5, startWeight: 15 },
-    { name: "Hip External Rotation",      gym: "comm", day: "lowerB", tag: "rehab",     slot: "Hip External Rotation", repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true },
-    { name: "Seated Leg Curl",            gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "A", repMin: 10, repMax: 15, step: 5,  startWeight: 30 },
-    { name: "Lying Leg Curl",             gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "B", repMin: 10, repMax: 15, step: 5,  startWeight: 25 },
-    { name: "Nordic Curl or GHR",         gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "C", repMin: 5,  repMax: 10, step: 1,  startWeight: 0, bw: true },
-    { name: "Standing Calf Raise",        gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "A", repMin: 12, repMax: 18, step: 5,  startWeight: 60 },
-    { name: "Seated Calf Raise",          gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "B", repMin: 12, repMax: 18, step: 5,  startWeight: 40 },
-    { name: "Calf Press on Leg Press",    gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "C", repMin: 12, repMax: 18, step: 10, startWeight: 80 },
-    { name: "Dead Bug",                   gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "A", repMin: 8,  repMax: 15, step: 1, startWeight: 0, bw: true },
-    { name: "Side Plank",                 gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "B", repMin: 20, repMax: 45, step: 5, startWeight: 0, bw: true, holdSeconds: true },
-    { name: "Russian Twist",              gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "C", repMin: 10, repMax: 20, step: 2.5, startWeight: 5 },
+    { name: "Goblet / Front Squat",       gym: "comm", day: "lowerB", tag: "primary",   slot: "Squat",               muscle: "Quads", repMin: 6,  repMax: 10, step: 2.5, startWeight: 20 },
+    { name: "Bulgarian Split Squat",      gym: "comm", day: "lowerB", tag: "primary",   slot: "Split Squat",         muscle: "Quads", repMin: 8,  repMax: 12, step: 2.5, startWeight: 15 },
+    { name: "Hip External Rotation",      gym: "comm", day: "lowerB", tag: "rehab",     slot: "Hip External Rotation", muscle: "Hips", repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true },
+    { name: "Seated Leg Curl",            gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "A", muscle: "Hamstrings", repMin: 10, repMax: 15, step: 5,  startWeight: 30 },
+    { name: "Lying Leg Curl",             gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "B", muscle: "Hamstrings", repMin: 10, repMax: 15, step: 5,  startWeight: 25 },
+    { name: "Nordic Curl or GHR",         gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "C", muscle: "Hamstrings", repMin: 5,  repMax: 10, step: 1,  startWeight: 0, bw: true },
+    { name: "Standing Calf Raise",        gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "A", muscle: "Calves", repMin: 12, repMax: 18, step: 5,  startWeight: 60 },
+    { name: "Seated Calf Raise",          gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "B", muscle: "Calves", repMin: 12, repMax: 18, step: 5,  startWeight: 40 },
+    { name: "Calf Press on Leg Press",    gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "C", muscle: "Calves", repMin: 12, repMax: 18, step: 10, startWeight: 80 },
+    { name: "Dead Bug",                   gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "A", muscle: "Core", repMin: 8,  repMax: 15, step: 1, startWeight: 0, bw: true },
+    { name: "Side Plank",                 gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "B", muscle: "Core", repMin: 20, repMax: 45, step: 5, startWeight: 0, bw: true, holdSeconds: true },
+    { name: "Russian Twist",              gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "C", muscle: "Core", repMin: 10, repMax: 20, step: 2.5, startWeight: 5 },
 
     // ---- Pull (back / biceps / shoulders) ----
-    { name: "Lat Pulldown",               gym: "comm", day: "pull", tag: "primary",   slot: "Vertical Pull",        repMin: 6,  repMax: 10, step: 5,   startWeight: 50 },
-    { name: "Chest-Supported Row",        gym: "comm", day: "pull", tag: "primary",   slot: "Chest-Supported Row",  repMin: 6,  repMax: 10, step: 5,   startWeight: 40 },
-    { name: "Single-Arm Cable Row",       gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation",   optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
-    { name: "T-Bar / Chest-Supported Single-Arm Row", gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation", optionSet: "B", repMin: 10, repMax: 15, step: 5, startWeight: 20 },
-    { name: "Kroc Row",                   gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation",   optionSet: "C", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 },
-    { name: "Rear Delt Fly",              gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "A", repMin: 12, repMax: 15, step: 1.25,startWeight: 7.5 },
-    { name: "Cable Rear Delt Fly",        gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "B", repMin: 12, repMax: 15, step: 2.5, startWeight: 10 },
-    { name: "Reverse Pec Deck",           gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "C", repMin: 12, repMax: 15, step: 5,   startWeight: 25 },
-    { name: "Face Pulls",                 gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "A", repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
-    { name: "Band Pull-Apart",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "B", repMin: 15, repMax: 20, step: 1,   startWeight: 0, bw: true },
-    { name: "Rope Face Pulls",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "C", repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
-    { name: "DB Curl",                    gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "A", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
-    { name: "Cable Curl",                 gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "B", repMin: 8,  repMax: 12, step: 2.5, startWeight: 20 },
-    { name: "Preacher Curl",              gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "C", repMin: 8,  repMax: 12, step: 2.5, startWeight: 20 },
-    { name: "Hammer Curl",                gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "A", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
-    { name: "Incline DB Curl",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "B", repMin: 8,  repMax: 12, step: 1.25,startWeight: 10 },
-    { name: "Cross-Body Hammer Curl",     gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "C", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
-    { name: "Hanging Knee Raise",         gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "A", repMin: 8,  repMax: 15, step: 1,   startWeight: 0, bw: true },
-    { name: "Pallof Press",               gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "B", repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
-    { name: "Cable Woodchop",             gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "C", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 }
-  ]
+    { name: "Lat Pulldown",               gym: "comm", day: "pull", tag: "primary",   slot: "Vertical Pull",        muscle: "Back", repMin: 6,  repMax: 10, step: 5,   startWeight: 50 },
+    { name: "Chest-Supported Row",        gym: "comm", day: "pull", tag: "primary",   slot: "Chest-Supported Row",  muscle: "Back", repMin: 6,  repMax: 10, step: 5,   startWeight: 40 },
+    { name: "Single-Arm Cable Row",       gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation",   optionSet: "A", muscle: "Back", repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
+    { name: "T-Bar / Chest-Supported Single-Arm Row", gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation", optionSet: "B", muscle: "Back", repMin: 10, repMax: 15, step: 5, startWeight: 20 },
+    { name: "Kroc Row",                   gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation",   optionSet: "C", muscle: "Back", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 },
+    { name: "Rear Delt Fly",              gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "A", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 1.25,startWeight: 7.5 },
+    { name: "Cable Rear Delt Fly",        gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "B", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 2.5, startWeight: 10 },
+    { name: "Reverse Pec Deck",           gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "C", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 5,   startWeight: 25 },
+    { name: "Face Pulls",                 gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "A", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
+    { name: "Band Pull-Apart",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "B", muscle: "Rear Delts", repMin: 15, repMax: 20, step: 1,   startWeight: 0, bw: true },
+    { name: "Rope Face Pulls",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "C", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
+    { name: "DB Curl",                    gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "A", muscle: "Biceps", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
+    { name: "Cable Curl",                 gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "B", muscle: "Biceps", repMin: 8,  repMax: 12, step: 2.5, startWeight: 20 },
+    { name: "Preacher Curl",              gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "C", muscle: "Biceps", repMin: 8,  repMax: 12, step: 2.5, startWeight: 20 },
+    { name: "Hammer Curl",                gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "A", muscle: "Biceps", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
+    { name: "Incline DB Curl",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "B", muscle: "Biceps", repMin: 8,  repMax: 12, step: 1.25,startWeight: 10 },
+    { name: "Cross-Body Hammer Curl",     gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "C", muscle: "Biceps", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
+    { name: "Hanging Knee Raise",         gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "A", muscle: "Core", repMin: 8,  repMax: 15, step: 1,   startWeight: 0, bw: true },
+    { name: "Pallof Press",               gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "B", muscle: "Core", repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
+    { name: "Cable Woodchop",             gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "C", muscle: "Core", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 }
+  ],
+
+  // Color per muscle-group label (used for the small dot next to each
+  // exercise in Today's Picks + the dropdown). Purely cosmetic — grouped
+  // loosely by day so a whole day's palette reads as one family.
+  muscleColors: {
+    "Quads": "#f2a93b", "Hamstrings": "#fb7185", "Glutes": "#f472b6",
+    "Adductors": "#c084fc", "Hips": "#eab308", "Calves": "#2dd4bf",
+    "Core": "#fde047", "Chest": "#38bdf8", "Shoulders": "#a78bfa",
+    "Triceps": "#fb923c", "Back": "#34d399", "Rear Delts": "#818cf8",
+    "Biceps": "#22d3ee"
+  }
 };
 </script>
 
@@ -404,6 +414,50 @@ img, video, canvas, svg { max-width: 100%; }
 }
 .po-plan-opt:hover { border-color: var(--text-3); }
 .po-plan-opt.active {
+  background: var(--accent); border-color: var(--accent); color: var(--bg);
+}
+.po-plan-opt .po-muscle-tag { margin-left: 2px; }
+.po-plan-opt.active .po-muscle-tag { color: var(--bg); opacity: 0.65; }
+
+/* Fixed (non-selectable) primary/rehab rows — always on for the day */
+.po-plan-fixed { margin-bottom: 14px; display: flex; flex-direction: column; gap: 7px; }
+.po-plan-fixed-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.po-plan-fixed-tag {
+  flex: 0 0 auto;
+  font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
+  padding: 2px 6px; border-radius: 5px;
+  text-transform: uppercase;
+}
+.po-plan-fixed-tag-primary { background: rgba(255,255,255,0.10); color: var(--text-1); }
+.po-plan-fixed-tag-rehab   { background: rgba(125,211,252,0.14); color: #7DD3FC; }
+.po-plan-fixed-tag-accessory { background: rgba(255,255,255,0.06); color: var(--text-3); }
+.po-plan-fixed-name { flex: 1 1 auto; font-size: 13px; font-weight: 600; color: var(--text-1); }
+
+.po-muscle-tag {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 600; color: var(--text-3);
+}
+.po-muscle-dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+
+.po-plan-confirm {
+  width: 100%; margin: 4px 0 8px;
+  padding: 11px 14px;
+  border-radius: 10px; border: 1px solid var(--border-strong);
+  background: transparent; color: var(--text-3);
+  font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.po-plan-confirm.is-dirty {
+  cursor: pointer;
   background: var(--accent); border-color: var(--accent); color: var(--bg);
 }
 
@@ -1933,7 +1987,7 @@ img, video, canvas, svg { max-width: 100%; }
     // Purely additive: merges in the new days + exercises without ever
     // touching or deleting anything already logged, then switches the
     // rotation to the new split. Runs exactly once per browser.
-    if (s.programVersion !== 2) {
+    if ((s.programVersion || 0) < 2) {
       const existingDayIds = new Set(s.days.map(d => d.id));
       (CONFIG.days || []).forEach(d => { if (!existingDayIds.has(d.id)) { s.days.push(d); existingDayIds.add(d.id); } });
 
@@ -2020,6 +2074,33 @@ img, video, canvas, svg { max-width: 100%; }
     // variation is "on" for that day) — lives in state so it persists
     // and can be set ahead of time, not just on the day itself.
     s.dayPlan = (s.dayPlan && typeof s.dayPlan === 'object') ? s.dayPlan : {};
+
+    // Fifth migration: drop the "Legs" day filter tab left over from the
+    // old 3-day split — its exercises (and their logs) were already
+    // deleted in migration 4, so the tab's been sitting there empty.
+    if ((s.programVersion || 0) < 5) {
+      s.days = s.days.filter(d => d.id !== 'legs');
+      if (!s.days.find(d => d.id === s.filterDay)) s.filterDay = s.days[0] ? s.days[0].id : '';
+      s.programVersion = 5;
+    }
+
+    // Sixth migration: tag every exercise with which muscle group it
+    // targets (for the color-coded dot in Today's Picks + the dropdown).
+    // Purely additive — matches existing exercises by name+day against
+    // the seed list and patches in `muscle` only where it's missing.
+    if ((s.programVersion || 0) < 6) {
+      const muscleByKey = {};
+      (CONFIG.defaultExercises || []).forEach(e => {
+        muscleByKey[(e.name + '|' + e.day).toLowerCase()] = e.muscle;
+      });
+      s.exercises.forEach(ex => {
+        if (ex.muscle) return;
+        const m = muscleByKey[(ex.name + '|' + ex.day).toLowerCase()];
+        if (m) ex.muscle = m;
+      });
+      s.programVersion = 6;
+    }
+
     return s;
   }
   function saveState() {
@@ -2077,45 +2158,97 @@ img, video, canvas, svg { max-width: 100%; }
     const pick = getActivePickForSlot(ex.day, ex.slot, members);
     return ex.optionSet ? ex.optionSet === pick : ex.id === pick;
   }
-  function setPlanPick(day, slot, value) {
-    state.dayPlan = state.dayPlan || {};
-    state.dayPlan[day] = state.dayPlan[day] || {};
-    state.dayPlan[day][slot] = value;
-    // The exercise that was selected may no longer be part of today's
-    // active picks — let getCurrentEx() fall back to whatever's active.
-    state.currentEx = null;
-    saveState();
-    renderAll();
+  // Exercises that are on regardless of any pick — primaries, rehab, and
+  // any accessory whose slot only has one member (nothing to choose between).
+  function getFixedForToday(day) {
+    return state.exercises
+      .filter(e => e.day === day && (e.gym === state.filterGym || e.gym === 'both'))
+      .filter(e => !e.slot || slotMembers(day, e.slot).length < 2)
+      .slice()
+      .sort((a, b) => (TAG_ORDER[a.tag] ?? 3) - (TAG_ORDER[b.tag] ?? 3));
   }
+  function muscleDotHtml(muscle) {
+    if (!muscle) return '';
+    const color = (CONFIG.muscleColors && CONFIG.muscleColors[muscle]) || '#888';
+    return '<span class="po-muscle-tag"><span class="po-muscle-dot" style="background:' + color + '"></span>' + escape(muscle) + '</span>';
+  }
+  function getCommittedPlan(day, slots) {
+    const out = {};
+    slots.forEach(({ slot, members }) => { out[slot] = getActivePickForSlot(day, slot, members); });
+    return out;
+  }
+  // Picks are staged in a draft and only take effect (updating the
+  // exercise dropdown) once "Confirm today's picks" is tapped — so
+  // tapping through options while planning ahead doesn't yank the
+  // dropdown out from under you on every click.
+  let planDraft = null;
+  let planDraftDay = null;
   function renderPlanPanel() {
     const panel = $('planPanel');
     if (!panel) return;
-    const slots = getSelectableSlots(state.filterDay);
-    if (!slots.length) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
+    const day = state.filterDay;
+    const slots = getSelectableSlots(day);
+    const fixed = getFixedForToday(day);
+    if (!slots.length && !fixed.length) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
     panel.style.display = '';
+
+    if (planDraftDay !== day) {
+      planDraft = getCommittedPlan(day, slots);
+      planDraftDay = day;
+    }
+
     let html = '<div class="po-plan-title">Today’s picks</div>';
-    slots.forEach(({ slot, members }) => {
-      const usesOptionSet = members.some(m => m.optionSet);
-      const active = getActivePickForSlot(state.filterDay, slot, members);
-      // Short label: strip the day-name prefix that's usually baked
-      // into the slot string (e.g. "Push Fly" -> "Fly") since the
-      // panel's already scoped to the current day.
-      const shortLabel = slot.replace(new RegExp('^' + dayName(state.filterDay) + '\\s*', 'i'), '') || slot;
-      html += '<div class="po-plan-row"><div class="po-plan-slot">' + escape(shortLabel) + '</div><div class="po-plan-opts">';
-      members.forEach(m => {
-        const value = usesOptionSet ? m.optionSet : m.id;
-        const isActive = value === active;
-        html += '<button type="button" class="po-plan-opt' + (isActive ? ' active' : '') +
-          '" data-day="' + state.filterDay + '" data-slot="' + escape(slot) + '" data-value="' + escape(String(value)) + '">' +
-          escape(m.name) + '</button>';
+
+    if (fixed.length) {
+      html += '<div class="po-plan-fixed">' + fixed.map(ex =>
+        '<div class="po-plan-fixed-row">'
+        + '<span class="po-plan-fixed-tag po-plan-fixed-tag-' + ex.tag + '">' + (ex.tag === 'rehab' ? 'REHAB' : 'FIXED') + '</span>'
+        + '<span class="po-plan-fixed-name">' + escape(ex.name) + '</span>'
+        + muscleDotHtml(ex.muscle)
+        + '</div>'
+      ).join('') + '</div>';
+    }
+
+    if (slots.length) {
+      slots.forEach(({ slot, members }) => {
+        const usesOptionSet = members.some(m => m.optionSet);
+        const active = planDraft[slot];
+        // Short label: strip the day-name prefix that's usually baked
+        // into the slot string (e.g. "Push Fly" -> "Fly") since the
+        // panel's already scoped to the current day.
+        const shortLabel = slot.replace(new RegExp('^' + dayName(day) + '\\s*', 'i'), '') || slot;
+        html += '<div class="po-plan-row"><div class="po-plan-slot">' + escape(shortLabel) + '</div><div class="po-plan-opts">';
+        members.forEach(m => {
+          const value = usesOptionSet ? m.optionSet : m.id;
+          const isActive = value === active;
+          html += '<button type="button" class="po-plan-opt' + (isActive ? ' active' : '') +
+            '" data-slot="' + escape(slot) + '" data-value="' + escape(String(value)) + '">' +
+            escape(m.name) + muscleDotHtml(m.muscle) + '</button>';
+        });
+        html += '</div></div>';
       });
-      html += '</div></div>';
-    });
+      const dirty = JSON.stringify(planDraft) !== JSON.stringify(getCommittedPlan(day, slots));
+      html += '<button type="button" class="po-plan-confirm' + (dirty ? ' is-dirty' : '') + '" id="planConfirmBtn">'
+        + (dirty ? 'Confirm today’s picks' : 'Picks confirmed ✓') + '</button>';
+    }
+
     panel.innerHTML = html;
     panel.querySelectorAll('.po-plan-opt').forEach(btn => {
       btn.addEventListener('click', () => {
-        setPlanPick(btn.dataset.day, btn.dataset.slot, btn.dataset.value);
+        planDraft[btn.dataset.slot] = btn.dataset.value;
+        renderPlanPanel();
       });
+    });
+    const confirmBtn = $('planConfirmBtn');
+    if (confirmBtn) confirmBtn.addEventListener('click', () => {
+      state.dayPlan = state.dayPlan || {};
+      state.dayPlan[day] = state.dayPlan[day] || {};
+      slots.forEach(({ slot }) => { state.dayPlan[day][slot] = planDraft[slot]; });
+      // The exercise that was selected may no longer be part of today's
+      // active picks — let getCurrentEx() fall back to whatever's active.
+      state.currentEx = null;
+      saveState();
+      renderAll();
     });
   }
 
