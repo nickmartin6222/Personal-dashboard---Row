@@ -34,7 +34,7 @@
   filter: grayscale(100%) brightness(1.4);
   opacity: 0.85;
 }
-.theme-toggle-btn, .home-btn {
+.home-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 44px; height: 42px;
   border: 1px solid rgba(255, 255, 255, 0.10);
@@ -46,7 +46,7 @@
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s;
 }
-.theme-toggle-btn:hover, .home-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.home-btn:hover { background: rgba(255, 255, 255, 0.08); }
 /* Fixed top-right chrome for pages that suppress the normal topbar
    (currently just finance) — a persistent way home without relying on
    scroll position or a browser back gesture. */
@@ -112,13 +112,11 @@ body.has-bottombar {
   border-bottom-color: rgba(20,18,15,0.08);
 }
 [data-theme="light"] .topbar-finance-btn,
-[data-theme="light"] .theme-toggle-btn,
 [data-theme="light"] .home-btn {
   background: #FFFFFF;
   border-color: rgba(20,18,15,0.12);
 }
 [data-theme="light"] .topbar-finance-btn:hover,
-[data-theme="light"] .theme-toggle-btn:hover,
 [data-theme="light"] .home-btn:hover {
   background: rgba(20,18,15,0.06);
 }
@@ -260,32 +258,8 @@ body.topbar-modal-open {
     document.body.classList.add('has-bottombar');
   }
 
-  // -------- Light / dark theme --------
-  const THEME_KEY = 'dash_theme_v1';
-  const THEME_COLOR_DARK = '#050506';
-  const THEME_COLOR_LIGHT = '#F5F3EF';
-
-  function getTheme() {
-    try { return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'; }
-    catch (e) { return 'dark'; }
-  }
-
-  function applyThemeColorMeta(theme) {
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'light' ? THEME_COLOR_LIGHT : THEME_COLOR_DARK);
-  }
-
-  function setTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
-    applyThemeColorMeta(theme);
-    const btn = document.getElementById('themeToggleBtn');
-    if (btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
-  }
-
   // Shared fixed top-right container for pages with no normal topbar
-  // (currently just finance) — holds the Home button and, on those
-  // pages, the theme toggle too, so neither one disappears.
+  // (currently just finance) — holds the Home button.
   function getFloatingChrome() {
     let el = document.getElementById('floatingChrome');
     if (!el) {
@@ -309,30 +283,6 @@ body.topbar-modal-open {
     btn.setAttribute('aria-label', 'Back to dashboard');
     btn.textContent = '🏠';
     getFloatingChrome().appendChild(btn);
-  }
-
-  function injectThemeToggle() {
-    if (isEmbedded()) return;
-    if (document.getElementById('themeToggleBtn')) return;
-
-    const btn = document.createElement('button');
-    btn.id = 'themeToggleBtn';
-    btn.type = 'button';
-    btn.className = 'theme-toggle-btn';
-    btn.setAttribute('aria-label', 'Toggle light/dark theme');
-    btn.textContent = getTheme() === 'light' ? '☀️' : '🌙';
-    btn.addEventListener('click', () => {
-      setTheme(getTheme() === 'light' ? 'dark' : 'light');
-    });
-
-    const topbarEl = document.getElementById('topbar');
-    if (topbarEl) {
-      topbarEl.appendChild(btn);
-    } else {
-      getFloatingChrome().appendChild(btn);
-    }
-
-    applyThemeColorMeta(getTheme());
   }
 
   // -------- Mobile lockdown helpers --------
@@ -386,7 +336,6 @@ body.topbar-modal-open {
   function boot() {
     injectStyleAndHTML();
     injectHomeButton();
-    injectThemeToggle();
     lockGestures();
     startModalLock();
   }
