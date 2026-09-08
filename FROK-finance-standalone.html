@@ -2231,13 +2231,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span>📈 Stocks / Investments</span><span id="stocksTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
         <div id="stocksList" class="nw-list"></div>
 
-        <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--accent);margin-top:10px">For live pricing — fill in both</div>
+        <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--accent);margin-top:10px">For live pricing</div>
         <div class="quick-add" style="margin-top:6px">
           <input type="text" placeholder="Ticker, e.g. IVV.AX" id="stocksTicker" style="text-transform:uppercase" />
-          <input type="number" placeholder="Units held, e.g. 74" id="stocksUnits" step="0.0001" />
+          <input type="number" placeholder="Units held (or leave blank)" id="stocksUnits" step="0.0001" />
+        </div>
+        <div style="font-size:10.5px;color:var(--text-tertiary);margin-top:6px;line-height:1.4">
+          Know your exact units? Enter them. Don't? Just enter a ticker and skip to Value below — units get worked out from that value ÷ today's price once it's fetched.
         </div>
 
-        <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--text-tertiary);margin-top:12px">Name + value (value ignored if using a ticker above)</div>
+        <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--text-tertiary);margin-top:12px">Name + value</div>
         <div class="quick-add" style="margin-top:6px">
           <input type="text" placeholder="Name (e.g. Vanguard S&P 500)" id="stocksName" />
           <input type="number" placeholder="Value" id="stocksAmount" step="0.01" />
@@ -2647,7 +2650,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
   async function refreshStockPrices(force) {
     const items = storeGet('nw:stocks') || [];
-    const withTicker = items.filter(it => it.ticker && it.units > 0);
+    // Includes bootstrap items: a ticker + a manually-typed value but no
+    // units yet — those get their units worked out below, once, from
+    // (value ÷ today's price), then behave like any other tracked holding.
+    const withTicker = items.filter(it => it.ticker && (it.units > 0 || it.amount > 0));
     if (!withTicker.length) return;
 
     if (!force) {
@@ -2671,6 +2677,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       const ccy = tickerCurrency(it.ticker);
       const rate = exchangeRates[ccy] || 1; // CHF -> ccy rate (1 CHF = rate ccy)
       const priceCHF = q.price / rate;
+      if (!(it.units > 0)) {
+        // Bootstrap: first successful price after a value-only add —
+        // work out units from what was typed, then track normally.
+        it.units = it.amount / priceCHF;
+      }
       it.amount = priceCHF * it.units;
       it.lastPrice = q.price;
       it.lastChangePercent = q.changePercent;
@@ -3362,10 +3373,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     // typing a per-unit price there and having it read as the total.
     if (tickerInput && unitsInput) {
       function syncAmtDisabled() {
-        const usingTicker = tickerInput.value.trim() && parseFloat(unitsInput.value) > 0;
-        amtInput.disabled = !!usingTicker;
-        amtInput.placeholder = usingTicker ? 'Auto (from live price)' : 'Value';
-        if (usingTicker) amtInput.value = '';
+        const hasTicker = tickerInput.value.trim();
+        const hasUnits = parseFloat(unitsInput.value) > 0;
+        amtInput.disabled = !!(hasTicker && hasUnits);
+        amtInput.placeholder = (hasTicker && hasUnits)
+          ? 'Auto (from live price)'
+          : (hasTicker ? 'Value — units worked out from this' : 'Value');
+        if (hasTicker && hasUnits) amtInput.value = '';
       }
       tickerInput.addEventListener('input', syncAmtDisabled);
       unitsInput.addEventListener('input', syncAmtDisabled);
@@ -3374,8 +3388,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       const n = nameInput.value.trim();
       const ticker = tickerInput ? tickerInput.value.trim().toUpperCase() : '';
       const units = unitsInput ? parseFloat(unitsInput.value) : NaN;
-      const hasTicker = ticker && units > 0;
       const a = parseFloat(amtInput.value);
+      const hasUnits = ticker && units > 0;
+      // A ticker + a Value but no Units is also valid — units get worked
+      // out from (value ÷ today's price) the moment the next price
+      // refresh succeeds, then it tracks normally from there. So you can
+      // just type what you currently have instead of knowing exact units.
+      const bootstrapFromValue = ticker && !hasUnits && !isNaN(a);
+      const hasTicker = hasUnits || bootstrapFromValue;
       if (!n) return;
       if (!hasTicker && isNaN(a)) return;
       // Interpret the input in the CURRENTLY SELECTED display currency, then
@@ -3383,16 +3403,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       // we store 40000 / USD-per-CHF rate — 31,400 CHF; displays as $40,000.
       const symbol = currencyEl ? currencyEl.value : 'CHF';
       const rate = exchangeRates[symbol] || 1;
-      // With a ticker, the Value field is ignored on purpose — amount
-      // starts at 0 and is only ever set by a successful live-price
-      // refresh (units × price). This used to silently accept whatever
-      // was typed into Value as if it were the total, which read as a
-      // stuck/wrong number when the price fetch failed (e.g. no
-      // EODHD_API_TOKEN set yet) rather than an obvious "not priced".
-      const amountCHF = hasTicker ? 0 : a / rate;
+      // With units given, amount starts at 0 and is only ever set by a
+      // successful live-price refresh (units × price). With only a value
+      // given (bootstrap case) or no ticker at all, amount starts as
+      // whatever was typed — the bootstrap case gets converted into a
+      // units count on the next successful refresh.
+      const amountCHF = hasUnits ? 0 : a / rate;
       const items = storeGet('nw:' + cat.key) || [];
       const item = { name: n, amount: amountCHF, dateAdded: new Date().toISOString().slice(0, 10) };
-      if (hasTicker) { item.ticker = ticker; item.units = units; }
+      if (hasTicker) { item.ticker = ticker; if (hasUnits) item.units = units; }
       items.push(item);
       storeSet('nw:' + cat.key, items);
       logActivity(cat.key, n, amountCHF, 'add');
