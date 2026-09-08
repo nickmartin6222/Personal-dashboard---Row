@@ -69,6 +69,37 @@ body::after {
 }
 @media (max-width: 480px) { .dash-title { font-size: 22px; } }
 
+/* ===== Handicap hero ===== */
+.hcp-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px;
+  margin-bottom: 18px;
+  text-align: center;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+.hcp-eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.hcp-num {
+  font-size: 44px; font-weight: 800; color: var(--text-primary);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1.1;
+  margin-top: 6px;
+}
+.hcp-tier {
+  display: inline-block; margin-top: 8px;
+  padding: 4px 12px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  background: rgba(110,231,183,0.12); color: var(--accent);
+}
+.hcp-note {
+  font-size: 11px; color: var(--text-tertiary); margin-top: 10px; line-height: 1.5;
+}
+
 /* ===== Stats row ===== */
 .stat-grid {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
@@ -107,6 +138,26 @@ body::after {
   content: ''; flex: 1; height: 1px;
   background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent);
 }
+.section-head-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 12px;
+}
+.section-head-row .section-title { margin-bottom: 0; flex: 1; }
+
+/* ===== Segmented control (holes toggle, filter) ===== */
+.seg {
+  display: inline-flex; flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px; overflow: hidden;
+  background: var(--bg-input);
+}
+.seg button {
+  border: 0; background: transparent; color: var(--text-tertiary);
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  padding: 8px 12px; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.seg button.on { background: rgba(255,255,255,0.12); color: var(--text-primary); }
 
 /* ===== Log-a-round card ===== */
 .golf-card {
@@ -152,6 +203,28 @@ body::after {
 }
 .golf-save-btn:hover { filter: brightness(1.05); }
 .golf-save-btn:active { transform: translateY(1px); }
+
+/* ===== Trend graph ===== */
+.golf-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 18px 14px;
+  margin-bottom: 18px;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+}
+.golf-chart-svg { width: 100%; height: 140px; display: block; overflow: visible; }
+.golf-chart-empty {
+  text-align: center; font-size: 12px; font-style: italic;
+  color: var(--text-tertiary); padding: 40px 0;
+}
+.golf-chart-legend {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 8px; font-size: 11px; color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+.golf-chart-legend b { color: var(--accent); font-weight: 700; }
 
 /* ===== Rounds history ===== */
 .golf-round-row {
@@ -232,8 +305,12 @@ body::after {
 [data-theme="light"] .section-title::after {
   background: linear-gradient(90deg, rgba(20,18,15,0.10), transparent);
 }
+[data-theme="light"] .hcp-card,
 [data-theme="light"] .golf-card,
+[data-theme="light"] .golf-chart-card,
 [data-theme="light"] .stat-tile { box-shadow: 0 12px 32px rgba(20,18,15,0.10); }
+[data-theme="light"] .hcp-tier { background: rgba(18,128,90,0.10); }
+[data-theme="light"] .seg button.on { background: rgba(20,18,15,0.10); color: var(--text-primary); }
 [data-theme="light"] .golf-round-row {
   background: rgba(20,18,15,0.03);
   border-color: rgba(20,18,15,0.08);
@@ -251,6 +328,13 @@ body::after {
 
   <h1 class="dash-title">Golf</h1>
 
+  <div class="hcp-card">
+    <div class="hcp-eyebrow">Handicap Index — rough estimate</div>
+    <div class="hcp-num" id="hcpNum">—</div>
+    <div class="hcp-tier" id="hcpTier" style="display:none"></div>
+    <div class="hcp-note" id="hcpNote">Log 3+ rounds to see an estimate.</div>
+  </div>
+
   <div class="stat-grid">
     <div class="stat-tile"><div class="stat-tile-val" id="statRounds">0</div><div class="stat-tile-label">Rounds</div></div>
     <div class="stat-tile"><div class="stat-tile-val" id="statBest">—</div><div class="stat-tile-label">Best score</div></div>
@@ -267,15 +351,32 @@ body::after {
         <input type="date" id="gInputDate" class="golf-input">
       </div>
       <div>
-        <label class="golf-field-label">Score</label>
-        <input type="number" inputmode="numeric" min="18" max="200" id="gInputScore" class="golf-input" placeholder="e.g. 88">
+        <label class="golf-field-label">Holes</label>
+        <div class="seg" id="gHolesSeg" style="width:100%">
+          <button type="button" data-h="18" class="on" style="flex:1">18</button>
+          <button type="button" data-h="9" style="flex:1">9</button>
+        </div>
       </div>
     </div>
 
-    <div class="golf-form-row full">
+    <div class="golf-form-row">
+      <div class="golf-form-row full" style="margin-bottom:0">
+        <div>
+          <label class="golf-field-label">Course</label>
+          <input type="text" id="gInputCourse" class="golf-input" list="gCourseList" placeholder="Course name — pick a saved one to prefill rating/slope" autocomplete="off">
+          <datalist id="gCourseList"></datalist>
+        </div>
+      </div>
+    </div>
+
+    <div class="golf-form-row">
       <div>
-        <label class="golf-field-label">Course</label>
-        <input type="text" id="gInputCourse" class="golf-input" placeholder="Course name" autocomplete="off">
+        <label class="golf-field-label">Score</label>
+        <input type="number" inputmode="numeric" min="18" max="200" id="gInputScore" class="golf-input" placeholder="e.g. 88">
+      </div>
+      <div>
+        <label class="golf-field-label">Putts <span style="opacity:.6">(optional)</span></label>
+        <input type="number" inputmode="numeric" id="gInputPutts" class="golf-input" placeholder="e.g. 32">
       </div>
     </div>
 
@@ -291,18 +392,28 @@ body::after {
     </div>
     <div class="golf-diff-hint" id="gDiffHint">Differential = (Score − Rating) × 113 / Slope — fill in rating &amp; slope to see it.</div>
 
-    <div class="golf-form-row">
+    <div class="golf-form-row full">
       <div>
         <label class="golf-field-label">Fairways hit <span style="opacity:.6">(optional)</span></label>
         <input type="text" id="gInputFairways" class="golf-input" placeholder="e.g. 9/14">
       </div>
-      <div>
-        <label class="golf-field-label">Putts <span style="opacity:.6">(optional)</span></label>
-        <input type="number" inputmode="numeric" id="gInputPutts" class="golf-input" placeholder="e.g. 32">
-      </div>
     </div>
 
     <button type="button" class="golf-save-btn" id="gSaveBtn">Save round</button>
+  </div>
+
+  <div class="golf-chart-card">
+    <div class="section-head-row">
+      <div class="section-title">Score trend</div>
+      <div class="seg" id="gFilterSeg">
+        <button type="button" data-f="all" class="on">All</button>
+        <button type="button" data-f="18">18</button>
+        <button type="button" data-f="9">9</button>
+      </div>
+    </div>
+    <svg class="golf-chart-svg" id="gChartSvg" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+    <div class="golf-chart-empty" id="gChartEmpty">Log 2+ rounds (matching this filter) to see a trend.</div>
+    <div class="golf-chart-legend" id="gChartLegend" style="display:none"></div>
   </div>
 
   <div class="section-title">Rounds</div>
@@ -316,6 +427,9 @@ body::after {
   'use strict';
   const $ = (id) => document.getElementById(id);
   const KEY = 'golf:rounds';
+  const COURSES_KEY = 'golf:courses';
+  let holesFilter = 'all';
+  let formHoles = 18;
 
   function loadRounds() {
     try { const r = JSON.parse(localStorage.getItem(KEY)); return Array.isArray(r) ? r : []; }
@@ -324,10 +438,40 @@ body::after {
   function saveRounds(rounds) {
     try { localStorage.setItem(KEY, JSON.stringify(rounds)); } catch (e) {}
   }
+  function loadCourses() {
+    try { const c = JSON.parse(localStorage.getItem(COURSES_KEY)); return (c && typeof c === 'object') ? c : {}; }
+    catch (e) { return {}; }
+  }
+  function saveCourses(courses) {
+    try { localStorage.setItem(COURSES_KEY, JSON.stringify(courses)); } catch (e) {}
+  }
+  function upsertCourse(name, rating, slope) {
+    if (!name || !(rating > 0) || !(slope > 0)) return;
+    const courses = loadCourses();
+    courses[name.toLowerCase()] = { name, rating, slope };
+    saveCourses(courses);
+    renderCourseList();
+  }
+  function renderCourseList() {
+    const courses = loadCourses();
+    $('gCourseList').innerHTML = Object.values(courses)
+      .map(c => '<option value="' + escapeHtml(c.name) + '">')
+      .join('');
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
 
   function computeDifferential(score, rating, slope) {
     if (!(score > 0) || !(rating > 0) || !(slope > 0)) return null;
     return Math.round(((score - rating) * 113 / slope) * 10) / 10;
+  }
+  // Rough comparable value for mixing 9- and 18-hole rounds into one
+  // handicap average — doubling a 9-hole differential is an approximation,
+  // not the real WHS 9-hole combination method.
+  function comparableDifferential(r) {
+    if (typeof r.differential !== 'number') return null;
+    return r.holes === 9 ? r.differential * 2 : r.differential;
   }
 
   function fmtDate(iso) {
@@ -336,6 +480,43 @@ body::after {
     const d = new Date(parts[0], parts[1] - 1, parts[2]);
     const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
     return mo + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+
+  function tierFor(h) {
+    if (h <= 5)  return 'Low / Scratch';
+    if (h <= 14) return 'Mid Handicap';
+    if (h <= 22) return 'High / Average';
+    if (h <= 32) return 'Recreational';
+    return 'Beginner';
+  }
+
+  function computeHandicapIndex(allRounds) {
+    const withDiff = allRounds
+      .slice()
+      .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0))
+      .slice(0, 20)
+      .map(comparableDifferential)
+      .filter(d => typeof d === 'number');
+    if (withDiff.length < 3) return null;
+    const best = withDiff.slice().sort((a, b) => a - b).slice(0, Math.min(8, withDiff.length));
+    const avg = best.reduce((a, b) => a + b, 0) / best.length;
+    return Math.round(avg * 10) / 10;
+  }
+
+  function renderHandicap(allRounds) {
+    const h = computeHandicapIndex(allRounds);
+    const numEl = $('hcpNum'), tierEl = $('hcpTier'), noteEl = $('hcpNote');
+    if (h == null) {
+      numEl.textContent = '—';
+      tierEl.style.display = 'none';
+      const have = allRounds.filter(r => typeof r.differential === 'number').length;
+      noteEl.textContent = have + '/3 rounds needed for an estimate.';
+      return;
+    }
+    numEl.textContent = (h > 0 ? '' : '') + h;
+    tierEl.textContent = tierFor(h);
+    tierEl.style.display = 'inline-block';
+    noteEl.textContent = 'Average of your best differentials from the last 20 rounds (9-hole rounds are roughly doubled to compare). Not an official WHS index.';
   }
 
   function renderStats(rounds) {
@@ -361,9 +542,57 @@ body::after {
     }
   }
 
+  function filteredRounds(rounds) {
+    if (holesFilter === 'all') return rounds;
+    const h = holesFilter === '9' ? 9 : 18;
+    return rounds.filter(r => (r.holes || 18) === h);
+  }
+
+  function renderChart(rounds) {
+    const svg = $('gChartSvg');
+    const empty = $('gChartEmpty');
+    const legend = $('gChartLegend');
+    const chrono = rounds.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
+    if (chrono.length < 2) {
+      svg.innerHTML = '';
+      empty.style.display = 'block';
+      legend.style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    legend.style.display = 'flex';
+
+    const scores = chrono.map(r => r.score);
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const min = Math.min(...scores), max = Math.max(...scores);
+    const pad = 8;
+    const W = 300, H = 140;
+    const range = Math.max(1, max - min);
+    const x = (i) => pad + (i / (chrono.length - 1)) * (W - pad * 2);
+    const y = (v) => H - 20 - ((v - min) / range) * (H - 40);
+
+    const pathD = scores.map((s, i) => (i === 0 ? 'M' : 'L') + x(i).toFixed(1) + ',' + y(s).toFixed(1)).join(' ');
+    const avgY = y(avg).toFixed(1);
+    const dots = scores.map((s, i) =>
+      '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(s).toFixed(1) + '" r="3" fill="var(--accent)"></circle>'
+    ).join('');
+
+    svg.innerHTML =
+      '<line x1="' + pad + '" y1="' + avgY + '" x2="' + (W - pad) + '" y2="' + avgY + '" stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="4 3"></line>' +
+      '<path d="' + pathD + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>' +
+      dots;
+
+    legend.innerHTML =
+      '<span>' + chrono.length + ' rounds shown</span>' +
+      '<span>Avg: <b>' + avg.toFixed(1) + '</b> · Best: <b>' + min + '</b></span>';
+  }
+
   function renderRounds() {
-    const rounds = loadRounds().slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0));
-    renderStats(rounds);
+    const all = loadRounds();
+    renderHandicap(all);
+    const rounds = filteredRounds(all).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0));
+    renderStats(all);
+    renderChart(filteredRounds(all));
 
     const list = $('gRoundsList');
     const empty = $('gEmpty');
@@ -383,7 +612,7 @@ body::after {
       body.className = 'golf-round-body';
       const course = document.createElement('div');
       course.className = 'golf-round-course';
-      course.textContent = r.course || 'Unnamed course';
+      course.textContent = (r.course || 'Unnamed course') + ((r.holes || 18) === 9 ? ' · 9H' : '');
       body.appendChild(course);
       const metaBits = [fmtDate(r.date)];
       if (r.fairways) metaBits.push(r.fairways + ' FW');
@@ -405,9 +634,9 @@ body::after {
       del.setAttribute('aria-label', 'Delete round');
       del.textContent = '×';
       del.addEventListener('click', () => {
-        const all = loadRounds();
-        const idx = all.findIndex(x => x.id === r.id);
-        if (idx !== -1) { all.splice(idx, 1); saveRounds(all); renderRounds(); }
+        const allNow = loadRounds();
+        const idx = allNow.findIndex(x => x.id === r.id);
+        if (idx !== -1) { allNow.splice(idx, 1); saveRounds(allNow); renderRounds(); }
       });
       row.appendChild(del);
 
@@ -432,6 +661,35 @@ body::after {
     $(id).addEventListener('input', updateDiffHint);
   });
 
+  // Course autocomplete: exact match against a saved course prefills its
+  // rating/slope (you can still edit them afterward for this round).
+  $('gInputCourse').addEventListener('input', () => {
+    const name = $('gInputCourse').value.trim().toLowerCase();
+    if (!name) return;
+    const courses = loadCourses();
+    const c = courses[name];
+    if (c) {
+      $('gInputRating').value = c.rating;
+      $('gInputSlope').value = c.slope;
+      updateDiffHint();
+    }
+  });
+
+  $('gHolesSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    formHoles = parseInt(b.dataset.h, 10);
+    $('gHolesSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  });
+
+  $('gFilterSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    holesFilter = b.dataset.f;
+    $('gFilterSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    renderRounds();
+  });
+
   $('gInputDate').valueAsDate = new Date();
 
   $('gSaveBtn').addEventListener('click', () => {
@@ -439,10 +697,12 @@ body::after {
     if (!score || score < 18) { $('gInputScore').focus(); return; }
     const rating = parseFloat($('gInputRating').value);
     const slope = parseFloat($('gInputSlope').value);
+    const course = $('gInputCourse').value.trim();
     const round = {
       id: 'r' + Date.now() + Math.random().toString(36).slice(2, 7),
       date: $('gInputDate').value || new Date().toISOString().slice(0, 10),
-      course: $('gInputCourse').value.trim(),
+      holes: formHoles,
+      course: course,
       score: score,
       rating: rating > 0 ? rating : null,
       slope: slope > 0 ? slope : null,
@@ -454,18 +714,24 @@ body::after {
     const all = loadRounds();
     all.push(round);
     saveRounds(all);
+    upsertCourse(course, rating, slope);
 
     $('gInputCourse').value = '';
     $('gInputScore').value = '';
     $('gInputFairways').value = '';
     $('gInputPutts').value = '';
+    $('gInputRating').value = '';
+    $('gInputSlope').value = '';
     $('gInputDate').valueAsDate = new Date();
+    formHoles = 18;
+    $('gHolesSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.h === '18'));
     updateDiffHint();
     renderRounds();
   });
 
+  renderCourseList();
   renderRounds();
-  window.addEventListener('storage', renderRounds);
+  window.addEventListener('storage', () => { renderCourseList(); renderRounds(); });
 })();
 </script>
 
@@ -474,7 +740,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (typeof initCloudSync !== 'function') return;
   initCloudSync({
     appKey: 'golf',
-    syncedKeys: ['golf:rounds'],
+    syncedKeys: ['golf:rounds', 'golf:courses'],
     onApplied: function () {
       window.dispatchEvent(new Event('storage'));
     }
