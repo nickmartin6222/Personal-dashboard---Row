@@ -2007,11 +2007,10 @@ img, video, canvas, svg { max-width: 100%; }
 
     const TAG_GROUP_LABEL = { primary: 'Primary', accessory: 'Accessory', rehab: 'Rehab' };
     function buildOption(e) {
-      const wLbl = e.bw ? ' · BW' : (e.startWeight ? ' · ' + e.startWeight + unit() : '');
       const sh = e.gym === 'both' ? ' ★' : '';
       let name = e.name;
       if (e.slot) name += ' (' + e.slot + (e.optionSet ? ' · Set ' + e.optionSet : '') + ')';
-      return '<option value="' + e.id + '"' + (e.id === state.currentEx ? ' selected' : '') + '>' + escape(name) + wLbl + sh + '</option>';
+      return '<option value="' + e.id + '"' + (e.id === state.currentEx ? ' selected' : '') + '>' + escape(name) + sh + '</option>';
     }
     let html = '';
     let openGroup = null;

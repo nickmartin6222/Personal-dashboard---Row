@@ -653,6 +653,8 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   display: flex; justify-content: space-between; align-items: center;
   padding: 5px 0; gap: 8px; min-width: 0;
 }
+/* The units+value inline editor (tap a ticker holding's amount) */
+.nw-inline-edit-2col { display: inline-flex; gap: 4px; align-items: center; flex-shrink: 0; }
 .nw-color-swatch {
   -webkit-appearance: none; appearance: none;
   width: 14px; height: 14px; flex-shrink: 0;
@@ -1718,6 +1720,34 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
     padding: 8px 12px !important;
     font-size: 16px !important;
   }
+
+  /* ---------- Net worth add rows (Bank/Stocks/Crypto/Other) ---------- */
+  /* These never got the same stacking treatment as Subs/Orders/Wishlist
+     above, so on a phone they squeezed 2-3 inputs + a button into one
+     row — same fix applied here. */
+  [data-section="net"] .quick-add {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px;
+    gap: 8px;
+  }
+  [data-section="net"] .quick-add input,
+  [data-section="net"] .quick-add button {
+    flex: none !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    width: 100%;
+    padding: 12px 14px !important;
+    font-size: 15px !important;
+    box-sizing: border-box;
+  }
+  /* Net worth rows themselves: let a row wrap onto a second line
+     rather than clip when an inline editor (ticker/units/date) is
+     open — a compact row of tappable text has room normally, but
+     the edit-mode inputs need more space than a phone's row width. */
+  .nw-row { flex-wrap: wrap; row-gap: 4px; }
+  .nw-inline-edit-2col { width: 100%; }
+  .nw-inline-edit-2col input { flex: 1; width: auto !important; min-width: 0 !important; }
 }
 
 /* ============================================================
@@ -2669,7 +2699,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       try { localStorage.setItem(STOCK_LAST_FETCH_KEY, String(Date.now())); } catch (e) {}
     } catch (e) { return; }
 
-    const snapshot = storeGet(STOCK_SNAPSHOT_KEY) || {};
+    // Rebuilt fresh every time from CURRENTLY held tickers — this used
+    // to load and merge into the old snapshot, so a deleted holding's
+    // ticker/price stuck around in the cache forever, showing stale
+    // data on the dashboard tile even after the holding was gone.
+    const snapshot = {};
     let changed = false;
     withTicker.forEach(it => {
       const q = quotes[it.ticker];
@@ -2689,9 +2723,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       changed = true;
       snapshot[it.ticker] = { name: it.name, price: q.price, changePercent: q.changePercent, currency: ccy, ts: q.ts };
     });
+    // The snapshot is always rewritten fresh (even if nothing priced
+    // this round) so a ticker that's no longer held drops out of the
+    // dashboard's cache immediately rather than lingering.
+    storeSet(STOCK_SNAPSHOT_KEY, snapshot);
     if (changed) {
       storeSet('nw:stocks', items);
-      storeSet(STOCK_SNAPSHOT_KEY, snapshot);
       renderAllNetWorth();
     }
   }
@@ -2777,6 +2814,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           // value didn't swing wildly during its lifetime, which is a
           // reasonable trade-off for "don't show a cliff from a removal."
           retroactivelyRemoveFromHistory(Number(removed.amount) || 0, removed.dateAdded);
+          // Prune it from the dashboard's stock snapshot cache right away
+          // instead of waiting up to 4 hours for the next price refresh
+          // to notice it's gone (unless another held item shares the
+          // same ticker, in which case it's still legitimately priced).
+          if (removed.ticker && cat.key === 'stocks') {
+            const stillHeld = items.some(x => x.ticker === removed.ticker);
+            if (!stillHeld) {
+              const snap = storeGet(STOCK_SNAPSHOT_KEY) || {};
+              if (snap[removed.ticker]) { delete snap[removed.ticker]; storeSet(STOCK_SNAPSHOT_KEY, snap); }
+            }
+          }
         }
         renderAllNetWorth();
       });
@@ -2924,17 +2972,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const curValueDisplay = (Number(items[idx].amount) || 0) * rate;
 
     const wrap = document.createElement('span');
-    wrap.style.cssText = 'display:inline-flex;gap:4px;align-items:center;';
+    wrap.className = 'nw-inline-edit-2col';
     const unitsInput = document.createElement('input');
     unitsInput.type = 'text'; unitsInput.inputMode = 'decimal';
     unitsInput.value = String(curUnits);
     unitsInput.title = 'Units held';
-    unitsInput.style.cssText = 'width:60px;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    unitsInput.style.cssText = 'width:56px;min-width:0;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
     const valueInput = document.createElement('input');
     valueInput.type = 'text'; valueInput.inputMode = 'decimal';
     valueInput.value = String(curValueDisplay.toFixed(curValueDisplay % 1 === 0 ? 0 : 2));
     valueInput.title = 'Value (' + symbol + ') — manual override, replaced by the next successful live price';
-    valueInput.style.cssText = 'width:80px;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    valueInput.style.cssText = 'width:72px;min-width:0;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
     wrap.appendChild(unitsInput);
     wrap.appendChild(valueInput);
     amtEl.textContent = '';
@@ -4879,6 +4927,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 })();
 </script>
+
+<!-- Build marker — bumped on every meaningful change to this file, so
+     it's possible to tell at a glance whether you're looking at a
+     cached copy or the actual latest deploy. Compare against what
+     Claude tells you the current build is. -->
+<div style="position:fixed;bottom:4px;left:8px;z-index:1;font-family:ui-monospace,monospace;font-size:9px;color:rgba(255,255,255,0.15);pointer-events:none;">build 2026-09-08e</div>
 
 </body>
 </html>
