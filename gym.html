@@ -2499,26 +2499,14 @@ img, video, canvas, svg { max-width: 100%; }
     noMsg.style.display = 'none';
     if (!f.find(e => e.id === state.currentEx)) state.currentEx = f[0].id;
 
-    const TAG_GROUP_LABEL = { primary: 'Primary', accessory: 'Accessory', rehab: 'Rehab' };
+    // Flat list, in the order the workout should actually be done
+    // (getFiltered() already sorts primary -> accessory -> rehab) — no
+    // grouping headers, no slot/set-letter clutter, just the name.
     function buildOption(e) {
       const sh = e.gym === 'both' ? ' ★' : '';
-      let name = e.name;
-      if (e.slot) name += ' (' + e.slot + (e.optionSet ? ' · Set ' + e.optionSet : '') + ')';
-      return '<option value="' + e.id + '"' + (e.id === state.currentEx ? ' selected' : '') + '>' + escape(name) + sh + '</option>';
+      return '<option value="' + e.id + '"' + (e.id === state.currentEx ? ' selected' : '') + '>' + escape(e.name) + sh + '</option>';
     }
-    let html = '';
-    let openGroup = null;
-    f.forEach(e => {
-      const groupLabel = TAG_GROUP_LABEL[e.tag] || null;
-      if (groupLabel !== openGroup) {
-        if (openGroup !== null) html += '</optgroup>';
-        if (groupLabel !== null) html += '<optgroup label="' + groupLabel + '">';
-        openGroup = groupLabel;
-      }
-      html += buildOption(e);
-    });
-    if (openGroup !== null) html += '</optgroup>';
-    sel.innerHTML = html;
+    sel.innerHTML = f.map(buildOption).join('');
   }
   function renderForm() {
     const ex = getCurrentEx();
