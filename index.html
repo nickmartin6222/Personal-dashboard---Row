@@ -858,49 +858,76 @@ body::after {
     if (statEl) statEl.textContent = '~' + avg;
   })();
 
-  // ---- Net worth: total + category breakdown, for both the Finance
-  // tile's one-liner and Main's pie chart ----
+  // ---- Net worth: total + per-holding breakdown, for both the Finance
+  // tile's one-liner and Main's pie chart. Each individual holding gets
+  // its own pie slice (not just one slice per category) — colour is
+  // whatever was customized on the Finance page (item.color), or a
+  // stable default derived from the same name/ticker hash finance.html
+  // uses, so an uncoloured item's default matches on both pages. ----
   (function () {
     const finEl = document.getElementById('tileInsightFinance');
     const pieEl = document.getElementById('mainNwPie');
     const totalEl = document.getElementById('mainNwTotal');
     const legendEl = document.getElementById('mainNwLegend');
-    const CATS = [
-      { key: 'bank',   name: 'Bank',   color: '#7DD3FC' },
-      { key: 'stocks', name: 'Stocks', color: '#6EE7B7' },
-      { key: 'crypto', name: 'Crypto', color: '#C9B8FF' },
-      { key: 'other',  name: 'Other',  color: '#F2C063' }
-    ];
+    const CAT_KEYS = ['bank', 'stocks', 'crypto', 'other'];
+    const PALETTE = ['#7DD3FC','#6EE7B7','#C9B8FF','#F2C063','#FF8A8A','#F472B6','#FCD34D','#34D399','#A78BFA','#60A5FA','#FB923C','#4ADE80'];
+    function defaultColor(catKey, it) {
+      const seed = catKey + ':' + (it.ticker || it.name || '');
+      let hash = 0;
+      for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+      return PALETTE[hash % PALETTE.length];
+    }
+
     let total = 0;
-    const sums = CATS.map(c => {
-      const items = readJSON('nw:' + c.key);
-      const sum = Array.isArray(items) ? items.reduce((s, it) => s + (Number(it.amount) || 0), 0) : 0;
-      total += sum;
-      return Object.assign({}, c, { sum });
+    const slices = [];
+    CAT_KEYS.forEach(catKey => {
+      const items = readJSON('nw:' + catKey);
+      if (!Array.isArray(items)) return;
+      items.forEach(it => {
+        const amt = Number(it.amount) || 0;
+        if (amt <= 0) return;
+        total += amt;
+        slices.push({ name: it.name || catKey, color: it.color || defaultColor(catKey, it), amount: amt });
+      });
     });
     if (total <= 0) return;
 
-    if (finEl) finEl.textContent = 'Net worth: CHF ' + Math.round(total).toLocaleString('en-US');
-    if (totalEl) totalEl.textContent = 'CHF ' + Math.round(total).toLocaleString('en-US');
+    // Display currency: whatever's set on the Finance page (defaults to
+    // AUD), converted from the CHF-base amounts via the same exchange
+    // rates the Finance page fetched (cached to fx:rates for us).
+    const ccy = readJSON('nw_currency') || 'AUD';
+    const rates = readJSON('fx:rates') || { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 };
+    const rate = rates[ccy] || 1;
+    const displayTotal = total * rate;
+    const totalStr = ccy + ' ' + Math.round(displayTotal).toLocaleString('en-US');
+
+    if (finEl) finEl.textContent = 'Net worth: ' + totalStr;
+    if (totalEl) totalEl.textContent = totalStr;
+
+    slices.sort((a, b) => b.amount - a.amount);
 
     if (pieEl) {
       let acc = 0;
-      const stops = sums.filter(c => c.sum > 0).map(c => {
+      const stops = slices.map(s => {
         const from = (acc / total) * 100;
-        acc += c.sum;
+        acc += s.amount;
         const to = (acc / total) * 100;
-        return c.color + ' ' + from.toFixed(2) + '% ' + to.toFixed(2) + '%';
+        return s.color + ' ' + from.toFixed(2) + '% ' + to.toFixed(2) + '%';
       });
       if (stops.length) pieEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
     }
     if (legendEl) {
-      legendEl.innerHTML = sums.filter(c => c.sum > 0).map(c => {
-        const pct = Math.round((c.sum / total) * 100);
+      // Cap the legend so a long holdings list doesn't blow out the tile —
+      // the pie itself still reflects every slice.
+      const shown = slices.slice(0, 6);
+      const rest = slices.length - shown.length;
+      legendEl.innerHTML = shown.map(s => {
+        const pct = Math.round((s.amount / total) * 100);
         return '<div class="main-nw-legend-row">' +
-          '<span class="main-nw-legend-dot" style="background:' + c.color + '"></span>' +
-          '<span>' + c.name + ' ' + pct + '%</span>' +
+          '<span class="main-nw-legend-dot" style="background:' + s.color + '"></span>' +
+          '<span>' + s.name + ' ' + pct + '%</span>' +
         '</div>';
-      }).join('');
+      }).join('') + (rest > 0 ? '<div class="main-nw-legend-row"><span>+' + rest + ' more</span></div>' : '');
     }
   })();
 
