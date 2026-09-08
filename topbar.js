@@ -34,7 +34,7 @@
   filter: grayscale(100%) brightness(1.4);
   opacity: 0.85;
 }
-.theme-toggle-btn {
+.theme-toggle-btn, .home-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 44px; height: 42px;
   border: 1px solid rgba(255, 255, 255, 0.10);
@@ -42,13 +42,17 @@
   border-radius: 12px;
   font-size: 18px; line-height: 1;
   cursor: pointer;
+  text-decoration: none;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s;
 }
-.theme-toggle-btn:hover { background: rgba(255, 255, 255, 0.08); }
-.theme-toggle-floating {
+.theme-toggle-btn:hover, .home-btn:hover { background: rgba(255, 255, 255, 0.08); }
+/* Fixed top-right chrome for pages that suppress the normal topbar
+   (currently just finance) — a persistent way home without relying on
+   scroll position or a browser back gesture. */
+.floating-chrome {
   position: fixed; top: max(14px, env(safe-area-inset-top)); right: 14px;
-  z-index: 110;
+  z-index: 110; display: flex; gap: 8px;
 }
 
 /* Bottom tab bar — Instagram-style */
@@ -108,12 +112,14 @@ body.has-bottombar {
   border-bottom-color: rgba(20,18,15,0.08);
 }
 [data-theme="light"] .topbar-finance-btn,
-[data-theme="light"] .theme-toggle-btn {
-  background: rgba(20,18,15,0.035);
+[data-theme="light"] .theme-toggle-btn,
+[data-theme="light"] .home-btn {
+  background: #FFFFFF;
   border-color: rgba(20,18,15,0.12);
 }
 [data-theme="light"] .topbar-finance-btn:hover,
-[data-theme="light"] .theme-toggle-btn:hover {
+[data-theme="light"] .theme-toggle-btn:hover,
+[data-theme="light"] .home-btn:hover {
   background: rgba(20,18,15,0.06);
 }
 [data-theme="light"] .topbar-finance-icon {
@@ -191,10 +197,6 @@ body.topbar-modal-open {
     <span class="bottombar-tab-icon">🏠</span>
     <span>Main</span>
   </a>
-  <a href="health.html" class="bottombar-tab" data-page="health">
-    <span class="bottombar-tab-icon">💊</span>
-    <span>Health</span>
-  </a>
   <a href="gym.html" class="bottombar-tab" data-page="fitness">
     <span class="bottombar-tab-icon">💪</span>
     <span>Fitness</span>
@@ -221,10 +223,11 @@ body.topbar-modal-open {
   }
   function currentPageKey() {
     const p = (window.location.pathname || '').toLowerCase();
-    if (p.endsWith('health.html')) return 'health';
     if (p.endsWith('gym.html')) return 'fitness';
     if (p.endsWith('golf.html')) return 'golf';
-    return 'main'; // index.html, /, or anything else falls back to main
+    // health.html has no bottombar tab of its own (hidden from nav for now) —
+    // falls back to 'main' so at least Home lights up if someone lands there.
+    return 'main'; // index.html, health.html, /, or anything else falls back to main
   }
 
   function injectStyleAndHTML() {
@@ -280,6 +283,34 @@ body.topbar-modal-open {
     if (btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
   }
 
+  // Shared fixed top-right container for pages with no normal topbar
+  // (currently just finance) — holds the Home button and, on those
+  // pages, the theme toggle too, so neither one disappears.
+  function getFloatingChrome() {
+    let el = document.getElementById('floatingChrome');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'floatingChrome';
+      el.className = 'floating-chrome';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function injectHomeButton() {
+    if (isEmbedded()) return;
+    if (document.getElementById('topbar')) return; // topbar already has a way home via the bottombar
+    if (document.getElementById('homeBtn')) return;
+
+    const btn = document.createElement('a');
+    btn.id = 'homeBtn';
+    btn.href = 'index.html';
+    btn.className = 'home-btn';
+    btn.setAttribute('aria-label', 'Back to dashboard');
+    btn.textContent = '🏠';
+    getFloatingChrome().appendChild(btn);
+  }
+
   function injectThemeToggle() {
     if (isEmbedded()) return;
     if (document.getElementById('themeToggleBtn')) return;
@@ -298,8 +329,7 @@ body.topbar-modal-open {
     if (topbarEl) {
       topbarEl.appendChild(btn);
     } else {
-      btn.classList.add('theme-toggle-floating');
-      document.body.appendChild(btn);
+      getFloatingChrome().appendChild(btn);
     }
 
     applyThemeColorMeta(getTheme());
@@ -355,6 +385,7 @@ body.topbar-modal-open {
   // -------- Boot --------
   function boot() {
     injectStyleAndHTML();
+    injectHomeButton();
     injectThemeToggle();
     lockGestures();
     startModalLock();
