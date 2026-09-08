@@ -99,6 +99,48 @@ body::after {
 .tile.big  { grid-column: span 2; grid-row: span 2; }
 .tile.wide { grid-column: span 2; }
 
+/* A tile that needs an interactive control floating on top of its
+   link (e.g. the creatine check on the Main tile) gets wrapped —
+   <button> can't nest inside <a>, so the wrapper takes over the grid
+   placement and the <a> just fills it, freeing the button to sit
+   absolutely positioned above it. */
+.tile-wrap { position: relative; }
+.tile-wrap-big { grid-column: span 2; grid-row: span 2; }
+.tile-wrap-big .tile.big { position: absolute; inset: 0; grid-column: unset; grid-row: unset; }
+.creatine-btn {
+  position: absolute; z-index: 5; top: 20px; right: 20px;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 12px 7px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(10,10,11,0.55);
+  backdrop-filter: blur(8px);
+  color: var(--text-secondary);
+  font-family: var(--font); font-size: 11.5px; font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.creatine-btn:hover { background: rgba(10,10,11,0.7); }
+.creatine-check {
+  width: 16px; height: 16px; flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.28);
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+}
+.creatine-btn.done { border-color: rgba(107,227,164,0.5); background: rgba(107,227,164,0.12); color: #6BE3A4; }
+.creatine-btn.done .creatine-check { background: #6BE3A4; border-color: #6BE3A4; }
+.creatine-btn.done .creatine-check::after {
+  content: ''; position: absolute; left: 4px; top: 1px;
+  width: 4px; height: 8px;
+  border: solid #0A0A0B; border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+@media (max-width: 440px) {
+  .creatine-btn { top: 14px; right: 14px; font-size: 10.5px; padding: 6px 10px 6px 7px; }
+}
+
 /* Tile contents */
 .tile-top { display: flex; align-items: flex-start; justify-content: space-between; }
 .tile-num {
@@ -130,11 +172,13 @@ body::after {
   .bento { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 150px; }
   .tile.big { grid-column: span 2; grid-row: span 1; }
   .tile.big .tile-title { font-size: 22px; }
+  .tile-wrap-big { grid-column: span 2; grid-row: span 1; }
 }
 @media (max-width: 440px) {
   body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
   .bento { grid-template-columns: 1fr; grid-auto-rows: 132px; }
   .tile.big, .tile.wide { grid-column: span 1; }
+  .tile-wrap-big { grid-column: span 1; }
 }
 
 /* ===== Header row + gear ===== */
@@ -283,18 +327,24 @@ body::after {
   <div class="bento">
 
     <!-- Big tile -->
-    <a class="tile big" href="main.html" style="--accent:#6BE3A4">
-      <div class="tile-top">
-        <span class="tile-num">·01</span>
-        <span class="tile-emoji">🏠</span>
-      </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Main</h2>
-      <div class="tile-foot">
-        <span class="tile-sub" id="tileInsightMain">Your day at a glance</span>
-        <span class="tile-arrow">→</span>
-      </div>
-    </a>
+    <div class="tile-wrap tile-wrap-big">
+      <a class="tile big" href="main.html" style="--accent:#6BE3A4">
+        <div class="tile-top">
+          <span class="tile-num">·01</span>
+          <span class="tile-emoji">🏠</span>
+        </div>
+        <div class="tile-spacer"></div>
+        <h2 class="tile-title">Main</h2>
+        <div class="tile-foot">
+          <span class="tile-sub" id="tileInsightMain">Your day at a glance</span>
+          <span class="tile-arrow">→</span>
+        </div>
+      </a>
+      <button type="button" class="creatine-btn" id="creatineBtn" aria-label="Mark today's creatine as taken">
+        <span class="creatine-check" id="creatineCheck"></span>
+        <span>Creatine 5g</span>
+      </button>
+    </div>
 
     <!-- Wide tile -->
     <a class="tile wide" href="gym.html" style="--accent:#7DD3FC">
@@ -595,6 +645,31 @@ body::after {
 (function () {
   'use strict';
   function readJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  // ---- Creatine checker — tap to mark today's 5g as taken ----
+  (function () {
+    const btn = document.getElementById('creatineBtn');
+    if (!btn) return;
+    const KEY = 'creatine:lastTakenDate';
+    function render() {
+      const done = localStorage.getItem(KEY) === todayKey();
+      btn.classList.toggle('done', done);
+      btn.querySelector('span:last-child').textContent = done ? 'Creatine taken' : 'Creatine 5g';
+    }
+    btn.addEventListener('click', () => {
+      const done = localStorage.getItem(KEY) === todayKey();
+      try {
+        if (done) localStorage.removeItem(KEY);
+        else localStorage.setItem(KEY, todayKey());
+      } catch (e) {}
+      render();
+    });
+    render();
+  })();
 
   // ---- Main: time-of-day phase (mirrors main.html's day ring) ----
   (function () {
