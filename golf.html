@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('dash_theme_v1')||'dark');}catch(e){}</script>
 <script src="lock.js"></script>
 <script src="/api/config"></script>
 <meta charset="UTF-8">
@@ -363,7 +362,7 @@ body::after {
       <div class="golf-form-row full" style="margin-bottom:0">
         <div>
           <label class="golf-field-label">Course</label>
-          <input type="text" id="gInputCourse" class="golf-input" list="gCourseList" placeholder="Course name — pick a saved one to prefill rating/slope" autocomplete="off">
+          <input type="text" id="gInputCourse" class="golf-input" list="gCourseList" placeholder="Course name — pick a saved one to prefill par/slope" autocomplete="off">
           <datalist id="gCourseList"></datalist>
         </div>
       </div>
@@ -382,15 +381,15 @@ body::after {
 
     <div class="golf-form-row">
       <div>
-        <label class="golf-field-label">Course rating</label>
-        <input type="number" inputmode="decimal" step="0.1" id="gInputRating" class="golf-input" placeholder="e.g. 72.0">
+        <label class="golf-field-label">Par</label>
+        <input type="number" inputmode="numeric" id="gInputPar" class="golf-input" placeholder="e.g. 36">
       </div>
       <div>
-        <label class="golf-field-label">Slope rating</label>
-        <input type="number" inputmode="numeric" id="gInputSlope" class="golf-input" placeholder="e.g. 113">
+        <label class="golf-field-label">Slope <span style="opacity:.6">(optional)</span></label>
+        <input type="number" inputmode="numeric" id="gInputSlope" class="golf-input" placeholder="113 if unsure">
       </div>
     </div>
-    <div class="golf-diff-hint" id="gDiffHint">Differential = (Score − Rating) × 113 / Slope — fill in rating &amp; slope to see it.</div>
+    <div class="golf-diff-hint" id="gDiffHint">Differential = (Score − Par) × 113 / Slope — fill in a par to see it.</div>
 
     <div class="golf-form-row full">
       <div>
@@ -445,10 +444,19 @@ body::after {
   function saveCourses(courses) {
     try { localStorage.setItem(COURSES_KEY, JSON.stringify(courses)); } catch (e) {}
   }
-  function upsertCourse(name, rating, slope) {
-    if (!name || !(rating > 0) || !(slope > 0)) return;
+  // Courses are saved with a separate par for 9 and 18 (they're often
+  // NOT simply double one another — e.g. an executive front nine),
+  // plus a slope. Whichever holes mode is selected when you pick a
+  // saved course prefills the matching par.
+  function upsertCourse(name, holes, par, slope) {
+    if (!name || !(par > 0)) return;
     const courses = loadCourses();
-    courses[name.toLowerCase()] = { name, rating, slope };
+    const key = name.toLowerCase();
+    const existing = courses[key] || { name };
+    existing.name = name;
+    if (holes === 9) existing.par9 = par; else existing.par18 = par;
+    if (slope > 0) existing.slope = slope;
+    courses[key] = existing;
     saveCourses(courses);
     renderCourseList();
   }
@@ -462,16 +470,14 @@ body::after {
     return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
-  // `rating` is whatever the course's published (18-hole) rating is —
-  // the only number most people can actually look up. For a 9-hole
-  // round we approximate the 9-hole rating as half of that (roughly
-  // right for a symmetric front/back nine) rather than requiring a
-  // separately-published 9-hole rating. Slope isn't halved — it's
-  // already a normalized 55-155 scale independent of hole count.
-  function computeDifferential(score, rating, slope, holes) {
-    if (!(score > 0) || !(rating > 0) || !(slope > 0)) return null;
-    const effRating = holes === 9 ? rating / 2 : rating;
-    return Math.round(((score - effRating) * 113 / slope) * 10) / 10;
+  // Par-based, not rating-based — par is something you actually know for
+  // your course, unlike an official USGA Course Rating you'd have to look
+  // up. Slope is optional and defaults to neutral (113 = no adjustment),
+  // matching how most casual "shots over par" estimates work when slope
+  // isn't known. This is deliberately simple, not the real WHS formula.
+  function computeDifferential(score, par, slope) {
+    if (!(score > 0) || !(par > 0)) return null;
+    return Math.round(((score - par) * 113 / (slope > 0 ? slope : 113)) * 10) / 10;
   }
   // Rough comparable value for mixing 9- and 18-hole rounds into one
   // handicap average — doubling a 9-hole differential is an approximation,
@@ -653,35 +659,34 @@ body::after {
 
   function updateDiffHint() {
     const score = parseFloat($('gInputScore').value);
-    const rating = parseFloat($('gInputRating').value);
+    const par = parseFloat($('gInputPar').value);
     const slope = parseFloat($('gInputSlope').value);
-    const d = computeDifferential(score, rating, slope, formHoles);
+    const d = computeDifferential(score, par, slope);
     const hint = $('gDiffHint');
-    const formula = formHoles === 9
-      ? '(Score − Rating÷2) × 113 / Slope'
-      : '(Score − Rating) × 113 / Slope';
     if (d != null) {
-      hint.innerHTML = 'Differential: <b>' + (d > 0 ? '+' : '') + d + '</b> — ' + formula;
+      hint.innerHTML = 'Differential: <b>' + (d > 0 ? '+' : '') + d + '</b> — (Score − Par) × 113 / Slope';
     } else {
-      hint.innerHTML = 'Differential = ' + formula + ' — fill in rating &amp; slope to see it.' +
-        (formHoles === 9 ? ' (enter the course’s normal 18-hole rating — it’s halved automatically for 9.)' : '');
+      hint.innerHTML = 'Differential = (Score − Par) × 113 / Slope — fill in a par to see it. Slope defaults to 113 (neutral) if left blank.';
     }
   }
 
-  ['gInputScore', 'gInputRating', 'gInputSlope'].forEach(id => {
+  ['gInputScore', 'gInputPar', 'gInputSlope'].forEach(id => {
     $(id).addEventListener('input', updateDiffHint);
   });
 
+  function defaultPar() { return formHoles === 9 ? 36 : 72; }
+
   // Course autocomplete: exact match against a saved course prefills its
-  // rating/slope (you can still edit them afterward for this round).
+  // par (for whichever holes mode is selected) and slope.
   $('gInputCourse').addEventListener('input', () => {
     const name = $('gInputCourse').value.trim().toLowerCase();
     if (!name) return;
     const courses = loadCourses();
     const c = courses[name];
     if (c) {
-      $('gInputRating').value = c.rating;
-      $('gInputSlope').value = c.slope;
+      const par = formHoles === 9 ? c.par9 : c.par18;
+      if (par > 0) $('gInputPar').value = par;
+      if (c.slope > 0) $('gInputSlope').value = c.slope;
       updateDiffHint();
     }
   });
@@ -691,6 +696,12 @@ body::after {
     if (!b) return;
     formHoles = parseInt(b.dataset.h, 10);
     $('gHolesSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    // Re-check the saved course for this holes mode's par, else fall
+    // back to the standard default so the field is rarely empty.
+    const name = $('gInputCourse').value.trim().toLowerCase();
+    const c = name ? loadCourses()[name] : null;
+    const savedPar = c ? (formHoles === 9 ? c.par9 : c.par18) : null;
+    $('gInputPar').value = savedPar > 0 ? savedPar : defaultPar();
     updateDiffHint();
   });
 
@@ -703,11 +714,12 @@ body::after {
   });
 
   $('gInputDate').valueAsDate = new Date();
+  $('gInputPar').value = defaultPar();
 
   $('gSaveBtn').addEventListener('click', () => {
     const score = parseInt($('gInputScore').value, 10);
     if (!score || score < 18) { $('gInputScore').focus(); return; }
-    const rating = parseFloat($('gInputRating').value);
+    const par = parseFloat($('gInputPar').value) || defaultPar();
     const slope = parseFloat($('gInputSlope').value);
     const course = $('gInputCourse').value.trim();
     const round = {
@@ -716,9 +728,9 @@ body::after {
       holes: formHoles,
       course: course,
       score: score,
-      rating: rating > 0 ? rating : null,
+      par: par,
       slope: slope > 0 ? slope : null,
-      differential: computeDifferential(score, rating, slope, formHoles),
+      differential: computeDifferential(score, par, slope),
       fairways: $('gInputFairways').value.trim(),
       putts: parseInt($('gInputPutts').value, 10) || null,
       ts: Date.now()
@@ -726,31 +738,37 @@ body::after {
     const all = loadRounds();
     all.push(round);
     saveRounds(all);
-    upsertCourse(course, rating, slope);
+    upsertCourse(course, formHoles, par, slope);
 
     $('gInputCourse').value = '';
     $('gInputScore').value = '';
     $('gInputFairways').value = '';
     $('gInputPutts').value = '';
-    $('gInputRating').value = '';
     $('gInputSlope').value = '';
     $('gInputDate').valueAsDate = new Date();
     formHoles = 18;
     $('gHolesSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.h === '18'));
+    $('gInputPar').value = defaultPar();
     updateDiffHint();
     renderRounds();
   });
 
-  // One-time fix-up: recompute every stored round's differential from its
-  // own score/rating/slope/holes, so any 9-hole round saved before the
-  // rating-halving fix (which used the full 18-hole rating and produced
-  // wildly-wrong differentials) gets corrected in place. Cheap and
-  // idempotent — safe to run on every load.
+  // One-time fix-up for rounds saved under the old Course-Rating model
+  // (which produced wildly-wrong 9-hole differentials): rounds without a
+  // `par` get a standard default (36 for 9, 72 for 18) and their
+  // differential recomputed. The default won't be exactly right for a
+  // course whose real par differs (e.g. a par-33 nine) — delete and
+  // re-log those with the correct par for a precise number. Cheap and
+  // idempotent, safe to run on every load.
   function migrateDifferentials() {
     const rounds = loadRounds();
     let changed = false;
     rounds.forEach(r => {
-      const fixed = computeDifferential(r.score, r.rating, r.slope, r.holes || 18);
+      if (!(r.par > 0)) {
+        r.par = (r.holes || 18) === 9 ? 36 : 72;
+        changed = true;
+      }
+      const fixed = computeDifferential(r.score, r.par, r.slope);
       if (fixed !== r.differential) { r.differential = fixed; changed = true; }
     });
     if (changed) saveRounds(rounds);
