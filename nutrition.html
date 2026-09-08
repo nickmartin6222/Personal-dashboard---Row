@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="lock.js"></script>
+<script src="/api/config"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<title>Nutrition</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
+<script src="topbar.js" defer></script>
+<style>
+:root {
+  --bg: #050506;
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-secondary: rgba(255, 255, 255, 0.035);
+  --bg-input: rgba(0, 0, 0, 0.28);
+  --bg-input-focus: rgba(0, 0, 0, 0.36);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --text-primary: #FAFAFA;
+  --text-secondary: #B8B6B0;
+  --text-tertiary: #76746E;
+  --text-quaternary: #4D4B47;
+  --accent: #6EE7B7;
+  --warning: #F2C063;
+  --danger: #FF6B6B;
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  min-height: 100vh; position: relative; overflow-x: hidden;
+  padding: max(28px, env(safe-area-inset-top)) 20px 60px;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background:
+    radial-gradient(circle at 82% 14%, rgba(224, 118, 88, 0.16), transparent 45%),
+    radial-gradient(circle at 18% 90%, rgba(180, 180, 200, 0.06), transparent 50%);
+  filter: blur(40px); pointer-events: none; z-index: -2;
+  animation: drift 36s ease-in-out infinite alternate;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.014) 1px, transparent 1px);
+  background-size: 3px 3px; pointer-events: none; z-index: -1;
+}
+@keyframes drift { 0%{transform:translate3d(0,0,0)} 100%{transform:translate3d(-22px,14px,0)} }
+
+.page { max-width: 720px; margin: 0 auto; }
+.dash-title {
+  margin: 0 0 18px; font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
+  background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+@media (max-width: 480px) { .dash-title { font-size: 22px; } }
+
+/* ===== Today hero ===== */
+.nut-hero {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px;
+  margin-bottom: 18px;
+  text-align: center;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+.nut-hero-eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.nut-hero-num {
+  font-size: 44px; font-weight: 800; color: var(--text-primary);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.03em; line-height: 1.1;
+  margin-top: 6px;
+}
+.nut-hero-note { font-size: 11px; color: var(--text-tertiary); margin-top: 10px; }
+.nut-streak {
+  display: inline-block; margin-top: 8px;
+  padding: 4px 12px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  background: rgba(110,231,183,0.12); color: var(--accent);
+}
+
+/* ===== Section title ===== */
+.section-title {
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-tertiary);
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 0 12px;
+}
+.section-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent);
+}
+
+/* ===== Cards ===== */
+.nut-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 22px;
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+
+/* ===== Goal toggle rows ===== */
+.goal-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.goal-row:last-child { border-bottom: 0; }
+.goal-row-body { flex: 1; min-width: 0; }
+.goal-row-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.goal-row-target { font-size: 11.5px; color: var(--text-tertiary); font-family: var(--font-mono); margin-top: 2px; }
+.goal-toggle {
+  flex-shrink: 0;
+  width: 78px; padding: 9px 0; text-align: center;
+  border-radius: 999px; border: 1px solid var(--border-strong);
+  background: transparent; color: var(--text-tertiary);
+  font-family: inherit; font-size: 12px; font-weight: 700;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.goal-toggle.hit { background: rgba(110,231,183,0.14); border-color: var(--accent); color: var(--accent); }
+.goal-toggle.miss { background: rgba(255,107,107,0.12); border-color: var(--danger); color: var(--danger); }
+
+/* ===== Goal edit form ===== */
+.goal-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.goal-field-label {
+  display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 6px;
+}
+.goal-input {
+  width: 100%; box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: inherit; font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+.goal-input:focus { border-color: rgba(255,255,255,0.28); background: var(--bg-input-focus); }
+.nut-save-btn {
+  width: 100%; padding: 13px; border: 0; border-radius: 12px;
+  background: linear-gradient(180deg,#FFFFFF,#E8E5DD); color: #0A0A0B;
+  font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 22px rgba(0,0,0,0.25);
+  transition: filter 0.15s, transform 0.1s;
+}
+.nut-save-btn:hover { filter: brightness(1.05); }
+.nut-save-btn:active { transform: translateY(1px); }
+.nut-save-status { text-align: center; font-size: 12px; color: var(--accent); min-height: 16px; margin-top: 8px; }
+
+/* ===== History ===== */
+.nut-hist-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+}
+.nut-hist-date { font-size: 13px; font-weight: 600; color: var(--text-primary); flex: 1; }
+.nut-hist-dots { display: flex; gap: 5px; }
+.nut-hist-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-strong); }
+.nut-hist-dot.hit { background: var(--accent); }
+.nut-hist-dot.miss { background: var(--danger); }
+.nut-hist-count { font-size: 12px; font-family: var(--font-mono); color: var(--text-tertiary); flex-shrink: 0; }
+.nut-empty { text-align: center; font-size: 12px; font-style: italic; color: var(--text-tertiary); padding: 20px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1 class="dash-title">Nutrition</h1>
+
+  <div class="nut-hero">
+    <div class="nut-hero-eyebrow">Today</div>
+    <div class="nut-hero-num" id="todayCount">0/5</div>
+    <div class="nut-hero-note">goals hit</div>
+    <div class="nut-streak" id="streakTag" style="display:none"></div>
+  </div>
+
+  <div class="nut-card">
+    <div class="section-title">Today's goals</div>
+    <div id="goalRows"></div>
+  </div>
+
+  <div class="nut-card">
+    <div class="section-title">Edit targets</div>
+    <div class="goal-form-row">
+      <div>
+        <label class="goal-field-label">Calories</label>
+        <input type="number" inputmode="numeric" id="gCalories" class="goal-input" placeholder="e.g. 2300">
+      </div>
+      <div>
+        <label class="goal-field-label">Protein (g)</label>
+        <input type="number" inputmode="numeric" id="gProtein" class="goal-input" placeholder="e.g. 140">
+      </div>
+    </div>
+    <div class="goal-form-row">
+      <div>
+        <label class="goal-field-label">Carbs (g)</label>
+        <input type="number" inputmode="numeric" id="gCarbs" class="goal-input" placeholder="e.g. 240">
+      </div>
+      <div>
+        <label class="goal-field-label">Fibre (g)</label>
+        <input type="number" inputmode="numeric" id="gFibre" class="goal-input" placeholder="e.g. 30">
+      </div>
+    </div>
+    <div class="goal-form-row" style="grid-template-columns:1fr">
+      <div>
+        <label class="goal-field-label">Fat (g)</label>
+        <input type="number" inputmode="numeric" id="gFat" class="goal-input" placeholder="e.g. 70">
+      </div>
+    </div>
+    <button type="button" class="nut-save-btn" id="saveGoalsBtn">Save targets</button>
+    <div class="nut-save-status" id="saveStatus"></div>
+  </div>
+
+  <div class="section-title">History</div>
+  <div id="historyList"></div>
+  <div class="nut-empty" id="historyEmpty">No days tracked yet — mark today's goals above.</div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const GOALS_KEY = 'nutrition:goals';
+  const LOG_KEY = 'nutrition:log';
+  const MACROS = [
+    { key: 'calories', label: 'Calories', unit: 'kcal' },
+    { key: 'protein',  label: 'Protein',  unit: 'g' },
+    { key: 'carbs',    label: 'Carbs',    unit: 'g' },
+    { key: 'fibre',    label: 'Fibre',    unit: 'g' },
+    { key: 'fat',      label: 'Fat',      unit: 'g' }
+  ];
+  const DEFAULT_GOALS = { calories: 2300, protein: 140, carbs: 240, fibre: 30, fat: 70 };
+
+  function loadGoals() {
+    try {
+      const g = JSON.parse(localStorage.getItem(GOALS_KEY));
+      return (g && typeof g === 'object') ? Object.assign({}, DEFAULT_GOALS, g) : Object.assign({}, DEFAULT_GOALS);
+    } catch (e) { return Object.assign({}, DEFAULT_GOALS); }
+  }
+  function saveGoals(g) { try { localStorage.setItem(GOALS_KEY, JSON.stringify(g)); } catch (e) {} }
+  function loadLog() {
+    try { const l = JSON.parse(localStorage.getItem(LOG_KEY)); return (l && typeof l === 'object') ? l : {}; }
+    catch (e) { return {}; }
+  }
+  function saveLog(l) { try { localStorage.setItem(LOG_KEY, JSON.stringify(l)); } catch (e) {} }
+
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function fmtDate(dk) {
+    const [y, m, d] = dk.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    const dows = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return dows[dt.getDay()] + ', ' + mons[dt.getMonth()] + ' ' + dt.getDate();
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  // Cycle a macro's state for a given day: unmarked -> hit -> miss -> unmarked.
+  function cycleState(dk, key) {
+    const log = loadLog();
+    const day = log[dk] || {};
+    const cur = day[key];
+    const next = cur === 'hit' ? 'miss' : (cur === 'miss' ? null : 'hit');
+    if (next) day[key] = next; else delete day[key];
+    if (Object.keys(day).length) log[dk] = day; else delete log[dk];
+    saveLog(log);
+  }
+
+  function renderGoalRows() {
+    const goals = loadGoals();
+    const log = loadLog();
+    const dk = todayKey();
+    const today = log[dk] || {};
+    $('goalRows').innerHTML = MACROS.map(m => {
+      const state = today[m.key];
+      const cls = state === 'hit' ? 'hit' : state === 'miss' ? 'miss' : '';
+      const label = state === 'hit' ? 'Hit ✓' : state === 'miss' ? 'Missed' : 'Not marked';
+      return '<div class="goal-row">'
+        + '<div class="goal-row-body">'
+        +   '<div class="goal-row-name">' + m.label + '</div>'
+        +   '<div class="goal-row-target">Target: ' + (goals[m.key] || 0) + ' ' + m.unit + '</div>'
+        + '</div>'
+        + '<button type="button" class="goal-toggle ' + cls + '" data-key="' + m.key + '">' + label + '</button>'
+        + '</div>';
+    }).join('');
+    $('goalRows').querySelectorAll('.goal-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        cycleState(dk, btn.dataset.key);
+        renderAll();
+      });
+    });
+  }
+
+  function computeStreak(log) {
+    // Consecutive days (ending today or yesterday) with at least one
+    // macro marked — a lightweight "you're keeping this up" signal,
+    // not a strict all-5-hit requirement.
+    let streak = 0;
+    let d = new Date();
+    // If today has nothing logged yet, start counting from yesterday
+    // so a streak isn't reset to 0 just because it's still morning.
+    const dkToday = todayKey();
+    if (!log[dkToday] || !Object.keys(log[dkToday]).length) d.setDate(d.getDate() - 1);
+    while (true) {
+      const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const day = log[dk];
+      if (!day || !Object.keys(day).length) break;
+      streak++;
+      d.setDate(d.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function renderHero() {
+    const goals = loadGoals();
+    const log = loadLog();
+    const dk = todayKey();
+    const today = log[dk] || {};
+    const hitCount = MACROS.filter(m => today[m.key] === 'hit').length;
+    $('todayCount').textContent = hitCount + '/' + MACROS.length;
+    const streak = computeStreak(log);
+    const tag = $('streakTag');
+    if (streak > 0) {
+      tag.style.display = 'inline-block';
+      tag.textContent = streak + ' day' + (streak === 1 ? '' : 's') + ' streak';
+    } else {
+      tag.style.display = 'none';
+    }
+  }
+
+  function renderHistory() {
+    const log = loadLog();
+    const dk = todayKey();
+    const days = Object.keys(log).filter(d => d !== dk).sort((a, b) => b.localeCompare(a)).slice(0, 30);
+    const list = $('historyList');
+    const empty = $('historyEmpty');
+    if (!days.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = days.map(d => {
+      const day = log[d];
+      const hitCount = MACROS.filter(m => day[m.key] === 'hit').length;
+      const dots = MACROS.map(m => '<span class="nut-hist-dot ' + (day[m.key] || '') + '"></span>').join('');
+      return '<div class="nut-hist-row">'
+        + '<span class="nut-hist-date">' + escapeHtml(fmtDate(d)) + '</span>'
+        + '<div class="nut-hist-dots">' + dots + '</div>'
+        + '<span class="nut-hist-count">' + hitCount + '/' + MACROS.length + '</span>'
+        + '</div>';
+    }).join('');
+  }
+
+  function renderAll() {
+    renderHero();
+    renderGoalRows();
+    renderHistory();
+  }
+
+  function populateGoalForm() {
+    const g = loadGoals();
+    $('gCalories').value = g.calories;
+    $('gProtein').value = g.protein;
+    $('gCarbs').value = g.carbs;
+    $('gFibre').value = g.fibre;
+    $('gFat').value = g.fat;
+  }
+
+  $('saveGoalsBtn').addEventListener('click', () => {
+    const g = {
+      calories: parseInt($('gCalories').value, 10) || DEFAULT_GOALS.calories,
+      protein: parseInt($('gProtein').value, 10) || DEFAULT_GOALS.protein,
+      carbs: parseInt($('gCarbs').value, 10) || DEFAULT_GOALS.carbs,
+      fibre: parseInt($('gFibre').value, 10) || DEFAULT_GOALS.fibre,
+      fat: parseInt($('gFat').value, 10) || DEFAULT_GOALS.fat
+    };
+    saveGoals(g);
+    renderAll();
+    const s = $('saveStatus');
+    s.textContent = 'Saved ✓';
+    setTimeout(() => { s.textContent = ''; }, 1800);
+  });
+
+  populateGoalForm();
+  renderAll();
+  window.addEventListener('storage', () => { populateGoalForm(); renderAll(); });
+})();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof initCloudSync !== 'function') return;
+  initCloudSync({
+    appKey: 'nutrition',
+    syncedKeys: ['nutrition:goals', 'nutrition:log'],
+    onApplied: function () {
+      window.dispatchEvent(new Event('storage'));
+    }
+  });
+});
+</script>
+</body>
+</html>

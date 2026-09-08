@@ -329,13 +329,14 @@ body::after {
   .bento-right {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
     gap: 14px;
     grid-column: 2; grid-row: 1;
     min-height: 0;
   }
   .bento-right .tile { min-height: 0; }
-  .bento-right .tile-right-big { grid-column: 1 / -1; grid-row: 2; }
+  .bento-right .tile-right-nutrition { grid-column: 1 / -1; grid-row: 2; }
+  .bento-right .tile-right-big { grid-column: 1 / -1; grid-row: 3; }
 }
 
 /* ===== Header row + gear ===== */
@@ -581,6 +582,22 @@ body::after {
       <div class="tile-hero-val" id="golfHeroStat">—</div>
       <div class="tile-foot">
         <span class="tile-sub">Rounds &amp; trend</span>
+        <span class="tile-arrow">→</span>
+      </div>
+    </a>
+
+    <!-- Nutrition, full width of the right column -->
+    <a class="tile wide tile-right-nutrition" href="nutrition.html" style="--accent:#C9B8FF">
+      <div class="tile-top">
+        <span class="tile-num">·05</span>
+        <span class="tile-emoji">🥗</span>
+      </div>
+      <div class="tile-spacer"></div>
+      <h2 class="tile-title">Nutrition</h2>
+      <div class="tile-hero-label">Today</div>
+      <div class="tile-hero-val" id="nutritionHeroStat">—</div>
+      <div class="tile-foot">
+        <span class="tile-sub">Calorie &amp; macro goals</span>
         <span class="tile-arrow">→</span>
       </div>
     </a>
@@ -912,6 +929,19 @@ body::after {
       if (heroEl) heroEl.textContent = rot[idx];
       if (statEl) statEl.textContent = rot[idx];
     } catch (e) {}
+  })();
+
+  // ---- Nutrition: today's hit count, same keys as nutrition.html ----
+  (function () {
+    const heroEl = document.getElementById('nutritionHeroStat');
+    if (!heroEl) return;
+    const MACRO_KEYS = ['calories', 'protein', 'carbs', 'fibre', 'fat'];
+    const d = new Date();
+    const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const log = readJSON('nutrition:log');
+    const today = (log && typeof log === 'object') ? (log[dk] || {}) : {};
+    const hit = MACRO_KEYS.filter(k => today[k] === 'hit').length;
+    heroEl.textContent = hit + '/' + MACRO_KEYS.length;
   })();
 
   // ---- Golf: rough handicap index, same calc as golf.html ----
