@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('dash_theme_v1')||'dark');}catch(e){}</script>
 <script src="lock.js"></script>
 <script src="/api/config"></script>
 <meta charset="UTF-8">
@@ -599,7 +598,7 @@ body::after {
 
   // ---- Main: time-of-day phase (mirrors main.html's day ring) ----
   (function () {
-    const WAKE_HOUR = 8, SLEEP_HOUR = 24;
+    const WAKE_HOUR = 6, SLEEP_HOUR = 21.5; // 6:00 AM – 9:30 PM
     const now = new Date();
     const hours = now.getHours() + now.getMinutes() / 60;
     const el = document.getElementById('tileInsightMain');

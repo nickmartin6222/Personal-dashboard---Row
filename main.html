@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>try{document.documentElement.setAttribute('data-theme',localStorage.getItem('dash_theme_v1')||'dark');}catch(e){}</script>
 <script src="lock.js"></script>
 <script src="/api/config"></script>
 <meta charset="UTF-8">
@@ -207,7 +206,7 @@ body::after {
     <div class="day-ring-text">
       <div class="day-ring-status"    id="dayRingStatus">Loading…</div>
       <div class="day-ring-remaining" id="dayRingRemaining">—</div>
-      <div class="day-ring-hours">8:00 AM – 12:00 AM</div>
+      <div class="day-ring-hours">6:00 AM – 9:30 PM</div>
     </div>
   </div>
 
@@ -217,8 +216,8 @@ body::after {
 (function () {
   'use strict';
 
-  const WAKE_HOUR  = 8;
-  const SLEEP_HOUR = 24;
+  const WAKE_HOUR  = 6;
+  const SLEEP_HOUR = 21.5; // 9:30 PM
 
   function pad2(n) { return String(n).padStart(2, '0'); }
 
