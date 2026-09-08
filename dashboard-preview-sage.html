@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="lock.js"></script>
+<script src="/api/config"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EDEEE9">
+<title>Dashboard — Sage preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
+<style>
+/* ===== DESIGN PREVIEW #2 — sage green + off-white, "Hello Carlic"
+   reference. Replaces the earlier cream/forest-green draft as the
+   working direction. Isolated demo file — not linked from the app's
+   nav, index.html untouched. Shares localStorage with the real pages
+   (same origin), so every number here is your real live data. ===== */
+:root {
+  --bg: #EDEEE9;
+  --card: #FFFFFF;
+  --card-soft: #F5F6F1;
+  --border: rgba(28,30,27,0.08);
+  --border-strong: rgba(28,30,27,0.14);
+  --text-primary: #1C1E1B;
+  --text-secondary: #63675F;
+  --text-tertiary: #9A9E93;
+  --sage: #5F7A63;
+  --sage-deep: #3F5443;
+  --sage-pale: #E4EBE1;
+  --positive: #4C7A5B;
+  --negative: #C2554B;
+  --gold: #C99A44;
+  --blue: #4F7FBF;
+  --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+body { min-height: 100vh; padding: max(24px, env(safe-area-inset-top)) 18px 60px; }
+
+.preview-banner {
+  max-width: 1100px; margin: 0 auto 18px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 16px; border-radius: 12px;
+  background: var(--sage-deep); color: #F2F5EF;
+  font-size: 12px; font-weight: 600;
+}
+.preview-banner a { color: #C9E4B8; font-weight: 700; }
+
+.page { max-width: 1100px; margin: 0 auto; }
+.hub-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+.greeting { font-family: var(--font); font-size: 26px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+.greeting-sub { font-size: 13px; color: var(--text-tertiary); margin-top: 4px; }
+.gear-btn {
+  width: 44px; height: 44px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 13px; border: 1px solid var(--border-strong);
+  background: var(--card); color: var(--text-secondary);
+  cursor: pointer; box-shadow: 0 6px 16px rgba(28,30,27,0.05);
+}
+.gear-btn svg { width: 20px; height: 20px; }
+
+.section-title {
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 28px 0 12px;
+}
+.section-title:first-of-type { margin-top: 0; }
+
+/* ===== Goals row ===== */
+.goals-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 720px) { .goals-grid { grid-template-columns: repeat(2, 1fr); } }
+.goal-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; padding: 18px;
+  box-shadow: 0 8px 24px rgba(28,30,27,0.05);
+}
+.goal-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.goal-card-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.goal-card-pct { font-family: var(--font); font-size: 13px; font-weight: 800; color: var(--sage); font-variant-numeric: tabular-nums; }
+.goal-card-vals { font-size: 12px; color: var(--text-tertiary); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.goal-bar-track { height: 8px; border-radius: 999px; background: var(--sage-pale); overflow: hidden; }
+.goal-bar-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+.goal-edit-btn {
+  margin-top: 12px; width: 100%; padding: 8px; border-radius: 9px;
+  border: 1px solid var(--border-strong); background: transparent;
+  color: var(--text-tertiary); font-family: inherit; font-size: 11px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.02em;
+}
+.goal-edit-btn:hover { background: var(--card-soft); color: var(--text-primary); }
+.goal-edit-row { display: flex; gap: 6px; margin-top: 10px; }
+.goal-edit-row input {
+  flex: 1; min-width: 0; padding: 7px 9px; border-radius: 8px;
+  border: 1px solid var(--border-strong); font-family: inherit; font-size: 12px;
+  background: var(--card-soft); color: var(--text-primary); outline: none;
+}
+.goal-edit-row button {
+  padding: 7px 12px; border-radius: 8px; border: 0;
+  background: var(--sage); color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+
+/* ===== Generic card ===== */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 22px;
+  box-shadow: 0 8px 24px rgba(28,30,27,0.05);
+}
+
+/* ===== Finance overview ===== */
+.fin-overview { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; }
+@media (max-width: 780px) { .fin-overview { grid-template-columns: 1fr; } }
+.fin-total-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); }
+.fin-total-val { font-family: var(--font); font-size: 34px; font-weight: 800; color: var(--text-primary); margin-top: 4px; letter-spacing: -0.02em; }
+.fin-total-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+.fin-chart-wrap { margin-top: 16px; }
+.fin-chart-svg { width: 100%; height: 120px; display: block; overflow: visible; }
+.fin-donut-row { display: flex; align-items: center; gap: 18px; }
+.fin-donut { width: 96px; height: 96px; border-radius: 50%; flex-shrink: 0; position: relative; }
+.fin-donut::after { content: ''; position: absolute; inset: 18px; border-radius: 50%; background: var(--card); }
+.fin-legend { display: flex; flex-direction: column; gap: 7px; min-width: 0; flex: 1; }
+.fin-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+.fin-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.fin-legend-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-legend-pct { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+/* ===== Small tile row (Gym / Golf / Nutrition) ===== */
+.mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 720px) { .mini-grid { grid-template-columns: 1fr; } }
+.mini-tile {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; padding: 20px;
+  text-decoration: none; display: block;
+  box-shadow: 0 8px 24px rgba(28,30,27,0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.mini-tile:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(28,30,27,0.09); }
+.mini-tile-top { display: flex; align-items: center; justify-content: space-between; }
+.mini-tile-emoji { font-size: 22px; }
+.mini-tile-arrow { color: var(--text-tertiary); font-size: 16px; }
+.mini-tile-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 14px; }
+.mini-tile-val { font-family: var(--font); font-size: 24px; font-weight: 800; color: var(--text-primary); margin-top: 3px; letter-spacing: -0.02em; }
+.mini-tile-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="preview-banner">
+  🌿 Design draft #2 — sage green + white, "Hello Carlic" reference. Replaces the earlier cream/forest draft. Nothing live is affected.
+  <a href="index.html">← Back to the real dashboard</a>
+</div>
+
+<div class="page">
+
+  <div class="hub-head">
+    <div>
+      <div class="greeting">Hello, Nick!</div>
+      <div class="greeting-sub" id="dateSub">—</div>
+    </div>
+    <button class="gear-btn" type="button" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="section-title">Goals</div>
+  <div class="goals-grid" id="goalsGrid"></div>
+
+  <div class="section-title">Finance overview</div>
+  <a class="card" href="FROK-finance-standalone.html" style="text-decoration:none; display:block;">
+    <div class="fin-overview">
+      <div>
+        <div class="fin-total-label">Net worth</div>
+        <div class="fin-total-val" id="finTotal">—</div>
+        <div class="fin-total-sub" id="finBreakdown"></div>
+        <div class="fin-chart-wrap">
+          <svg class="fin-chart-svg" id="finChartSvg" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div class="fin-donut-row">
+        <div class="fin-donut" id="finDonut"></div>
+        <div class="fin-legend" id="finLegend"></div>
+      </div>
+    </div>
+  </a>
+
+  <div class="section-title">Fitness, golf &amp; nutrition</div>
+  <div class="mini-grid">
+    <a class="mini-tile" href="gym.html">
+      <div class="mini-tile-top"><span class="mini-tile-emoji">💪</span><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Today</div>
+      <div class="mini-tile-val" id="gymVal">—</div>
+      <div class="mini-tile-sub">Fitness split</div>
+    </a>
+    <a class="mini-tile" href="golf.html">
+      <div class="mini-tile-top"><span class="mini-tile-emoji">⛳</span><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Handicap</div>
+      <div class="mini-tile-val" id="golfVal">—</div>
+      <div class="mini-tile-sub">Rounds &amp; trend</div>
+    </a>
+    <a class="mini-tile" href="nutrition.html">
+      <div class="mini-tile-top"><span class="mini-tile-emoji">🥗</span><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Today</div>
+      <div class="mini-tile-val" id="nutVal">—</div>
+      <div class="mini-tile-sub">Goals hit</div>
+    </a>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  function readJSON(key, fallback) { try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; } catch (e) { return fallback; } }
+  function writeJSON(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
+
+  const dows = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  $('dateSub').textContent = dows[now.getDay()] + ', ' + mons[now.getMonth()] + ' ' + now.getDate();
+
+  // ============================================================
+  // GOALS — savings/stock read from Finance's own categories;
+  // handicap/weight use a direction-agnostic "distance covered"
+  // formula, auto-capturing a start value the first time a target
+  // is set so lower-is-better (handicap) and either-direction
+  // (weight) goals both just work.
+  // ============================================================
+  const GOALS_KEY = 'goals:targets';
+  const DEFAULT_GOALS = { savings: 15000, stock: 15000, handicap: 15, weight: 83, handicapStart: null, weightStart: null };
+
+  function loadGoals() {
+    const g = readJSON(GOALS_KEY, null);
+    return (g && typeof g === 'object') ? Object.assign({}, DEFAULT_GOALS, g) : Object.assign({}, DEFAULT_GOALS);
+  }
+  function saveGoals(g) { writeJSON(GOALS_KEY, g); }
+
+  function nwCategoryTotal(catKey) {
+    const items = readJSON('nw:' + catKey, []);
+    if (!Array.isArray(items)) return 0;
+    return items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+  }
+  function currentHandicap() {
+    const rounds = readJSON('golf:rounds', []);
+    if (!Array.isArray(rounds) || !rounds.length) return null;
+    const comparable = rounds.slice()
+      .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0))
+      .slice(0, 20)
+      .map(r => typeof r.differential === 'number' ? (r.holes === 9 ? r.differential * 2 : r.differential) : null)
+      .filter(d => typeof d === 'number');
+    if (comparable.length < 3) return null;
+    const best = comparable.slice().sort((a, b) => a - b).slice(0, Math.min(8, comparable.length));
+    return Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
+  }
+  function currentWeight() {
+    const arr = readJSON('po_coach_weights', []);
+    if (!Array.isArray(arr) || !arr.length) return null;
+    const sorted = arr.slice().sort((a, b) => (a.dateKey || '').localeCompare(b.dateKey || ''));
+    return sorted[sorted.length - 1].weight;
+  }
+
+  // Simple current/target ratio, capped 0-100%.
+  function ratioProgress(current, target) {
+    if (!(target > 0)) return 0;
+    return Math.max(0, Math.min(100, (current / target) * 100));
+  }
+  // Distance-covered progress: works whether current needs to go up or
+  // down to reach target, using a captured starting point.
+  function distanceProgress(start, current, target) {
+    if (start == null || current == null || start === target) return 0;
+    const pct = ((start - current) / (start - target)) * 100;
+    return Math.max(0, Math.min(100, pct));
+  }
+
+  const GOAL_DEFS = [
+    {
+      key: 'savings', label: 'Savings', color: '#4C7A5B',
+      current: () => nwCategoryTotal('bank'),
+      target: (g) => g.savings,
+      progress: (g, cur) => ratioProgress(cur, g.savings),
+      fmt: (v) => 'CHF ' + Math.round(v).toLocaleString()
+    },
+    {
+      key: 'stock', label: 'Stock amount', color: '#4F7FBF',
+      current: () => nwCategoryTotal('stocks'),
+      target: (g) => g.stock,
+      progress: (g, cur) => ratioProgress(cur, g.stock),
+      fmt: (v) => 'CHF ' + Math.round(v).toLocaleString()
+    },
+    {
+      key: 'handicap', label: 'Golf handicap', color: '#C99A44',
+      current: () => currentHandicap(),
+      target: (g) => g.handicap,
+      progress: (g, cur) => {
+        if (cur == null) return 0;
+        if (g.handicapStart == null) { g.handicapStart = cur; saveGoals(g); }
+        return distanceProgress(g.handicapStart, cur, g.handicap);
+      },
+      fmt: (v) => v == null ? 'no rounds yet' : v.toFixed(1)
+    },
+    {
+      key: 'weight', label: 'Body weight', color: '#8A6BB5',
+      current: () => currentWeight(),
+      target: (g) => g.weight,
+      progress: (g, cur) => {
+        if (cur == null) return 0;
+        if (g.weightStart == null) { g.weightStart = cur; saveGoals(g); }
+        return distanceProgress(g.weightStart, cur, g.weight);
+      },
+      fmt: (v) => v == null ? 'no weigh-ins yet' : v + ' kg'
+    }
+  ];
+
+  let editingGoal = null;
+
+  function renderGoals() {
+    const goals = loadGoals();
+    $('goalsGrid').innerHTML = GOAL_DEFS.map(def => {
+      const cur = def.current();
+      const pct = Math.round(def.progress(goals, cur));
+      const isEditing = editingGoal === def.key;
+      return '<div class="goal-card" data-key="' + def.key + '">'
+        + '<div class="goal-card-top"><span class="goal-card-label">' + def.label + '</span><span class="goal-card-pct">' + pct + '%</span></div>'
+        + '<div class="goal-card-vals">' + def.fmt(cur) + ' &rarr; ' + def.fmt(def.target(goals)) + '</div>'
+        + '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%;background:' + def.color + '"></div></div>'
+        + (isEditing
+            ? '<div class="goal-edit-row"><input type="number" inputmode="decimal" id="goalInput_' + def.key + '" value="' + def.target(goals) + '"><button type="button" data-save="' + def.key + '">Save</button></div>'
+            : '<button type="button" class="goal-edit-btn" data-edit="' + def.key + '">Edit target</button>')
+        + '</div>';
+    }).join('');
+
+    $('goalsGrid').querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => { editingGoal = btn.dataset.edit; renderGoals(); });
+    });
+    $('goalsGrid').querySelectorAll('[data-save]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.save;
+        const val = parseFloat($('goalInput_' + key).value);
+        const g = loadGoals();
+        if (!isNaN(val) && val > 0) {
+          g[key] = val;
+          // Re-anchor the start point when a direction-based target changes,
+          // so progress reflects distance to the NEW target going forward.
+          if (key === 'handicap') g.handicapStart = null;
+          if (key === 'weight') g.weightStart = null;
+          saveGoals(g);
+        }
+        editingGoal = null;
+        renderGoals();
+      });
+    });
+  }
+
+  // ============================================================
+  // FINANCE OVERVIEW — same net-worth/pie logic as the real
+  // dashboard, plus a small trend line from nw:history.
+  // ============================================================
+  function renderFinance() {
+    const CAT_KEYS = ['bank', 'stocks', 'crypto', 'other'];
+    const PALETTE = ['#4C7A5B', '#4F7FBF', '#8A6BB5', '#C99A44', '#C2554B', '#5F7A63', '#7A9A4A', '#3F5443'];
+    function defaultColor(catKey, it) {
+      const seed = catKey + ':' + (it.ticker || it.name || '');
+      let hash = 0;
+      for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+      return PALETTE[hash % PALETTE.length];
+    }
+    let total = 0;
+    const slices = [];
+    CAT_KEYS.forEach(catKey => {
+      const items = readJSON('nw:' + catKey, []);
+      if (!Array.isArray(items)) return;
+      items.forEach(it => {
+        const amt = Number(it.amount) || 0;
+        if (amt <= 0) return;
+        total += amt;
+        slices.push({ name: it.name || catKey, color: it.color || defaultColor(catKey, it), amount: amt });
+      });
+    });
+    const ccy = readJSON('nw_currency', 'AUD');
+    const rates = readJSON('fx:rates', { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 });
+    const rate = rates[ccy] || 1;
+    const displayTotal = total * rate;
+    $('finTotal').textContent = total > 0 ? (ccy + ' ' + Math.round(displayTotal).toLocaleString('en-US')) : '—';
+    const bank = nwCategoryTotal('bank') * rate, stocks = nwCategoryTotal('stocks') * rate;
+    $('finBreakdown').textContent = total > 0 ? ('bank ' + ccy + ' ' + Math.round(bank).toLocaleString('en-US') + ' · stocks ' + ccy + ' ' + Math.round(stocks).toLocaleString('en-US')) : 'No holdings logged yet';
+
+    slices.sort((a, b) => b.amount - a.amount);
+    const donutEl = $('finDonut');
+    if (slices.length && total > 0) {
+      let acc = 0;
+      const stops = slices.map(s => {
+        const from = (acc / total) * 100; acc += s.amount; const to = (acc / total) * 100;
+        return s.color + ' ' + from.toFixed(2) + '% ' + to.toFixed(2) + '%';
+      });
+      donutEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
+    } else {
+      donutEl.style.background = 'var(--sage-pale)';
+    }
+    const shown = slices.slice(0, 5);
+    const rest = slices.length - shown.length;
+    $('finLegend').innerHTML = shown.map(s => {
+      const pct = Math.round((s.amount / total) * 100);
+      return '<div class="fin-legend-row"><span class="fin-legend-dot" style="background:' + s.color + '"></span>'
+        + '<span class="fin-legend-name">' + s.name + '</span><span class="fin-legend-pct">' + pct + '%</span></div>';
+    }).join('') + (rest > 0 ? '<div class="fin-legend-row"><span class="fin-legend-name">+' + rest + ' more</span></div>' : '');
+
+    // Trend line from nw:history (CHF-based snapshots)
+    const hist = readJSON('nw:history', []);
+    const svg = $('finChartSvg');
+    if (!Array.isArray(hist) || hist.length < 2) { svg.innerHTML = ''; return; }
+    const vals = hist.map(h => h.v);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const range = Math.max(1, max - min);
+    const W = 300, H = 100, pad = 4;
+    const x = (i) => pad + (i / (hist.length - 1)) * (W - pad * 2);
+    const y = (v) => H - pad - ((v - min) / range) * (H - pad * 2);
+    const lineD = hist.map((h, i) => (i === 0 ? 'M' : 'L') + x(i).toFixed(1) + ',' + y(h.v).toFixed(1)).join(' ');
+    const areaD = lineD + ' L' + x(hist.length - 1).toFixed(1) + ',' + H + ' L' + x(0).toFixed(1) + ',' + H + ' Z';
+    svg.innerHTML =
+      '<defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1">'
+      + '<stop offset="0%" stop-color="#4C7A5B" stop-opacity="0.28"/><stop offset="100%" stop-color="#4C7A5B" stop-opacity="0"/>'
+      + '</linearGradient></defs>'
+      + '<path d="' + areaD + '" fill="url(#finAreaGrad)"></path>'
+      + '<path d="' + lineD + '" fill="none" stroke="#4C7A5B" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>';
+  }
+
+  // ============================================================
+  // GYM / GOLF / NUTRITION mini tiles
+  // ============================================================
+  function renderMiniTiles() {
+    const s = readJSON('po_coach_v1', null);
+    if (s && Array.isArray(s.weekdaySplit) && s.weekdaySplit.length === 7) {
+      $('gymVal').textContent = s.weekdaySplit[new Date().getDay()] || '—';
+    }
+    const hcp = currentHandicap();
+    $('golfVal').textContent = hcp == null ? '—' : hcp.toFixed(1);
+
+    const MACRO_KEYS = ['calories', 'protein', 'carbs', 'fibre', 'fat'];
+    const d = new Date();
+    const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const log = readJSON('nutrition:log', {});
+    const today = (log && typeof log === 'object') ? (log[dk] || {}) : {};
+    const hit = MACRO_KEYS.filter(k => today[k] === 'hit').length;
+    $('nutVal').textContent = hit + '/' + MACRO_KEYS.length;
+  }
+
+  function renderAll() { renderGoals(); renderFinance(); renderMiniTiles(); }
+  renderAll();
+  window.addEventListener('storage', renderAll);
+})();
+</script>
+</body>
+</html>
