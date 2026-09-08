@@ -2622,28 +2622,44 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
   // ============================================================
   // LIVE STOCK PRICES — for any Stocks/Investments item that has a
-  // ticker + units, fetch its current price via the Finnhub proxy
-  // and recompute that item's value (units × price, converted to
-  // CHF base). Also writes a small snapshot to localStorage
+  // ticker + units, fetch its current price via the EODHD proxy and
+  // recompute that item's value (units × price, converted to CHF
+  // base). Also writes a small snapshot to localStorage
   // (stocks:snapshot) so the dashboard tile can show price/24h%
   // without hitting the API itself.
+  //
+  // EODHD's free tier is only 20 API calls/day TOTAL, and it counts
+  // one call per symbol — so refreshes are throttled to roughly
+  // every 4 hours (LAST_FETCH_KEY), not on every page load, and
+  // definitely not on a short interval. A deliberate edit (new
+  // holding, ticker/units change) bypasses the throttle since that's
+  // an infrequent, intentional action worth spending one refresh on.
   // ============================================================
   const STOCK_SNAPSHOT_KEY = 'stocks:snapshot';
+  const STOCK_LAST_FETCH_KEY = 'stocks:lastFetchTs';
+  const STOCK_REFRESH_MIN_GAP_MS = 4 * 60 * 60 * 1000; // 4 hours
   // ASX (.AX) tickers trade in AUD; everything else assumed USD.
   // A rough heuristic, not exchange detection — good enough for the
   // common case of a US brokerage vs an Australian one.
   function tickerCurrency(ticker) {
     return /\.AX$/i.test(ticker) ? 'AUD' : 'USD';
   }
-  async function refreshStockPrices() {
+  async function refreshStockPrices(force) {
     const items = storeGet('nw:stocks') || [];
     const withTicker = items.filter(it => it.ticker && it.units > 0);
     if (!withTicker.length) return;
+
+    if (!force) {
+      const last = Number(localStorage.getItem(STOCK_LAST_FETCH_KEY)) || 0;
+      if (Date.now() - last < STOCK_REFRESH_MIN_GAP_MS) return;
+    }
+
     const symbols = [...new Set(withTicker.map(it => it.ticker))];
     let quotes = {};
     try {
       const r = await fetch('/api/stock-price?symbols=' + encodeURIComponent(symbols.join(',')));
       quotes = await r.json();
+      try { localStorage.setItem(STOCK_LAST_FETCH_KEY, String(Date.now())); } catch (e) {}
     } catch (e) { return; }
 
     const snapshot = storeGet(STOCK_SNAPSHOT_KEY) || {};
@@ -2668,7 +2684,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     }
   }
   refreshStockPrices();
-  setInterval(refreshStockPrices, 5 * 60 * 1000);
+  setInterval(refreshStockPrices, 60 * 60 * 1000); // hourly check; the 4h gate inside actually throttles it
 
   function fmtMoney(amountCHF) {
     const symbol = currencyEl ? currencyEl.value : 'CHF';
@@ -2728,7 +2744,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       if (neverPriced) amt.style.opacity = '0.55';
       if (it.ticker) {
         amt.title = neverPriced
-          ? 'No live price yet — check FINNHUB_API_KEY is set in Vercel, and that ' + it.ticker + ' is a valid symbol. Tap to edit units held.'
+          ? 'No live price yet — check EODHD_API_TOKEN is set in Vercel, and that ' + it.ticker + ' is a valid symbol. Tap to edit units held.'
           : 'Tap to edit units held (' + (it.units || 0) + ' now) — value recalculates from the live price';
         amt.addEventListener('click', () => beginNwUnitsEdit(amt, items, idx, cat.key));
       } else {
@@ -2839,7 +2855,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       if (v && v !== cur) {
         items[idx].ticker = v;
         storeSet('nw:' + catKey, items);
-        refreshStockPrices();
+        refreshStockPrices(true);
       }
       renderAllNetWorth();
     }
@@ -2868,7 +2884,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       if (v > 0 && v !== cur) {
         items[idx].units = v;
         storeSet('nw:' + catKey, items);
-        refreshStockPrices();
+        refreshStockPrices(true);
       }
       renderAllNetWorth();
     }
@@ -3286,7 +3302,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       // refresh (units × price). This used to silently accept whatever
       // was typed into Value as if it were the total, which read as a
       // stuck/wrong number when the price fetch failed (e.g. no
-      // FINNHUB_API_KEY set yet) rather than an obvious "not priced".
+      // EODHD_API_TOKEN set yet) rather than an obvious "not priced".
       const amountCHF = hasTicker ? 0 : a / rate;
       const items = storeGet('nw:' + cat.key) || [];
       const item = { name: n, amount: amountCHF, dateAdded: new Date().toISOString().slice(0, 10) };
@@ -3298,7 +3314,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       if (tickerInput) tickerInput.value = '';
       if (unitsInput) unitsInput.value = '';
       renderAllNetWorth();
-      if (hasTicker && typeof refreshStockPrices === 'function') refreshStockPrices();
+      if (hasTicker && typeof refreshStockPrices === 'function') refreshStockPrices(true);
     }
     addBtn.addEventListener('click', doAdd);
     nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
