@@ -2230,17 +2230,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <div class="card nw-subcard">
         <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span>📈 Stocks / Investments</span><span id="stocksTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
         <div id="stocksList" class="nw-list"></div>
-        <div class="quick-add">
+
+        <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--accent);margin-top:10px">For live pricing — fill in both</div>
+        <div class="quick-add" style="margin-top:6px">
+          <input type="text" placeholder="Ticker, e.g. IVV.AX" id="stocksTicker" style="text-transform:uppercase" />
+          <input type="number" placeholder="Units held, e.g. 74" id="stocksUnits" step="0.0001" />
+        </div>
+
+        <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--text-tertiary);margin-top:12px">Name + value (value ignored if using a ticker above)</div>
+        <div class="quick-add" style="margin-top:6px">
           <input type="text" placeholder="Name (e.g. Vanguard S&P 500)" id="stocksName" />
           <input type="number" placeholder="Value" id="stocksAmount" step="0.01" />
           <button class="quick-add-btn" id="stocksAddBtn">+</button>
-        </div>
-        <div class="quick-add" style="margin-top:6px">
-          <input type="text" placeholder="Ticker (optional, e.g. VOO or IVV.AX)" id="stocksTicker" style="text-transform:uppercase" />
-          <input type="number" placeholder="Units held" id="stocksUnits" step="0.0001" />
-        </div>
-        <div style="font-size:10.5px;color:var(--text-tertiary);margin-top:6px;line-height:1.4">
-          Add a ticker + units and this holding's value updates automatically from a live price instead of the Value field above.
         </div>
       </div>
       <!-- Crypto -->
