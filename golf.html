@@ -462,9 +462,16 @@ body::after {
     return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
-  function computeDifferential(score, rating, slope) {
+  // `rating` is whatever the course's published (18-hole) rating is —
+  // the only number most people can actually look up. For a 9-hole
+  // round we approximate the 9-hole rating as half of that (roughly
+  // right for a symmetric front/back nine) rather than requiring a
+  // separately-published 9-hole rating. Slope isn't halved — it's
+  // already a normalized 55-155 scale independent of hole count.
+  function computeDifferential(score, rating, slope, holes) {
     if (!(score > 0) || !(rating > 0) || !(slope > 0)) return null;
-    return Math.round(((score - rating) * 113 / slope) * 10) / 10;
+    const effRating = holes === 9 ? rating / 2 : rating;
+    return Math.round(((score - effRating) * 113 / slope) * 10) / 10;
   }
   // Rough comparable value for mixing 9- and 18-hole rounds into one
   // handicap average — doubling a 9-hole differential is an approximation,
@@ -648,12 +655,16 @@ body::after {
     const score = parseFloat($('gInputScore').value);
     const rating = parseFloat($('gInputRating').value);
     const slope = parseFloat($('gInputSlope').value);
-    const d = computeDifferential(score, rating, slope);
+    const d = computeDifferential(score, rating, slope, formHoles);
     const hint = $('gDiffHint');
+    const formula = formHoles === 9
+      ? '(Score − Rating÷2) × 113 / Slope'
+      : '(Score − Rating) × 113 / Slope';
     if (d != null) {
-      hint.innerHTML = 'Differential: <b>' + (d > 0 ? '+' : '') + d + '</b> — (Score − Rating) × 113 / Slope';
+      hint.innerHTML = 'Differential: <b>' + (d > 0 ? '+' : '') + d + '</b> — ' + formula;
     } else {
-      hint.innerHTML = 'Differential = (Score − Rating) × 113 / Slope — fill in rating &amp; slope to see it.';
+      hint.innerHTML = 'Differential = ' + formula + ' — fill in rating &amp; slope to see it.' +
+        (formHoles === 9 ? ' (enter the course’s normal 18-hole rating — it’s halved automatically for 9.)' : '');
     }
   }
 
@@ -680,6 +691,7 @@ body::after {
     if (!b) return;
     formHoles = parseInt(b.dataset.h, 10);
     $('gHolesSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    updateDiffHint();
   });
 
   $('gFilterSeg').addEventListener('click', (e) => {
@@ -706,7 +718,7 @@ body::after {
       score: score,
       rating: rating > 0 ? rating : null,
       slope: slope > 0 ? slope : null,
-      differential: computeDifferential(score, rating, slope),
+      differential: computeDifferential(score, rating, slope, formHoles),
       fairways: $('gInputFairways').value.trim(),
       putts: parseInt($('gInputPutts').value, 10) || null,
       ts: Date.now()
@@ -729,6 +741,22 @@ body::after {
     renderRounds();
   });
 
+  // One-time fix-up: recompute every stored round's differential from its
+  // own score/rating/slope/holes, so any 9-hole round saved before the
+  // rating-halving fix (which used the full 18-hole rating and produced
+  // wildly-wrong differentials) gets corrected in place. Cheap and
+  // idempotent — safe to run on every load.
+  function migrateDifferentials() {
+    const rounds = loadRounds();
+    let changed = false;
+    rounds.forEach(r => {
+      const fixed = computeDifferential(r.score, r.rating, r.slope, r.holes || 18);
+      if (fixed !== r.differential) { r.differential = fixed; changed = true; }
+    });
+    if (changed) saveRounds(rounds);
+  }
+
+  migrateDifferentials();
   renderCourseList();
   renderRounds();
   window.addEventListener('storage', () => { renderCourseList(); renderRounds(); });
