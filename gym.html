@@ -38,19 +38,14 @@ const CONFIG = {
     { id: "pull",   name: "Pull" }
   ],
 
-  // Split rotation — the order your training days cycle through. Use day
-  // ids from `days` above, plus "rest" for off-days. The pill at the top
-  // of the app reads this + splitAnchor to compute "what day is today".
-  splitRotation: ["lowerA", "push", "lowerB", "pull", "rest"],
-
-  // Anchor: pair a real calendar date with which split day fell on it.
-  // The rotation advances from this point. Set `date` to a recent day
-  // when you knew what split you were on, and `splitId` to that day.
-  // Edit this if your split drifts.
-  splitAnchor: {
-    date: "2026-05-12",
-    splitId: "rest"
-  },
+  // Weekly schedule — a fixed day-of-week -> split mapping (0=Sunday .. 6=
+  // Saturday, matching JS's Date.getDay()). Replaces the old rolling
+  // rotation+anchor system: that advanced a pointer by elapsed days, which
+  // drifted against the calendar week (a 5-day rotation repeats on a
+  // different weekday every week) and could be knocked out of sync by
+  // editing the list. A fixed weekday mapping can't drift — Monday is
+  // always Push, full stop. Use day ids from `days` above, or "rest".
+  weekdaySplit: ["rest", "push", "lowerA", "rest", "pull", "lowerB", "rest"],
 
   // Progression rule: hit this many reps on the top set → coach tells you
   // to add weight next session. Lower this to be more aggressive (e.g. 6),
@@ -105,6 +100,7 @@ const CONFIG = {
     { name: "Single-Leg Machine Hip Thrust", gym: "comm", day: "lowerA", tag: "primary", slot: "Hip Thrust",          muscle: "Glutes", repMin: 8,  repMax: 12, step: 5,    startWeight: 40 },
     { name: "Machine Hip Adductor",       gym: "comm", day: "lowerA", tag: "rehab",     slot: "Hip Adductor",        muscle: "Adductors", repMin: 10, repMax: 15, step: 2.5,  startWeight: 30 },
     { name: "Machine Hip Abduction",      gym: "comm", day: "lowerA", tag: "rehab",     slot: "Hip Abduction",       muscle: "Hips", repMin: 10, repMax: 15, step: 2.5,  startWeight: 20 },
+    { name: "Back Extensions",            gym: "comm", day: "lowerA", tag: "rehab",     slot: "Back Extension",      muscle: "Lower Back", repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
     { name: "Copenhagen Plank",           gym: "comm", day: "lowerA", tag: "rehab",     slot: "Copenhagen Plank",    muscle: "Adductors", repMin: 20, repMax: 40, step: 1,    startWeight: 0,  bw: true, holdSeconds: true },
     { name: "Leg Press",                  gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "A", muscle: "Quads", repMin: 8,  repMax: 12, step: 10,  startWeight: 120 },
     { name: "Hack Squat",                 gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "B", muscle: "Quads", repMin: 8,  repMax: 12, step: 10,  startWeight: 80 },
@@ -153,16 +149,13 @@ const CONFIG = {
     // ---- Pull (back / biceps / shoulders) ----
     { name: "Lat Pulldown",               gym: "comm", day: "pull", tag: "primary",   slot: "Vertical Pull",        muscle: "Back", repMin: 6,  repMax: 10, step: 5,   startWeight: 50 },
     { name: "Pull-Ups",                   gym: "comm", day: "pull", tag: "primary",   slot: "Pull-Up",              muscle: "Back", repMin: 4,  repMax: 10, step: 1,   startWeight: 0, bw: true },
-    { name: "Chest-Supported Row",        gym: "comm", day: "pull", tag: "primary",   slot: "Chest-Supported Row",  muscle: "Back", repMin: 6,  repMax: 10, step: 5,   startWeight: 40 },
+    { name: "Chest-Supported T-Bar Row",  gym: "comm", day: "pull", tag: "primary",   slot: "Chest-Supported Row",  muscle: "Back", repMin: 6,  repMax: 10, step: 5,   startWeight: 40 },
     { name: "Single-Arm Cable Row",       gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation",   optionSet: "A", muscle: "Back", repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
     { name: "T-Bar / Chest-Supported Single-Arm Row", gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation", optionSet: "B", muscle: "Back", repMin: 10, repMax: 15, step: 5, startWeight: 20 },
     { name: "Kroc Row",                   gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation",   optionSet: "C", muscle: "Back", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 },
-    { name: "Rear Delt Fly",              gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "A", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 1.25,startWeight: 7.5 },
+    { name: "Face Pulls",                 gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "A", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
     { name: "Cable Rear Delt Fly",        gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "B", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 2.5, startWeight: 10 },
     { name: "Reverse Pec Deck",           gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "C", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 5,   startWeight: 25 },
-    { name: "Face Pulls",                 gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "A", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
-    { name: "Band Pull-Apart",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "B", muscle: "Rear Delts", repMin: 15, repMax: 20, step: 1,   startWeight: 0, bw: true },
-    { name: "Rope Face Pulls",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "C", muscle: "Rear Delts", repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
     { name: "DB Curl",                    gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "A", muscle: "Biceps", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
     { name: "Cable Curl",                 gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "B", muscle: "Biceps", repMin: 8,  repMax: 12, step: 2.5, startWeight: 20 },
     { name: "Preacher Curl",              gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "C", muscle: "Biceps", repMin: 8,  repMax: 12, step: 2.5, startWeight: 20 },
@@ -182,7 +175,7 @@ const CONFIG = {
     "Adductors": "#c084fc", "Hips": "#eab308", "Calves": "#2dd4bf",
     "Core": "#fde047", "Chest": "#38bdf8", "Shoulders": "#a78bfa",
     "Triceps": "#fb923c", "Back": "#34d399", "Rear Delts": "#818cf8",
-    "Biceps": "#22d3ee"
+    "Biceps": "#22d3ee", "Lower Back": "#c2a878"
   }
 };
 </script>
@@ -406,6 +399,7 @@ img, video, canvas, svg { max-width: 100%; }
   font-size: 11px; font-weight: 600; color: var(--text-2);
   margin-bottom: 6px;
 }
+.po-plan-skipped { font-weight: 500; color: var(--text-3); text-transform: none; letter-spacing: 0; }
 .po-plan-opts { display: flex; flex-wrap: wrap; gap: 6px; }
 .po-plan-opt {
   border: 1px solid var(--border-strong);
@@ -834,54 +828,37 @@ img, video, canvas, svg { max-width: 100%; }
 }
 .po-add-row-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-1); }
 
-/* Rotation editor list */
-.rot-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
-.rot-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto auto auto;
-  gap: 6px; align-items: center;
-  padding: 8px 10px;
+/* Weekly schedule editor — one row per calendar weekday, no anchor/
+   rotation-index to drift out of sync. */
+.rot-week-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.rot-week-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px;
   background: rgba(255,255,255,0.025);
   border: 1px solid var(--border);
   border-radius: 8px;
   transition: border-color 0.15s, background 0.15s;
 }
-.rot-row.is-today {
+.rot-week-row.is-today {
   background: linear-gradient(180deg, rgba(110,231,183,0.10), rgba(255,255,255,0.025));
   border-color: rgba(110,231,183,0.30);
 }
-.rot-row-num {
-  font-size: 11px; color: var(--text-3);
-  font-family: var(--font-mono); font-weight: 700;
-  width: 18px; text-align: center;
+.rot-week-day {
+  flex: 0 0 40px;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.04em;
+  color: var(--text-1);
 }
-.rot-row input {
-  background: transparent; border: none; outline: none;
-  color: var(--text-1); font-family: inherit; font-size: 13px;
-  padding: 4px 0; min-width: 0;
-}
-.rot-row .rot-mini {
-  background: transparent; border: none;
-  color: var(--text-3); font-size: 14px;
-  cursor: pointer; padding: 4px 8px;
-  -webkit-tap-highlight-color: transparent;
-}
-.rot-row .rot-mini:hover { color: var(--text-1); }
-.rot-row .rot-mini-del:hover { color: var(--bad); }
-.rot-row .rot-today-tag {
-  font-size: 8px; font-weight: 800; letter-spacing: 0.10em;
-  color: var(--good); padding: 2px 6px; border-radius: 999px;
-  background: rgba(110,231,183,0.16);
-}
-.rot-row .rot-today-btn {
+.rot-week-opts { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; }
+.rot-week-opt {
   background: rgba(255,255,255,0.04);
-  border: 1px solid var(--border);
-  color: var(--text-3); font-size: 9px; font-weight: 700;
-  letter-spacing: 0.06em; padding: 4px 8px; border-radius: 999px;
-  cursor: pointer; text-transform: uppercase;
+  border: 1px solid var(--border-strong);
+  color: var(--text-2); font-family: inherit; font-size: 11.5px; font-weight: 600;
+  padding: 6px 10px; border-radius: 999px; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.rot-row .rot-today-btn:hover { color: var(--good); border-color: rgba(110,231,183,0.30); }
+.rot-week-opt:hover { border-color: var(--text-3); }
+.rot-week-opt.active { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 
 @media (max-width: 480px) {
   /* === Mobile / iPhone polish === */
@@ -2019,16 +1996,15 @@ img, video, canvas, svg { max-width: 100%; }
   </div>
 </div>
 
-<!-- Rotation editor modal -->
+<!-- Weekly schedule editor modal -->
 <div class="po-modal-bg" id="rotModalBg">
   <div class="po-modal">
-    <h3>Edit split rotation</h3>
+    <h3>Edit weekly schedule</h3>
     <p style="font-size:12px;color:var(--text-3);margin:-6px 0 14px;line-height:1.45;">
-      Days cycle in this order, repeating forever. Today is whichever entry is highlighted.
-      Use <strong>Today is →</strong> to jump the cycle to a different starting day.
+      Pick which split (or Rest) falls on each day of the week. Fixed to the
+      calendar — Monday is always whatever's set here, no drift.
     </p>
-    <div class="rot-list" id="rotList"></div>
-    <button class="po-add-row-btn" id="rotAddBtn">+ Add day</button>
+    <div class="rot-week-list" id="rotWeekList"></div>
     <div class="po-modal-actions">
       <button class="po-btn-secondary" id="rotCancel">Cancel</button>
       <button class="po-btn-primary" id="rotSave">Save</button>
@@ -2107,29 +2083,16 @@ img, video, canvas, svg { max-width: 100%; }
     s.logs = (s.logs && typeof s.logs === 'object') ? s.logs : {};
     s.filterGym = s.filterGym || s.gyms[0].id;
     s.filterDay = s.filterDay || s.days[0].id;
-    // Split rotation lives in state so the user can edit it via the pill modal.
-    // Stored as a plain array of names (e.g. ["Lower A", "Push", "Lower B", "Pull", "Rest"]).
-    if (!Array.isArray(s.splitRotation) || !s.splitRotation.length) {
-      s.splitRotation = (CONFIG.splitRotation || ['Lower A', 'Push', 'Lower B', 'Pull', 'Rest']).map(x =>
-        // CONFIG used ids — map id → display name where possible
-        (CONFIG.days || []).find(d => d.id === x) ? (CONFIG.days.find(d => d.id === x).name) :
-        (x === 'rest' ? 'Rest' : x.charAt(0).toUpperCase() + x.slice(1))
-      );
+    // Weekly schedule lives in state so it's editable — a fixed array of 7
+    // day-of-week -> split-name entries (index 0 = Sunday, matching
+    // Date.getDay()). See CONFIG.weekdaySplit for why this replaced the
+    // old rolling rotation+anchor system.
+    function splitIdToName(x) {
+      const d = (CONFIG.days || []).find(d => d.id === x);
+      return d ? d.name : (x === 'rest' ? 'Rest' : x.charAt(0).toUpperCase() + x.slice(1));
     }
-    if (!s.splitAnchor || !s.splitAnchor.date || s.splitAnchor.index == null) {
-      // Map old anchor-by-id to new anchor-by-index, or default to today=index 0.
-      const oldId = (CONFIG.splitAnchor && CONFIG.splitAnchor.splitId) || null;
-      let idx = 0;
-      if (oldId) {
-        const oldName = (CONFIG.days || []).find(d => d.id === oldId);
-        const targetName = oldName ? oldName.name : (oldId === 'rest' ? 'Rest' : oldId);
-        const found = s.splitRotation.findIndex(n => n.toLowerCase() === targetName.toLowerCase());
-        if (found >= 0) idx = found;
-      }
-      s.splitAnchor = {
-        date: (CONFIG.splitAnchor && CONFIG.splitAnchor.date) || new Date().toISOString().slice(0, 10),
-        index: idx
-      };
+    if (!Array.isArray(s.weekdaySplit) || s.weekdaySplit.length !== 7) {
+      s.weekdaySplit = (CONFIG.weekdaySplit || ['rest','push','lowerA','rest','pull','lowerB','rest']).map(splitIdToName);
     }
 
     // One-time migration to the 4-day Lower A/Push/Lower B/Pull program.
@@ -2149,14 +2112,6 @@ img, video, canvas, svg { max-width: 100%; }
         }
       });
 
-      s.splitRotation = (CONFIG.splitRotation || ['Lower A', 'Push', 'Lower B', 'Pull', 'Rest']).map(x =>
-        (CONFIG.days || []).find(d => d.id === x) ? (CONFIG.days.find(d => d.id === x).name) :
-        (x === 'rest' ? 'Rest' : x.charAt(0).toUpperCase() + x.slice(1))
-      );
-      s.splitAnchor = {
-        date: (CONFIG.splitAnchor && CONFIG.splitAnchor.date) || new Date().toISOString().slice(0, 10),
-        index: 0
-      };
       s.programVersion = 2;
     }
 
@@ -2164,7 +2119,7 @@ img, video, canvas, svg { max-width: 100%; }
     // (Pallof Press, Plank, etc, replacing the old one generic "Core
     // Finisher" placeholder) plus tightened rep ranges on a couple of
     // rehab exercises that started too high to log honestly. Merges
-    // in new exercises only — doesn't touch splitRotation/splitAnchor
+    // in new exercises only — doesn't touch the weekly schedule
     // again, and doesn't delete the old "Core Finisher" entries (any
     // history logged against them stays put, just no longer seeded).
     if ((s.programVersion || 0) < 3) {
@@ -2266,6 +2221,64 @@ img, video, canvas, svg { max-width: 100%; }
       s.programVersion = 7;
     }
 
+    // Eighth migration:
+    //  - Switch to the fixed weekday schedule (CONFIG.weekdaySplit),
+    //    overwriting whatever rolling rotation was previously in place —
+    //    that system could drift/desync (the actual bug behind "today"
+    //    showing the wrong split), so this replaces it outright with the
+    //    explicit Mon-Fri schedule rather than trying to convert it.
+    //  - Rename "Chest-Supported Row" -> "Chest-Supported T-Bar Row" and
+    //    "Core Finisher" -> "Ab Crunch Machine" (both renamed in place so
+    //    existing logged history stays attached, on whichever day(s) a
+    //    leftover "Core Finisher" placeholder still exists).
+    //  - Consolidate Pull day's two overlapping rear-delt slots (Rear
+    //    Delt Fly/Cable Rear Delt Fly/Reverse Pec Deck +
+    //    Face Pulls/Band Pull-Apart/Rope Face Pulls) into one: Face
+    //    Pulls, Cable Rear Delt Fly, Reverse Pec Deck. Deletes the 3
+    //    dropped exercises and their logs (a deliberate cleanup, not an
+    //    accident) and repoints Face Pulls at the surviving slot name.
+    //  - Add Back Extensions (fixed rehab, Lower A) via the usual
+    //    additive merge.
+    if ((s.programVersion || 0) < 8) {
+      s.weekdaySplit = (CONFIG.weekdaySplit || ['rest','push','lowerA','rest','pull','lowerB','rest']).map(splitIdToName);
+
+      [
+        { day: 'pull', from: 'chest-supported row', to: 'Chest-Supported T-Bar Row' }
+      ].forEach(({ day, from, to }) => {
+        const ex = s.exercises.find(e => e.day === day && (e.name || '').toLowerCase() === from);
+        if (ex) ex.name = to;
+      });
+      s.exercises.forEach(ex => {
+        if ((ex.name || '').toLowerCase() === 'core finisher') {
+          ex.name = 'Ab Crunch Machine';
+          ex.muscle = 'Core';
+        }
+      });
+
+      const faceP = s.exercises.find(e => e.day === 'pull' && (e.name || '').toLowerCase() === 'face pulls');
+      if (faceP) faceP.slot = 'Pull Rear Delt';
+      const dropRearDelt = [
+        { day: 'pull', name: 'Rear Delt Fly' },
+        { day: 'pull', name: 'Band Pull-Apart' },
+        { day: 'pull', name: 'Rope Face Pulls' }
+      ];
+      s.exercises = s.exercises.filter(e => {
+        const drop = dropRearDelt.some(d => d.day === e.day && (e.name || '').toLowerCase() === d.name.toLowerCase());
+        if (drop) delete s.logs[e.id];
+        return !drop;
+      });
+
+      const existingExKeys8 = new Set(s.exercises.map(e => (e.name + '|' + e.day).toLowerCase()));
+      (CONFIG.defaultExercises || []).forEach((e, i) => {
+        const key = (e.name + '|' + e.day).toLowerCase();
+        if (!existingExKeys8.has(key)) {
+          s.exercises.push(Object.assign({ id: 'seed8_' + i + '_' + Date.now() }, e));
+          existingExKeys8.add(key);
+        }
+      });
+      s.programVersion = 8;
+    }
+
     return s;
   }
   function saveState() {
@@ -2284,6 +2297,26 @@ img, video, canvas, svg { max-width: 100%; }
   function dayName(id) { const d = state.days.find(x => x.id === id); return d ? d.name : id; }
   function estimate1RM(w, r) { if (r < 2) return w; return w * (1 + r / 30); }
   function roundToStep(v, s) { return Math.round(v / s) * s; }
+  // Local-time ISO-ish timestamp — NOT Date#toISOString(), which is UTC.
+  // Everything else in this app (wtDateKey, todayDateLabel, etc.) buckets
+  // "today" by local calendar date, so a log timestamp needs to match or
+  // it silently files itself under the wrong day for anyone far enough
+  // from UTC (e.g. logging before ~10-11am in Melbourne lands on UTC's
+  // previous day) — sets would appear missing from "Today" and show up
+  // misdated in Past Workouts instead.
+  function localTimestamp(d) {
+    d = d || new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+      + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  function fmtTime12h(d) {
+    let h = d.getHours();
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const ap = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + m + ' ' + ap;
+  }
   const TAG_ORDER = { primary: 0, accessory: 1, rehab: 2 };
 
   // ---------- Today's picks (which accessory option / primary variation
@@ -2305,9 +2338,14 @@ img, video, canvas, svg { max-width: 100%; }
     });
     return slots;
   }
+  // Sentinel for "explicitly turned off" — lets a slot contribute nothing
+  // on a shorter-session day, distinct from "never chosen yet" (which
+  // still defaults to the first option, same as before).
+  const PLAN_NONE = '__none__';
   function getActivePickForSlot(day, slot, members) {
     const plan = (state.dayPlan && state.dayPlan[day]) || {};
     const saved = plan[slot];
+    if (saved === PLAN_NONE) return PLAN_NONE;
     const usesOptionSet = members.some(m => m.optionSet);
     if (usesOptionSet) {
       if (saved && members.some(m => m.optionSet === saved)) return saved;
@@ -2321,6 +2359,7 @@ img, video, canvas, svg { max-width: 100%; }
     const members = slotMembers(ex.day, ex.slot);
     if (members.length < 2) return true;
     const pick = getActivePickForSlot(ex.day, ex.slot, members);
+    if (pick === PLAN_NONE) return false;
     return ex.optionSet ? ex.optionSet === pick : ex.id === pick;
   }
   // Exercises that are on regardless of any pick — primaries, rehab, and
@@ -2382,7 +2421,9 @@ img, video, canvas, svg { max-width: 100%; }
         // into the slot string (e.g. "Push Fly" -> "Fly") since the
         // panel's already scoped to the current day.
         const shortLabel = slot.replace(new RegExp('^' + dayName(day) + '\\s*', 'i'), '') || slot;
-        html += '<div class="po-plan-row"><div class="po-plan-slot">' + escape(shortLabel) + '</div><div class="po-plan-opts">';
+        const skipped = active === PLAN_NONE;
+        html += '<div class="po-plan-row"><div class="po-plan-slot">' + escape(shortLabel)
+          + (skipped ? ' <span class="po-plan-skipped">· skipped</span>' : '') + '</div><div class="po-plan-opts">';
         members.forEach(m => {
           const value = usesOptionSet ? m.optionSet : m.id;
           const isActive = value === active;
@@ -2400,7 +2441,10 @@ img, video, canvas, svg { max-width: 100%; }
     panel.innerHTML = html;
     panel.querySelectorAll('.po-plan-opt').forEach(btn => {
       btn.addEventListener('click', () => {
-        planDraft[btn.dataset.slot] = btn.dataset.value;
+        const slot = btn.dataset.slot, value = btn.dataset.value;
+        // Tapping the already-active option turns the slot off entirely
+        // (shorter-session days) — tapping it again turns it back on.
+        planDraft[slot] = (planDraft[slot] === value) ? PLAN_NONE : value;
         renderPlanPanel();
       });
     });
@@ -2516,25 +2560,24 @@ img, video, canvas, svg { max-width: 100%; }
     });
     renderNextDayInfo();
   }
-  // "Next Lower A: in 4 days" — how long until the currently-filtered
-  // day comes back around in the rotation, so you know the actual
-  // rest cadence for this muscle group instead of guessing.
+  // "Next Pull: in 4 days" — how long until the currently-filtered day
+  // comes back around on the fixed weekly schedule.
   function renderNextDayInfo() {
     const el = $('nextDayInfo');
     if (!el) return;
     const name = dayName(state.filterDay);
     if (!name || isRestName(name)) { el.textContent = ''; return; }
-    const rot = state.splitRotation;
-    if (!rot || !rot.length) { el.textContent = ''; return; }
-    const today = todaySplit();
-    if (rot[today.index] && rot[today.index].toLowerCase() === name.toLowerCase()) {
+    const sched = state.weekdaySplit;
+    if (!sched || sched.length !== 7) { el.textContent = ''; return; }
+    const todayIdx = new Date().getDay();
+    if (sched[todayIdx] && sched[todayIdx].toLowerCase() === name.toLowerCase()) {
       el.innerHTML = '<b>Today</b> is ' + escape(name) + ' day.';
       return;
     }
     let daysAway = null;
-    for (let offset = 1; offset <= rot.length; offset++) {
-      const idx = (today.index + offset) % rot.length;
-      if (rot[idx] && rot[idx].toLowerCase() === name.toLowerCase()) { daysAway = offset; break; }
+    for (let offset = 1; offset <= 7; offset++) {
+      const idx = (todayIdx + offset) % 7;
+      if (sched[idx] && sched[idx].toLowerCase() === name.toLowerCase()) { daysAway = offset; break; }
     }
     el.innerHTML = daysAway == null
       ? ''
@@ -2709,20 +2752,17 @@ img, video, canvas, svg { max-width: 100%; }
       });
     });
   }
-  // Compute today's split from state.splitRotation + state.splitAnchor.
-  // Returns the rotation entry name (e.g. "Push" or "Rest") AND the index.
+  // Compute today's split — a direct lookup into the fixed weekly
+  // schedule by the real calendar weekday. No drift possible: Monday is
+  // always whatever state.weekdaySplit[1] says, forever.
   function todaySplit() {
     try {
-      const rot = state.splitRotation;
-      if (!rot || !rot.length) return { name: '—', index: 0 };
-      const a = new Date(state.splitAnchor.date);
-      const t = new Date();
-      a.setHours(0,0,0,0); t.setHours(0,0,0,0);
-      const diffDays = Math.round((t - a) / 86400000);
-      const idx = ((state.splitAnchor.index + diffDays) % rot.length + rot.length) % rot.length;
-      return { name: rot[idx], index: idx };
+      const sched = state.weekdaySplit;
+      if (!sched || sched.length !== 7) return { name: '—', index: 0 };
+      const idx = new Date().getDay();
+      return { name: sched[idx], index: idx };
     } catch (e) {
-      return { name: (state.splitRotation && state.splitRotation[0]) || '—', index: 0 };
+      return { name: '—', index: 0 };
     }
   }
   function todayDateLabel() {
@@ -2845,16 +2885,26 @@ img, video, canvas, svg { max-width: 100%; }
 
   function summarizeDay(daySets) {
     // daySets: [{ex, log}]. Group by exercise, return {sets: N, vol: kg, perEx: [...]}.
+    // Also tracks when each set happened (localTimestamp-based, so this is
+    // real local time-of-day) — surfaced so you can see your actual usual
+    // gym time from the logged history, not just what you plan to select.
     const byEx = {};
+    let firstTime = null, lastTime = null;
     daySets.forEach(({ex, log}) => {
-      if (!byEx[ex.id]) byEx[ex.id] = { ex, sets: [], vol: 0 };
+      if (!byEx[ex.id]) byEx[ex.id] = { ex, sets: [], vol: 0, lastTime: null };
       byEx[ex.id].sets.push(log);
       byEx[ex.id].vol += (log.weight || 0) * (log.reps || 0);
+      const t = new Date(log.date);
+      if (!isNaN(t)) {
+        if (!byEx[ex.id].lastTime || t > byEx[ex.id].lastTime) byEx[ex.id].lastTime = t;
+        if (!firstTime || t < firstTime) firstTime = t;
+        if (!lastTime || t > lastTime) lastTime = t;
+      }
     });
     const perEx = Object.values(byEx);
     const totalSets = perEx.reduce((s, e) => s + e.sets.length, 0);
     const totalVol = perEx.reduce((s, e) => s + e.vol, 0);
-    return { perEx, totalSets, totalVol };
+    return { perEx, totalSets, totalVol, firstTime, lastTime };
   }
 
   function renderTodaysWorkout() {
@@ -2884,9 +2934,10 @@ img, video, canvas, svg { max-width: 100%; }
         const top = e.ex.bw
           ? 'top ' + Math.max.apply(null, e.sets.map(s => s.reps)) + ' reps'
           : 'top ' + Math.max.apply(null, e.sets.map(s => s.weight)) + u;
-        const meta = e.ex.bw
+        const timeStr = e.lastTime ? ' · ' + fmtTime12h(e.lastTime) : '';
+        const meta = (e.ex.bw
           ? (e.sets.length + ' set' + (e.sets.length === 1 ? '' : 's') + ' · ' + top)
-          : (e.sets.length + ' set' + (e.sets.length === 1 ? '' : 's') + ' · ' + top + ' · ' + Math.round(e.vol) + u + ' total');
+          : (e.sets.length + ' set' + (e.sets.length === 1 ? '' : 's') + ' · ' + top + ' · ' + Math.round(e.vol) + u + ' total')) + timeStr;
         return '<li class="po-tw-row">'
           + '<span class="po-tw-row-name">' + escape(e.ex.name) + '</span>'
           + '<span class="po-tw-row-meta">' + meta + '</span>'
@@ -2921,11 +2972,14 @@ img, video, canvas, svg { max-width: 100%; }
       const isDone = !!doneDays[dk];
       const exNames = sum.perEx.map(e => e.ex.name).slice(0, 3).join(', ')
         + (sum.perEx.length > 3 ? '…' : '');
+      const timeRange = (sum.firstTime && sum.lastTime)
+        ? ' · ' + fmtTime12h(sum.firstTime) + (sum.lastTime > sum.firstTime ? '–' + fmtTime12h(sum.lastTime) : '')
+        : '';
       return '<div class="po-tw-past-day">'
         + '<div class="po-tw-past-day-h">'
         +   '<span class="po-tw-past-day-date">' + fmtPastDate(dk) + '</span>'
         +   '<span class="po-tw-past-day-summary">'
-        +     sum.totalSets + ' sets · ' + Math.round(sum.totalVol).toLocaleString() + ' ' + u
+        +     sum.totalSets + ' sets · ' + Math.round(sum.totalVol).toLocaleString() + ' ' + u + timeRange
         +     (isDone ? ' <span class="po-tw-past-day-done">DONE</span>' : '')
         +   '</span>'
         + '</div>'
@@ -3021,7 +3075,7 @@ img, video, canvas, svg { max-width: 100%; }
     const arr = state.logs[ex.id] || [];
     const now = Date.now();
     for (let i = 0; i < sets; i++) {
-      arr.push({ weight: w, reps: reps, date: new Date(now + i).toISOString() });
+      arr.push({ weight: w, reps: reps, date: localTimestamp(new Date(now + i)) });
     }
     state.logs[ex.id] = arr;
     saveState(); renderAll();
@@ -3174,101 +3228,52 @@ img, video, canvas, svg { max-width: 100%; }
   });
 
   // ============================================================
-  // ROTATION EDITOR (tap the day pill)
-  // Edit the split cycle in place: rename, reorder, add, delete.
-  // "Today is →" jumps the cycle anchor to any entry, so you can change
-  // both the order AND which day in that order is "today".
+  // WEEKLY SCHEDULE EDITOR (tap the day pill)
+  // Fixed weekday -> split mapping, no anchor/rotation-index to drift
+  // out of sync — each row is independent, so editing one day can never
+  // knock any other day off.
   // ============================================================
-  let rotDraft = null;          // working copy while modal is open
-  let rotDraftTodayIdx = 0;     // which entry IS today in the draft
+  let rotWeekDraft = null;   // working copy while modal is open, 7 entries
 
   function openRotationModal() {
-    rotDraft = (state.splitRotation || []).slice();
-    if (!rotDraft.length) rotDraft = ['Lower A', 'Push', 'Lower B', 'Pull', 'Rest'];
-    rotDraftTodayIdx = todaySplit().index;
-    if (rotDraftTodayIdx >= rotDraft.length) rotDraftTodayIdx = 0;
-    renderRotList();
+    rotWeekDraft = (state.weekdaySplit || []).slice();
+    if (rotWeekDraft.length !== 7) rotWeekDraft = ['Rest','Push','Lower A','Rest','Pull','Lower B','Rest'];
+    renderRotWeekList();
     $('rotModalBg').classList.add('show');
   }
 
-  function renderRotList() {
-    const list = $('rotList');
-    list.innerHTML = rotDraft.map((name, i) => {
-      const isToday = (i === rotDraftTodayIdx);
-      return '<div class="rot-row ' + (isToday ? 'is-today' : '') + '" data-i="' + i + '">'
-        + '<span class="rot-row-num">' + (i + 1) + '</span>'
-        + '<input type="text" value="' + escape(name) + '" placeholder="e.g. Arms" maxlength="30">'
-        + (isToday
-            ? '<span class="rot-today-tag">TODAY</span>'
-            : '<button type="button" class="rot-today-btn" data-action="today">Today is →</button>')
-        + '<button type="button" class="rot-mini" data-action="up"   aria-label="Move up">↑</button>'
-        + '<button type="button" class="rot-mini" data-action="down" aria-label="Move down">↓</button>'
-        + '<button type="button" class="rot-mini rot-mini-del" data-action="del" aria-label="Delete">×</button>'
-        + '</div>';
+  function renderRotWeekList() {
+    const WEEKDAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const options = state.days.map(d => d.name).concat('Rest');
+    const todayIdx = new Date().getDay();
+    const list = $('rotWeekList');
+    list.innerHTML = rotWeekDraft.map((val, i) => {
+      const isToday = (i === todayIdx);
+      return '<div class="rot-week-row ' + (isToday ? 'is-today' : '') + '" data-i="' + i + '">'
+        + '<span class="rot-week-day">' + WEEKDAY_NAMES[i] + '</span>'
+        + '<div class="rot-week-opts">'
+        + options.map(opt =>
+            '<button type="button" class="rot-week-opt' + (opt.toLowerCase() === (val || '').toLowerCase() ? ' active' : '') + '" data-i="' + i + '" data-v="' + escape(opt) + '">' + escape(opt) + '</button>'
+          ).join('')
+        + '</div></div>';
     }).join('');
-    list.querySelectorAll('.rot-row').forEach(row => {
-      const i = parseInt(row.dataset.i, 10);
-      row.querySelector('input').addEventListener('input', e => { rotDraft[i] = e.target.value; });
-      const upBtn = row.querySelector('[data-action="up"]');
-      const dnBtn = row.querySelector('[data-action="down"]');
-      const delBtn = row.querySelector('[data-action="del"]');
-      const todayBtn = row.querySelector('[data-action="today"]');
-      if (upBtn) upBtn.addEventListener('click', () => {
-        if (i === 0) return;
-        [rotDraft[i-1], rotDraft[i]] = [rotDraft[i], rotDraft[i-1]];
-        if (rotDraftTodayIdx === i)   rotDraftTodayIdx = i - 1;
-        else if (rotDraftTodayIdx === i - 1) rotDraftTodayIdx = i;
-        renderRotList();
-      });
-      if (dnBtn) dnBtn.addEventListener('click', () => {
-        if (i >= rotDraft.length - 1) return;
-        [rotDraft[i+1], rotDraft[i]] = [rotDraft[i], rotDraft[i+1]];
-        if (rotDraftTodayIdx === i)   rotDraftTodayIdx = i + 1;
-        else if (rotDraftTodayIdx === i + 1) rotDraftTodayIdx = i;
-        renderRotList();
-      });
-      if (delBtn) delBtn.addEventListener('click', () => {
-        if (rotDraft.length <= 1) { alert('Need at least one day in the cycle.'); return; }
-        rotDraft.splice(i, 1);
-        if (rotDraftTodayIdx >= rotDraft.length) rotDraftTodayIdx = rotDraft.length - 1;
-        else if (i < rotDraftTodayIdx) rotDraftTodayIdx--;
-        renderRotList();
-      });
-      if (todayBtn) todayBtn.addEventListener('click', () => {
-        rotDraftTodayIdx = i;
-        renderRotList();
+    list.querySelectorAll('.rot-week-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        rotWeekDraft[parseInt(btn.dataset.i, 10)] = btn.dataset.v;
+        renderRotWeekList();
       });
     });
   }
 
-  $('rotAddBtn').addEventListener('click', () => {
-    rotDraft.push('New day');
-    renderRotList();
-    // Focus the newly added input
-    setTimeout(() => {
-      const inputs = $('rotList').querySelectorAll('input');
-      const last = inputs[inputs.length - 1];
-      if (last) { last.focus(); last.select(); }
-    }, 30);
-  });
   $('rotCancel').addEventListener('click', () => {
     $('rotModalBg').classList.remove('show');
-    rotDraft = null;
+    rotWeekDraft = null;
   });
   $('rotSave').addEventListener('click', () => {
-    // Trim + drop empty entries
-    const cleaned = rotDraft.map(s => (s || '').trim()).filter(Boolean);
-    if (!cleaned.length) { alert('Need at least one day in the cycle.'); return; }
-    let newTodayIdx = rotDraftTodayIdx;
-    if (newTodayIdx >= cleaned.length) newTodayIdx = 0;
-    state.splitRotation = cleaned;
-    state.splitAnchor = {
-      date: new Date().toISOString().slice(0, 10),
-      index: newTodayIdx
-    };
+    state.weekdaySplit = rotWeekDraft.slice();
     saveState();
     $('rotModalBg').classList.remove('show');
-    rotDraft = null;
+    rotWeekDraft = null;
     renderAll();
   });
 
