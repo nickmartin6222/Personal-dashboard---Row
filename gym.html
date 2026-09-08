@@ -31,18 +31,19 @@ const CONFIG = {
     { id: "comm",  name: "Commercial Gym" }
   ],
 
-  // Training split. Most people use Push/Pull/Legs but you can rename
-  // these to "Upper", "Lower", "Full Body", "Day A", anything.
+  // Training split — 4-day: Lower A / Push / Lower B / Pull.
   days: [
-    { id: "push", name: "Push" },
-    { id: "pull", name: "Pull" },
-    { id: "legs", name: "Legs" }
+    { id: "lowerA", name: "Lower A" },
+    { id: "push",   name: "Push" },
+    { id: "lowerB", name: "Lower B" },
+    { id: "pull",   name: "Pull" },
+    { id: "legs",   name: "Legs" }  // kept so any exercises/logs from the old 3-day split stay reachable
   ],
 
   // Split rotation — the order your training days cycle through. Use day
   // ids from `days` above, plus "rest" for off-days. The pill at the top
   // of the app reads this + splitAnchor to compute "what day is today".
-  splitRotation: ["push", "pull", "legs", "rest"],
+  splitRotation: ["lowerA", "push", "lowerB", "pull", "rest"],
 
   // Anchor: pair a real calendar date with which split day fell on it.
   // The rotation advances from this point. Set `date` to a recent day
@@ -72,6 +73,20 @@ const CONFIG = {
   //   name        — what shows in the dropdown
   //   gym         — one of the gym ids above, or "both"
   //   day         — one of the day ids above
+  //   tag         — "primary" (weight/reps tracked, stays the same movement
+  //                 for a training block), "accessory" (variety is fine,
+  //                 rotate through the preset options for its slot), or
+  //                 "rehab" (fixed, pain-free range, never rotated)
+  //   slot        — groups exercises that are alternatives for the same
+  //                 spot in the program. A primary with multiple equipment
+  //                 variations shares a slot but each variation still gets
+  //                 its own progression thread (they're separate entries
+  //                 here). An accessory's slot is the "position" it fills
+  //                 (e.g. push day's fly slot); its 3 options share a slot
+  //                 and are told apart by optionSet.
+  //   optionSet   — for accessories with preset A/B/C option sets: which
+  //                 set this one belongs to. Hold one set for 2-3 weeks
+  //                 before switching to another for the same slot.
   //   repMin      — bottom of your target rep range
   //   repMax      — top of your target rep range
   //   step        — how much weight you add when progressing (kg/lb)
@@ -79,17 +94,71 @@ const CONFIG = {
   //   bw          — true for bodyweight movements (logs reps only)
   //
   // First-run defaults. Once a user logs anything, they edit through
-  // the in-app + / gear buttons; this block stays as the seed.
+  // the in-app + / gear buttons; this block stays as the seed. Existing
+  // installs get these merged in additively (see normalize()'s one-time
+  // programVersion 2 migration) — nothing you've already logged is lost.
   defaultExercises: [
-    { name: "Bench press",     gym: "comm", day: "push", repMin: 5, repMax: 8,  step: 2.5, startWeight: 60 },
-    { name: "Overhead press",  gym: "comm", day: "push", repMin: 5, repMax: 8,  step: 2.5, startWeight: 35 },
-    { name: "Tricep pushdown", gym: "comm", day: "push", repMin: 8, repMax: 12, step: 2.5, startWeight: 25 },
-    { name: "Pull-ups",        gym: "both", day: "pull", repMin: 5, repMax: 10, step: 1,   startWeight: 0, bw: true },
-    { name: "Barbell row",     gym: "comm", day: "pull", repMin: 6, repMax: 10, step: 2.5, startWeight: 50 },
-    { name: "Bicep curl",      gym: "comm", day: "pull", repMin: 8, repMax: 12, step: 1.25,startWeight: 15 },
-    { name: "Back squat",      gym: "comm", day: "legs", repMin: 5, repMax: 8,  step: 5,   startWeight: 80 },
-    { name: "Romanian deadlift", gym: "comm", day: "legs", repMin: 6, repMax: 10, step: 5, startWeight: 60 },
-    { name: "Leg press",       gym: "comm", day: "legs", repMin: 8, repMax: 12, step: 5,   startWeight: 100 }
+    // ---- Lower A ----
+    { name: "Barbell RDL",                gym: "comm", day: "lowerA", tag: "primary",   slot: "RDL",                 repMin: 6,  repMax: 10, step: 5,    startWeight: 60 },
+    { name: "Single-Leg Machine Hip Thrust", gym: "comm", day: "lowerA", tag: "primary", slot: "Hip Thrust",          repMin: 8,  repMax: 12, step: 5,    startWeight: 40 },
+    { name: "Machine Hip Adductor",       gym: "comm", day: "lowerA", tag: "rehab",     slot: "Hip Adductor",        repMin: 15, repMax: 20, step: 2.5,  startWeight: 30 },
+    { name: "Copenhagen Plank",           gym: "comm", day: "lowerA", tag: "rehab",     slot: "Copenhagen Plank",    repMin: 20, repMax: 40, step: 1,    startWeight: 0,  bw: true },
+    { name: "Leg Press",                  gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "A", repMin: 8,  repMax: 12, step: 10,  startWeight: 120 },
+    { name: "Hack Squat",                 gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "B", repMin: 8,  repMax: 12, step: 10,  startWeight: 80 },
+    { name: "Walking Lunge",              gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "C", repMin: 10, repMax: 14, step: 2.5, startWeight: 20 },
+    { name: "Core Finisher",              gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core",       repMin: 10, repMax: 20, step: 1,   startWeight: 0,  bw: true },
+
+    // ---- Push (chest / triceps / shoulders) ----
+    { name: "Barbell Bench Press",        gym: "comm", day: "push", tag: "primary",   slot: "Horizontal Press",     repMin: 5,  repMax: 8,  step: 2.5, startWeight: 60 },
+    { name: "Incline Barbell Press",      gym: "comm", day: "push", tag: "primary",   slot: "Incline Press",        repMin: 5,  repMax: 8,  step: 2.5, startWeight: 45 },
+    { name: "Cable Fly",                  gym: "comm", day: "push", tag: "accessory", slot: "Push Fly",             optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
+    { name: "Pec Deck",                   gym: "comm", day: "push", tag: "accessory", slot: "Push Fly",             optionSet: "B", repMin: 10, repMax: 15, step: 5,   startWeight: 40 },
+    { name: "Incline Cable Fly",          gym: "comm", day: "push", tag: "accessory", slot: "Push Fly",             optionSet: "C", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 },
+    { name: "DB Shoulder Press",          gym: "comm", day: "push", tag: "accessory", slot: "Push Shoulder Press",  optionSet: "A", repMin: 8,  repMax: 12, step: 2.5, startWeight: 17.5 },
+    { name: "Arnold Press",               gym: "comm", day: "push", tag: "accessory", slot: "Push Shoulder Press",  optionSet: "B", repMin: 8,  repMax: 12, step: 2.5, startWeight: 15 },
+    { name: "Landmine Press",             gym: "comm", day: "push", tag: "accessory", slot: "Push Shoulder Press",  optionSet: "C", repMin: 8,  repMax: 12, step: 5,   startWeight: 20 },
+    { name: "Lateral Raise",              gym: "comm", day: "push", tag: "accessory", slot: "Push Lateral Raise",   optionSet: "A", repMin: 12, repMax: 15, step: 1.25,startWeight: 7.5 },
+    { name: "Cable Lateral Raise",        gym: "comm", day: "push", tag: "accessory", slot: "Push Lateral Raise",   optionSet: "B", repMin: 12, repMax: 15, step: 2.5, startWeight: 7.5 },
+    { name: "Machine Lateral Raise",      gym: "comm", day: "push", tag: "accessory", slot: "Push Lateral Raise",   optionSet: "C", repMin: 12, repMax: 15, step: 5,   startWeight: 20 },
+    { name: "Cable Pushdown",             gym: "comm", day: "push", tag: "accessory", slot: "Push Pushdown",        optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 25 },
+    { name: "Rope Pushdown",              gym: "comm", day: "push", tag: "accessory", slot: "Push Pushdown",        optionSet: "B", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 },
+    { name: "Single-Arm Pushdown",        gym: "comm", day: "push", tag: "accessory", slot: "Push Pushdown",        optionSet: "C", repMin: 10, repMax: 15, step: 1.25,startWeight: 12.5 },
+    { name: "Overhead DB Extension",      gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
+    { name: "Skull Crusher",              gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "B", repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
+    { name: "Close-Grip Bench or Dip",    gym: "comm", day: "push", tag: "accessory", slot: "Push Triceps Extension", optionSet: "C", repMin: 8,  repMax: 12, step: 2.5, startWeight: 40 },
+    { name: "Core Finisher",              gym: "comm", day: "push", tag: "accessory", slot: "Push Core",            repMin: 10, repMax: 20, step: 1,   startWeight: 0,  bw: true },
+
+    // ---- Lower B ----
+    { name: "Goblet / Front Squat",       gym: "comm", day: "lowerB", tag: "primary",   slot: "Squat",               repMin: 6,  repMax: 10, step: 2.5, startWeight: 20 },
+    { name: "Bulgarian Split Squat",      gym: "comm", day: "lowerB", tag: "primary",   slot: "Split Squat",         repMin: 8,  repMax: 12, step: 2.5, startWeight: 15 },
+    { name: "Hip External Rotation",      gym: "comm", day: "lowerB", tag: "rehab",     slot: "Hip External Rotation", repMin: 15, repMax: 20, step: 1, startWeight: 0, bw: true },
+    { name: "Seated Leg Curl",            gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "A", repMin: 10, repMax: 15, step: 5,  startWeight: 30 },
+    { name: "Lying Leg Curl",             gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "B", repMin: 10, repMax: 15, step: 5,  startWeight: 25 },
+    { name: "Nordic Curl or GHR",         gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "C", repMin: 5,  repMax: 10, step: 1,  startWeight: 0, bw: true },
+    { name: "Standing Calf Raise",        gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "A", repMin: 12, repMax: 18, step: 5,  startWeight: 60 },
+    { name: "Seated Calf Raise",          gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "B", repMin: 12, repMax: 18, step: 5,  startWeight: 40 },
+    { name: "Calf Press on Leg Press",    gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Calf",       optionSet: "C", repMin: 12, repMax: 18, step: 10, startWeight: 80 },
+    { name: "Core Finisher",              gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core",       repMin: 10, repMax: 20, step: 1,   startWeight: 0, bw: true },
+
+    // ---- Pull (back / biceps / shoulders) ----
+    { name: "Lat Pulldown",               gym: "comm", day: "pull", tag: "primary",   slot: "Vertical Pull",        repMin: 6,  repMax: 10, step: 5,   startWeight: 50 },
+    { name: "Chest-Supported Row",        gym: "comm", day: "pull", tag: "primary",   slot: "Chest-Supported Row",  repMin: 6,  repMax: 10, step: 5,   startWeight: 40 },
+    { name: "Single-Arm Cable Row",       gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation",   optionSet: "A", repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
+    { name: "T-Bar / Chest-Supported Single-Arm Row", gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation", optionSet: "B", repMin: 10, repMax: 15, step: 5, startWeight: 20 },
+    { name: "Kroc Row",                   gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation",   optionSet: "C", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 },
+    { name: "Rear Delt Fly",              gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "A", repMin: 12, repMax: 15, step: 1.25,startWeight: 7.5 },
+    { name: "Cable Rear Delt Fly",        gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "B", repMin: 12, repMax: 15, step: 2.5, startWeight: 10 },
+    { name: "Reverse Pec Deck",           gym: "comm", day: "pull", tag: "accessory", slot: "Pull Rear Delt",       optionSet: "C", repMin: 12, repMax: 15, step: 5,   startWeight: 25 },
+    { name: "Face Pulls",                 gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "A", repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
+    { name: "Band Pull-Apart",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "B", repMin: 15, repMax: 20, step: 1,   startWeight: 0, bw: true },
+    { name: "Rope Face Pulls",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Face Pull",       optionSet: "C", repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
+    { name: "DB Curl",                    gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "A", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
+    { name: "Cable Curl",                 gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "B", repMin: 8,  repMax: 12, step: 2.5, startWeight: 20 },
+    { name: "Preacher Curl",              gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 1",          optionSet: "C", repMin: 8,  repMax: 12, step: 2.5, startWeight: 20 },
+    { name: "Hammer Curl",                gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "A", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
+    { name: "Incline DB Curl",            gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "B", repMin: 8,  repMax: 12, step: 1.25,startWeight: 10 },
+    { name: "Cross-Body Hammer Curl",     gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "C", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
+    { name: "Core Finisher",              gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core",            repMin: 10, repMax: 20, step: 1,   startWeight: 0, bw: true }
   ]
 };
 </script>
@@ -561,13 +630,13 @@ img, video, canvas, svg { max-width: 100%; }
 }
 .po-modal .po-field { margin-bottom: 12px; }
 .po-modal-seg {
-  display: flex; gap: 4px;
+  display: flex; gap: 4px; flex-wrap: wrap;
   background: rgba(255,255,255,0.04);
   border: 1px solid var(--border);
   border-radius: 10px; padding: 3px;
 }
 .po-modal-seg button {
-  flex: 1; padding: 9px; border: none; background: transparent;
+  flex: 1 1 auto; min-width: 64px; padding: 9px; border: none; background: transparent;
   color: var(--text-3); border-radius: 7px;
   font-family: inherit; font-size: 12px; font-weight: 600;
   cursor: pointer;
@@ -1637,6 +1706,23 @@ img, video, canvas, svg { max-width: 100%; }
       <label style="font-size:11px;color:var(--text-3);font-weight:700;letter-spacing:0.04em;text-transform:uppercase">Day</label>
       <div class="po-modal-seg" id="exDaySeg"></div>
     </div>
+    <div class="po-field">
+      <label style="font-size:11px;color:var(--text-3);font-weight:700;letter-spacing:0.04em;text-transform:uppercase">Tag</label>
+      <div class="po-modal-seg" id="exTagSeg"></div>
+    </div>
+    <div class="po-log-grid">
+      <div class="po-field">
+        <label style="font-size:11px;color:var(--text-3);font-weight:700;letter-spacing:0.04em;text-transform:uppercase">Slot <span style="opacity:.6">(optional)</span></label>
+        <input type="text" id="exSlot" placeholder="e.g. Horizontal Press">
+      </div>
+      <div class="po-field">
+        <label style="font-size:11px;color:var(--text-3);font-weight:700;letter-spacing:0.04em;text-transform:uppercase">Option set <span style="opacity:.6">(optional)</span></label>
+        <input type="text" id="exOptionSet" placeholder="e.g. A" maxlength="8">
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--text-3);margin:-6px 0 12px;line-height:1.4;">
+      Slot groups alternatives for the same spot in the program — an accessory's rotating options, or a primary's equipment variations (each variation still gets its own tracked progression). Option set is just the A/B/C label for a rotating accessory.
+    </p>
     <label class="po-bw-toggle">
       <input type="checkbox" id="exBw">
       Bodyweight (track reps only, no weight)
@@ -1756,9 +1842,9 @@ img, video, canvas, svg { max-width: 100%; }
     s.filterGym = s.filterGym || s.gyms[0].id;
     s.filterDay = s.filterDay || s.days[0].id;
     // Split rotation lives in state so the user can edit it via the pill modal.
-    // Stored as a plain array of names (e.g. ["Push", "Pull", "Legs", "Rest"]).
+    // Stored as a plain array of names (e.g. ["Lower A", "Push", "Lower B", "Pull", "Rest"]).
     if (!Array.isArray(s.splitRotation) || !s.splitRotation.length) {
-      s.splitRotation = (CONFIG.splitRotation || ['Push', 'Pull', 'Legs', 'Rest']).map(x =>
+      s.splitRotation = (CONFIG.splitRotation || ['Lower A', 'Push', 'Lower B', 'Pull', 'Rest']).map(x =>
         // CONFIG used ids — map id → display name where possible
         (CONFIG.days || []).find(d => d.id === x) ? (CONFIG.days.find(d => d.id === x).name) :
         (x === 'rest' ? 'Rest' : x.charAt(0).toUpperCase() + x.slice(1))
@@ -1779,6 +1865,34 @@ img, video, canvas, svg { max-width: 100%; }
         index: idx
       };
     }
+
+    // One-time migration to the 4-day Lower A/Push/Lower B/Pull program.
+    // Purely additive: merges in the new days + exercises without ever
+    // touching or deleting anything already logged, then switches the
+    // rotation to the new split. Runs exactly once per browser.
+    if (s.programVersion !== 2) {
+      const existingDayIds = new Set(s.days.map(d => d.id));
+      (CONFIG.days || []).forEach(d => { if (!existingDayIds.has(d.id)) { s.days.push(d); existingDayIds.add(d.id); } });
+
+      const existingExKeys = new Set(s.exercises.map(e => (e.name + '|' + e.day).toLowerCase()));
+      (CONFIG.defaultExercises || []).forEach((e, i) => {
+        const key = (e.name + '|' + e.day).toLowerCase();
+        if (!existingExKeys.has(key)) {
+          s.exercises.push(Object.assign({ id: 'seed2_' + i + '_' + Date.now() }, e));
+          existingExKeys.add(key);
+        }
+      });
+
+      s.splitRotation = (CONFIG.splitRotation || ['Lower A', 'Push', 'Lower B', 'Pull', 'Rest']).map(x =>
+        (CONFIG.days || []).find(d => d.id === x) ? (CONFIG.days.find(d => d.id === x).name) :
+        (x === 'rest' ? 'Rest' : x.charAt(0).toUpperCase() + x.slice(1))
+      );
+      s.splitAnchor = {
+        date: (CONFIG.splitAnchor && CONFIG.splitAnchor.date) || new Date().toISOString().slice(0, 10),
+        index: 0
+      };
+      s.programVersion = 2;
+    }
     return s;
   }
   function saveState() {
@@ -1797,9 +1911,12 @@ img, video, canvas, svg { max-width: 100%; }
   function dayName(id) { const d = state.days.find(x => x.id === id); return d ? d.name : id; }
   function estimate1RM(w, r) { if (r < 2) return w; return w * (1 + r / 30); }
   function roundToStep(v, s) { return Math.round(v / s) * s; }
+  const TAG_ORDER = { primary: 0, accessory: 1, rehab: 2 };
   function getFiltered() {
-    return state.exercises.filter(e =>
-      (e.gym === state.filterGym || e.gym === 'both') && e.day === state.filterDay);
+    return state.exercises
+      .filter(e => (e.gym === state.filterGym || e.gym === 'both') && e.day === state.filterDay)
+      .slice()
+      .sort((a, b) => (TAG_ORDER[a.tag] ?? 3) - (TAG_ORDER[b.tag] ?? 3));
   }
   function getCurrentEx() {
     const f = getFiltered();
@@ -1877,11 +1994,28 @@ img, video, canvas, svg { max-width: 100%; }
     sel.disabled = false; editBtn.disabled = false; logBtn.disabled = false;
     noMsg.style.display = 'none';
     if (!f.find(e => e.id === state.currentEx)) state.currentEx = f[0].id;
-    sel.innerHTML = f.map(e => {
+
+    const TAG_GROUP_LABEL = { primary: 'Primary', accessory: 'Accessory', rehab: 'Rehab' };
+    function buildOption(e) {
       const wLbl = e.bw ? ' · BW' : (e.startWeight ? ' · ' + e.startWeight + unit() : '');
       const sh = e.gym === 'both' ? ' ★' : '';
-      return '<option value="' + e.id + '"' + (e.id === state.currentEx ? ' selected' : '') + '>' + escape(e.name) + wLbl + sh + '</option>';
-    }).join('');
+      let name = e.name;
+      if (e.slot) name += ' (' + e.slot + (e.optionSet ? ' · Set ' + e.optionSet : '') + ')';
+      return '<option value="' + e.id + '"' + (e.id === state.currentEx ? ' selected' : '') + '>' + escape(name) + wLbl + sh + '</option>';
+    }
+    let html = '';
+    let openGroup = null;
+    f.forEach(e => {
+      const groupLabel = TAG_GROUP_LABEL[e.tag] || null;
+      if (groupLabel !== openGroup) {
+        if (openGroup !== null) html += '</optgroup>';
+        if (groupLabel !== null) html += '<optgroup label="' + groupLabel + '">';
+        openGroup = groupLabel;
+      }
+      html += buildOption(e);
+    });
+    if (openGroup !== null) html += '</optgroup>';
+    sel.innerHTML = html;
   }
   function renderForm() {
     const ex = getCurrentEx();
@@ -2332,13 +2466,21 @@ img, video, canvas, svg { max-width: 100%; }
   // EXERCISE MODAL (add / edit)
   // ============================================================
   let editingExId = null;
-  let modalGym = null, modalDay = null;
+  let modalGym = null, modalDay = null, modalTag = null;
+  const EX_TAGS = [
+    { id: 'primary',   name: 'Primary' },
+    { id: 'accessory', name: 'Accessory' },
+    { id: 'rehab',     name: 'Rehab' }
+  ];
   function renderModalSegs() {
     $('exGymSeg').innerHTML = state.gyms.map(g =>
       '<button data-gym="' + g.id + '" class="' + (modalGym === g.id ? 'active' : '') + '">' + escape(g.name) + '</button>'
     ).join('') + '<button data-gym="both" class="' + (modalGym === 'both' ? 'active' : '') + '">Both</button>';
     $('exDaySeg').innerHTML = state.days.map(d =>
       '<button data-day="' + d.id + '" class="' + (modalDay === d.id ? 'active' : '') + '">' + escape(d.name) + '</button>'
+    ).join('');
+    $('exTagSeg').innerHTML = EX_TAGS.map(t =>
+      '<button data-tag="' + t.id + '" class="' + (modalTag === t.id ? 'active' : '') + '">' + t.name + '</button>'
     ).join('');
     $('exGymSeg').querySelectorAll('button').forEach(b => {
       b.addEventListener('click', () => {
@@ -2354,6 +2496,13 @@ img, video, canvas, svg { max-width: 100%; }
         b.classList.add('active');
       });
     });
+    $('exTagSeg').querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        modalTag = b.dataset.tag;
+        $('exTagSeg').querySelectorAll('button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+      });
+    });
   }
   function openExModal(mode, ex) {
     editingExId = mode === 'edit' ? ex.id : null;
@@ -2363,6 +2512,9 @@ img, video, canvas, svg { max-width: 100%; }
       $('exName').value = ex.name;
       modalGym = ex.gym;
       modalDay = ex.day;
+      modalTag = ex.tag || 'primary';
+      $('exSlot').value = ex.slot || '';
+      $('exOptionSet').value = ex.optionSet || '';
       $('exBw').checked = !!ex.bw;
       $('exStartWeight').value = ex.startWeight || 0;
       $('exRepMin').value = ex.repMin;
@@ -2372,6 +2524,9 @@ img, video, canvas, svg { max-width: 100%; }
       $('exName').value = '';
       modalGym = state.filterGym;
       modalDay = state.filterDay;
+      modalTag = 'primary';
+      $('exSlot').value = '';
+      $('exOptionSet').value = '';
       $('exBw').checked = false;
       $('exStartWeight').value = 20;
       $('exRepMin').value = 6;
@@ -2400,11 +2555,14 @@ img, video, canvas, svg { max-width: 100%; }
     if (!name) { alert('Name is required.'); return; }
     if (!modalGym) { alert('Pick a gym.'); return; }
     if (!modalDay) { alert('Pick a day.'); return; }
+    if (!modalTag) { alert('Pick a tag.'); return; }
     const isBw = $('exBw').checked;
     const repMin = parseInt($('exRepMin').value, 10) || 6;
     const repMax = parseInt($('exRepMax').value, 10) || 8;
     const data = {
-      name, gym: modalGym, day: modalDay,
+      name, gym: modalGym, day: modalDay, tag: modalTag,
+      slot: $('exSlot').value.trim(),
+      optionSet: $('exOptionSet').value.trim(),
       bw: isBw,
       startWeight: isBw ? 0 : (parseFloat($('exStartWeight').value) || 0),
       repMin, repMax,
@@ -2447,7 +2605,7 @@ img, video, canvas, svg { max-width: 100%; }
 
   function openRotationModal() {
     rotDraft = (state.splitRotation || []).slice();
-    if (!rotDraft.length) rotDraft = ['Push', 'Pull', 'Legs', 'Rest'];
+    if (!rotDraft.length) rotDraft = ['Lower A', 'Push', 'Lower B', 'Pull', 'Rest'];
     rotDraftTodayIdx = todaySplit().index;
     if (rotDraftTodayIdx >= rotDraft.length) rotDraftTodayIdx = 0;
     renderRotList();
