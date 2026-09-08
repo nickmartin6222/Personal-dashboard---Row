@@ -2192,9 +2192,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span>📈 Stocks / Investments</span><span id="stocksTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
         <div id="stocksList" class="nw-list"></div>
         <div class="quick-add">
-          <input type="text" placeholder="Stock / fund" id="stocksName" />
+          <input type="text" placeholder="Name (e.g. Vanguard S&P 500)" id="stocksName" />
           <input type="number" placeholder="Value" id="stocksAmount" step="0.01" />
           <button class="quick-add-btn" id="stocksAddBtn">+</button>
+        </div>
+        <div class="quick-add" style="margin-top:6px">
+          <input type="text" placeholder="Ticker (optional, e.g. VOO or IVV.AX)" id="stocksTicker" style="text-transform:uppercase" />
+          <input type="number" placeholder="Units held" id="stocksUnits" step="0.0001" />
+        </div>
+        <div style="font-size:10.5px;color:var(--text-tertiary);margin-top:6px;line-height:1.4">
+          Add a ticker + units and this holding's value updates automatically from a live price instead of the Value field above.
         </div>
       </div>
       <!-- Crypto -->
@@ -2555,6 +2562,56 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
   loadExchangeRates();
 
+  // ============================================================
+  // LIVE STOCK PRICES — for any Stocks/Investments item that has a
+  // ticker + units, fetch its current price via the Finnhub proxy
+  // and recompute that item's value (units × price, converted to
+  // CHF base). Also writes a small snapshot to localStorage
+  // (stocks:snapshot) so the dashboard tile can show price/24h%
+  // without hitting the API itself.
+  // ============================================================
+  const STOCK_SNAPSHOT_KEY = 'stocks:snapshot';
+  // ASX (.AX) tickers trade in AUD; everything else assumed USD.
+  // A rough heuristic, not exchange detection — good enough for the
+  // common case of a US brokerage vs an Australian one.
+  function tickerCurrency(ticker) {
+    return /\.AX$/i.test(ticker) ? 'AUD' : 'USD';
+  }
+  async function refreshStockPrices() {
+    const items = storeGet('nw:stocks') || [];
+    const withTicker = items.filter(it => it.ticker && it.units > 0);
+    if (!withTicker.length) return;
+    const symbols = [...new Set(withTicker.map(it => it.ticker))];
+    let quotes = {};
+    try {
+      const r = await fetch('/api/stock-price?symbols=' + encodeURIComponent(symbols.join(',')));
+      quotes = await r.json();
+    } catch (e) { return; }
+
+    const snapshot = storeGet(STOCK_SNAPSHOT_KEY) || {};
+    let changed = false;
+    withTicker.forEach(it => {
+      const q = quotes[it.ticker];
+      if (!q || q.error || !(q.price > 0)) return;
+      const ccy = tickerCurrency(it.ticker);
+      const rate = exchangeRates[ccy] || 1; // CHF -> ccy rate (1 CHF = rate ccy)
+      const priceCHF = q.price / rate;
+      it.amount = priceCHF * it.units;
+      it.lastPrice = q.price;
+      it.lastChangePercent = q.changePercent;
+      it.lastPriceTs = q.ts;
+      changed = true;
+      snapshot[it.ticker] = { name: it.name, price: q.price, changePercent: q.changePercent, currency: ccy, ts: q.ts };
+    });
+    if (changed) {
+      storeSet('nw:stocks', items);
+      storeSet(STOCK_SNAPSHOT_KEY, snapshot);
+      renderAllNetWorth();
+    }
+  }
+  refreshStockPrices();
+  setInterval(refreshStockPrices, 5 * 60 * 1000);
+
   function fmtMoney(amountCHF) {
     const symbol = currencyEl ? currencyEl.value : 'CHF';
     const rate = exchangeRates[symbol] || 1;
@@ -2574,14 +2631,26 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       row.className = 'nw-row';
       const name = document.createElement('span');
       name.className = 'nw-name nw-name-edit';
-      name.textContent = it.name;
-      name.title = 'Tap to rename';
+      name.textContent = it.name + (it.ticker ? ' · ' + it.ticker : '');
+      name.title = it.ticker ? 'Tap to rename (ticker/units set via delete + re-add)' : 'Tap to rename';
       name.addEventListener('click', () => beginNwNameEdit(name, items, idx, cat.key));
+      let chg = null;
+      if (it.ticker && typeof it.lastChangePercent === 'number') {
+        chg = document.createElement('span');
+        const up = it.lastChangePercent >= 0;
+        chg.textContent = (up ? '+' : '') + it.lastChangePercent.toFixed(2) + '%';
+        chg.style.cssText = 'flex-shrink:0;font-size:11px;font-weight:700;font-family:var(--font-mono);' +
+          'color:' + (up ? '#6BE3A4' : '#FF8A8A') + ';';
+      }
       const amt = document.createElement('span');
-      amt.className = 'nw-amt nw-amt-edit';
+      amt.className = 'nw-amt' + (it.ticker ? '' : ' nw-amt-edit');
       amt.textContent = fmtMoney(it.amount);
-      amt.title = 'Tap to edit · type +500 to add, -200 to subtract, or a new total';
-      amt.addEventListener('click', () => beginNwAmountEdit(amt, items, idx, cat.key));
+      if (it.ticker) {
+        amt.title = 'Live-priced from ' + it.ticker + ' — edit units by deleting and re-adding this holding';
+      } else {
+        amt.title = 'Tap to edit · type +500 to add, -200 to subtract, or a new total';
+        amt.addEventListener('click', () => beginNwAmountEdit(amt, items, idx, cat.key));
+      }
       const del = document.createElement('button'); del.className = 'nw-del'; del.textContent = '×';
       del.addEventListener('click', () => {
         const removed = items[idx];
@@ -2589,7 +2658,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         if (removed) logActivity(cat.key, removed.name, -(Number(removed.amount) || 0), 'delete');
         renderAllNetWorth();
       });
-      row.appendChild(name); row.appendChild(amt); row.appendChild(del);
+      row.appendChild(name); if (chg) row.appendChild(chg); row.appendChild(amt); row.appendChild(del);
       list.appendChild(row);
     });
     document.getElementById(cat.totalId).textContent = fmtMoney(total);
@@ -2988,27 +3057,42 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const addBtn = document.getElementById(cat.addId);
     const nameInput = document.getElementById(cat.nameId);
     const amtInput = document.getElementById(cat.amtId);
+    const tickerInput = cat.key === 'stocks' ? document.getElementById('stocksTicker') : null;
+    const unitsInput  = cat.key === 'stocks' ? document.getElementById('stocksUnits')  : null;
     if (!addBtn) return;
     function doAdd() {
       const n = nameInput.value.trim();
+      const ticker = tickerInput ? tickerInput.value.trim().toUpperCase() : '';
+      const units = unitsInput ? parseFloat(unitsInput.value) : NaN;
+      const hasTicker = ticker && units > 0;
       const a = parseFloat(amtInput.value);
-      if (!n || isNaN(a)) return;
+      if (!n) return;
+      if (!hasTicker && isNaN(a)) return;
       // Interpret the input in the CURRENTLY SELECTED display currency, then
       // convert to CHF for storage. So if USD is selected and user types 40000,
       // we store 40000 / USD-per-CHF rate — 31,400 CHF; displays as $40,000.
       const symbol = currencyEl ? currencyEl.value : 'CHF';
       const rate = exchangeRates[symbol] || 1;
-      const amountCHF = a / rate;
+      // With a ticker, amount is a placeholder (0, or whatever's typed) until
+      // the next live-price refresh fills it in from ticker × units.
+      const amountCHF = hasTicker ? (isNaN(a) ? 0 : a / rate) : a / rate;
       const items = storeGet('nw:' + cat.key) || [];
-      items.push({ name: n, amount: amountCHF });
+      const item = { name: n, amount: amountCHF };
+      if (hasTicker) { item.ticker = ticker; item.units = units; }
+      items.push(item);
       storeSet('nw:' + cat.key, items);
       logActivity(cat.key, n, amountCHF, 'add');
       nameInput.value = ''; amtInput.value = '';
+      if (tickerInput) tickerInput.value = '';
+      if (unitsInput) unitsInput.value = '';
       renderAllNetWorth();
+      if (hasTicker && typeof refreshStockPrices === 'function') refreshStockPrices();
     }
     addBtn.addEventListener('click', doAdd);
     nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
     amtInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
+    if (tickerInput) tickerInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
+    if (unitsInput) unitsInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
   });
 
   if (currencyEl) {
