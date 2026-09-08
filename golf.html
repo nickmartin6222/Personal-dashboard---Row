@@ -1009,7 +1009,7 @@ body::after {
     const t = gSelectedTee;
     $('gHoleGrid').innerHTML = t.holes.map((h, i) =>
       '<div class="golf-hole-row">'
-      + '<div class="golf-hole-num">Hole ' + (i + 1) + '<span class="golf-hole-par">Par ' + h.par + (h.yardage ? ' · ' + h.yardage + 'y' : '') + '</span></div>'
+      + '<div class="golf-hole-num">Hole ' + (i + 1) + '<span class="golf-hole-par">Par ' + h.par + (h.yardage ? ' · ' + h.yardage + 'y (' + Math.round(h.yardage * 0.9144) + 'm)' : '') + '</span></div>'
       + '<input type="number" inputmode="numeric" class="golf-input golf-hole-score" data-i="' + i + '" placeholder="Score">'
       + (h.par >= 4 ? '<button type="button" class="golf-fw-btn" data-i="' + i + '" aria-label="Fairway hit">FW</button>' : '<span></span>')
       + '<input type="number" inputmode="numeric" class="golf-input golf-hole-putts" data-i="' + i + '" placeholder="Putts">'
