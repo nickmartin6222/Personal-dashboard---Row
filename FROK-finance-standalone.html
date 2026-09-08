@@ -919,7 +919,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 .nw-activity-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 2px; }
 .nw-activity-list::-webkit-scrollbar-track { background: transparent; }
 .nw-activity-row {
-  display: grid; grid-template-columns: 4px 1fr auto auto;
+  display: grid; grid-template-columns: 4px 1fr auto auto auto;
   gap: 10px; align-items: center;
   padding: 8px 12px;
   background: rgba(255,255,255,0.025);
@@ -928,6 +928,13 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   transition: background 0.15s;
 }
 .nw-activity-row:hover { background: rgba(255,255,255,0.05); }
+.nw-activity-del {
+  border: 0; background: transparent; color: var(--text-tertiary);
+  font-size: 16px; line-height: 1; cursor: pointer; padding: 2px 4px;
+  opacity: 0.5; transition: opacity 0.2s, color 0.2s;
+}
+.nw-activity-row:hover .nw-activity-del { opacity: 1; }
+.nw-activity-del:hover { color: var(--danger); }
 .nw-activity-bar {
   width: 4px; height: 24px; border-radius: 2px;
   flex-shrink: 0;
@@ -2687,9 +2694,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   const ACTIVITY_MAX = 50;
   function logActivity(catKey, name, deltaCHF, kind) {
     const arr = storeGet(ACTIVITY_KEY) || [];
-    arr.push({ ts: Date.now(), cat: catKey, name: String(name || ''), delta: Number(deltaCHF) || 0, kind: kind || 'add' });
+    arr.push({ id: 'act_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), ts: Date.now(), cat: catKey, name: String(name || ''), delta: Number(deltaCHF) || 0, kind: kind || 'add' });
     if (arr.length > ACTIVITY_MAX) arr.splice(0, arr.length - ACTIVITY_MAX);
     storeSet(ACTIVITY_KEY, arr);
+  }
+  function deleteActivity(id) {
+    const arr = (storeGet(ACTIVITY_KEY) || []).filter(e => e.id !== id);
+    storeSet(ACTIVITY_KEY, arr);
+    renderActivity();
   }
   function fmtActivityDate(ts) {
     const d = new Date(ts);
@@ -2709,7 +2721,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const empty = document.getElementById('nwActivityEmpty');
     const count = document.getElementById('nwActivityCount');
     if (!list) return;
-    const arr = (storeGet(ACTIVITY_KEY) || []).slice().sort((a, b) => b.ts - a.ts);
+    const raw = storeGet(ACTIVITY_KEY) || [];
+    let backfilled = false;
+    raw.forEach(e => {
+      if (!e.id) { e.id = 'act_' + (e.ts || Date.now()) + '_' + Math.random().toString(36).slice(2, 7); backfilled = true; }
+    });
+    if (backfilled) storeSet(ACTIVITY_KEY, raw);
+    const arr = raw.slice().sort((a, b) => b.ts - a.ts);
     if (!arr.length) {
       list.classList.add('hidden');
       empty.classList.remove('hidden');
@@ -2733,9 +2751,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         + '</div>'
         + '<span class="nw-activity-amt ' + cls + '">' + sign + amt + '</span>'
         + '<span class="nw-activity-date">' + fmtActivityDate(e.ts) + '</span>'
+        + '<button type="button" class="nw-activity-del" data-id="' + e.id + '" aria-label="Remove from history">×</button>'
         + '</div>';
     }).join('');
   }
+  document.getElementById('nwActivityList').addEventListener('click', (e) => {
+    const btn = e.target.closest('.nw-activity-del');
+    if (btn) deleteActivity(btn.dataset.id);
+  });
 
   // ============================================================
   // ALLOCATION DONUT — pie chart of where money lives + annual subs
