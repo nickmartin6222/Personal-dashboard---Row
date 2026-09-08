@@ -653,6 +653,21 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   display: flex; justify-content: space-between; align-items: center;
   padding: 5px 0; gap: 8px; min-width: 0;
 }
+.nw-color-swatch {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.18); border-radius: 50%;
+  padding: 0; background: none; cursor: pointer;
+}
+.nw-color-swatch::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
+.nw-color-swatch::-webkit-color-swatch { border: none; border-radius: 50%; }
+.nw-color-swatch::-moz-color-swatch { border: none; border-radius: 50%; }
+.nw-ticker-tag {
+  flex-shrink: 0; font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  color: var(--text-tertiary); background: rgba(255,255,255,0.06);
+  padding: 2px 6px; border-radius: 5px; cursor: pointer;
+}
+.nw-ticker-tag:hover { background: rgba(255,255,255,0.10); color: var(--text-primary); }
 .nw-name {
   color: var(--text-primary); flex: 1 1 auto; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -2546,6 +2561,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     { key: 'crypto', listId: 'cryptoList', totalId: 'cryptoTotal', nameId: 'cryptoName', amtId: 'cryptoAmount', addId: 'cryptoAddBtn' },
     { key: 'other',  listId: 'otherList',  totalId: 'otherTotal',  nameId: 'otherName',  amtId: 'otherAmount',  addId: 'otherAddBtn' }
   ];
+  // Per-holding pie chart colour — customizable (item.color), with a
+  // stable default derived from the holding's name/ticker so colours
+  // don't jump around as other items are added/removed. Shared palette
+  // + hash so the dashboard's net worth pie (index.html) computes the
+  // exact same default for any item that hasn't been recoloured.
+  const NW_COLOR_PALETTE = ['#7DD3FC','#6EE7B7','#C9B8FF','#F2C063','#FF8A8A','#F472B6','#FCD34D','#34D399','#A78BFA','#60A5FA','#FB923C','#4ADE80'];
+  function defaultItemColor(catKey, it) {
+    const seed = catKey + ':' + (it.ticker || it.name || '');
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+    return NW_COLOR_PALETTE[hash % NW_COLOR_PALETTE.length];
+  }
+  function itemColor(catKey, it) {
+    return it.color || defaultItemColor(catKey, it);
+  }
+
   const currencyEl = document.getElementById('netWorthCurrency');
   const netWorthTotal = document.getElementById('netWorthTotal');
   const netWorthBreakdown = document.getElementById('netWorthBreakdown');
@@ -2563,6 +2594,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           GBP: data.rates.GBP || 1,
           AUD: data.rates.AUD || 1
         };
+        // Cache for the dashboard tile (index.html), which shows a net
+        // worth figure but has no reason to fetch exchange rates itself.
+        try { localStorage.setItem('fx:rates', JSON.stringify(exchangeRates)); } catch (e) {}
         renderAllNetWorth();
         if (typeof renderSubs === 'function') renderSubs();
       }
@@ -2637,11 +2671,32 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       total += Number(it.amount) || 0;
       const row = document.createElement('div');
       row.className = 'nw-row';
+
+      const swatch = document.createElement('input');
+      swatch.type = 'color';
+      swatch.className = 'nw-color-swatch';
+      swatch.value = itemColor(cat.key, it);
+      swatch.title = 'Pick this holding\'s pie chart colour';
+      swatch.addEventListener('input', () => {
+        items[idx].color = swatch.value;
+        storeSet('nw:' + cat.key, items);
+      });
+      swatch.addEventListener('change', renderAllNetWorth);
+
       const name = document.createElement('span');
       name.className = 'nw-name nw-name-edit';
-      name.textContent = it.name + (it.ticker ? ' · ' + it.ticker : '');
-      name.title = it.ticker ? 'Tap to rename (ticker/units set via delete + re-add)' : 'Tap to rename';
+      name.textContent = it.name;
+      name.title = 'Tap to rename';
       name.addEventListener('click', () => beginNwNameEdit(name, items, idx, cat.key));
+
+      let tickerEl = null;
+      if (it.ticker) {
+        tickerEl = document.createElement('span');
+        tickerEl.className = 'nw-ticker-tag';
+        tickerEl.textContent = it.ticker;
+        tickerEl.title = 'Tap to change ticker';
+        tickerEl.addEventListener('click', () => beginNwTickerEdit(tickerEl, items, idx, cat.key));
+      }
       let chg = null;
       if (it.ticker && typeof it.lastChangePercent === 'number') {
         chg = document.createElement('span');
@@ -2651,10 +2706,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           'color:' + (up ? '#6BE3A4' : '#FF8A8A') + ';';
       }
       const amt = document.createElement('span');
-      amt.className = 'nw-amt' + (it.ticker ? '' : ' nw-amt-edit');
+      amt.className = 'nw-amt nw-amt-edit';
       amt.textContent = fmtMoney(it.amount);
       if (it.ticker) {
-        amt.title = 'Live-priced from ' + it.ticker + ' — edit units by deleting and re-adding this holding';
+        amt.title = 'Tap to edit units held (' + (it.units || 0) + ' now) — value recalculates from the live price';
+        amt.addEventListener('click', () => beginNwUnitsEdit(amt, items, idx, cat.key));
       } else {
         amt.title = 'Tap to edit · type +500 to add, -200 to subtract, or a new total';
         amt.addEventListener('click', () => beginNwAmountEdit(amt, items, idx, cat.key));
@@ -2666,7 +2722,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         if (removed) logActivity(cat.key, removed.name, -(Number(removed.amount) || 0), 'delete');
         renderAllNetWorth();
       });
-      row.appendChild(name); if (chg) row.appendChild(chg); row.appendChild(amt); row.appendChild(del);
+      row.appendChild(swatch);
+      row.appendChild(name);
+      if (tickerEl) row.appendChild(tickerEl);
+      if (chg) row.appendChild(chg);
+      row.appendChild(amt);
+      row.appendChild(del);
       list.appendChild(row);
     });
     document.getElementById(cat.totalId).textContent = fmtMoney(total);
@@ -2739,6 +2800,63 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       else if (e.key === 'Escape') { saved = true; renderAllNetWorth(); }
     });
     input.addEventListener('blur', save);
+  }
+
+  function beginNwTickerEdit(tickerEl, items, idx, catKey) {
+    if (tickerEl.querySelector('input')) return;
+    const cur = String(items[idx].ticker || '');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = cur;
+    input.style.cssText = 'width:100px;padding:4px 8px;font-family:var(--font-mono);font-size:12px;text-transform:uppercase;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;outline:none;';
+    tickerEl.textContent = '';
+    tickerEl.appendChild(input);
+    setTimeout(() => { input.focus(); input.select(); }, 0);
+    let savedTicker = false;
+    function saveTicker() {
+      if (savedTicker) return; savedTicker = true;
+      const v = input.value.trim().toUpperCase();
+      if (v && v !== cur) {
+        items[idx].ticker = v;
+        storeSet('nw:' + catKey, items);
+        refreshStockPrices();
+      }
+      renderAllNetWorth();
+    }
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); saveTicker(); }
+      else if (e.key === 'Escape') { savedTicker = true; renderAllNetWorth(); }
+    });
+    input.addEventListener('blur', saveTicker);
+  }
+
+  function beginNwUnitsEdit(amtEl, items, idx, catKey) {
+    if (amtEl.querySelector('input')) return;
+    const cur = Number(items[idx].units) || 0;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.inputMode = 'decimal';
+    input.value = String(cur);
+    input.style.cssText = 'width:90px;padding:4px 8px;font-family:var(--font-mono);font-size:12px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    amtEl.textContent = '';
+    amtEl.appendChild(input);
+    setTimeout(() => { input.focus(); input.select(); }, 0);
+    let savedUnits = false;
+    function saveUnits() {
+      if (savedUnits) return; savedUnits = true;
+      const v = parseFloat(input.value);
+      if (v > 0 && v !== cur) {
+        items[idx].units = v;
+        storeSet('nw:' + catKey, items);
+        refreshStockPrices();
+      }
+      renderAllNetWorth();
+    }
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); saveUnits(); }
+      else if (e.key === 'Escape') { savedUnits = true; renderAllNetWorth(); }
+    });
+    input.addEventListener('blur', saveUnits);
   }
 
   function renderAllNetWorth() {
