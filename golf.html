@@ -777,7 +777,14 @@ body::after {
   migrateDifferentials();
   renderCourseList();
   renderRounds();
-  window.addEventListener('storage', () => { renderCourseList(); renderRounds(); });
+  // Re-run the differential fix-up whenever localStorage changes from
+  // outside this tab — critically including right after cloud sync
+  // pulls in the remote copy. Without this, an old/bad remote copy
+  // (saved before this fix existed) silently overwrites the freshly-
+  // corrected local data a moment after page load. migrateDifferentials
+  // re-saving also pushes the fix back up to the cloud, so this only
+  // needs to happen once per device from here on.
+  window.addEventListener('storage', () => { migrateDifferentials(); renderCourseList(); renderRounds(); });
 })();
 </script>
 
