@@ -104,6 +104,7 @@ const CONFIG = {
     { name: "Barbell RDL",                gym: "comm", day: "lowerA", tag: "primary",   slot: "RDL",                 muscle: "Hamstrings", repMin: 6,  repMax: 10, step: 5,    startWeight: 60 },
     { name: "Single-Leg Machine Hip Thrust", gym: "comm", day: "lowerA", tag: "primary", slot: "Hip Thrust",          muscle: "Glutes", repMin: 8,  repMax: 12, step: 5,    startWeight: 40 },
     { name: "Machine Hip Adductor",       gym: "comm", day: "lowerA", tag: "rehab",     slot: "Hip Adductor",        muscle: "Adductors", repMin: 10, repMax: 15, step: 2.5,  startWeight: 30 },
+    { name: "Machine Hip Abduction",      gym: "comm", day: "lowerA", tag: "rehab",     slot: "Hip Abduction",       muscle: "Hips", repMin: 10, repMax: 15, step: 2.5,  startWeight: 20 },
     { name: "Copenhagen Plank",           gym: "comm", day: "lowerA", tag: "rehab",     slot: "Copenhagen Plank",    muscle: "Adductors", repMin: 20, repMax: 40, step: 1,    startWeight: 0,  bw: true, holdSeconds: true },
     { name: "Leg Press",                  gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "A", muscle: "Quads", repMin: 8,  repMax: 12, step: 10,  startWeight: 120 },
     { name: "Hack Squat",                 gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Accessory", optionSet: "B", muscle: "Quads", repMin: 8,  repMax: 12, step: 10,  startWeight: 80 },
@@ -138,6 +139,7 @@ const CONFIG = {
     { name: "Goblet / Front Squat",       gym: "comm", day: "lowerB", tag: "primary",   slot: "Squat",               muscle: "Quads", repMin: 6,  repMax: 10, step: 2.5, startWeight: 20 },
     { name: "Bulgarian Split Squat",      gym: "comm", day: "lowerB", tag: "primary",   slot: "Split Squat",         muscle: "Quads", repMin: 8,  repMax: 12, step: 2.5, startWeight: 15 },
     { name: "Hip External Rotation",      gym: "comm", day: "lowerB", tag: "rehab",     slot: "Hip External Rotation", muscle: "Hips", repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true },
+    { name: "Leg Extension",              gym: "comm", day: "lowerB", tag: "accessory", slot: "Leg Extension",       muscle: "Quads", repMin: 10, repMax: 15, step: 5, startWeight: 30 },
     { name: "Seated Leg Curl",            gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "A", muscle: "Hamstrings", repMin: 10, repMax: 15, step: 5,  startWeight: 30 },
     { name: "Lying Leg Curl",             gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "B", muscle: "Hamstrings", repMin: 10, repMax: 15, step: 5,  startWeight: 25 },
     { name: "Nordic Curl or GHR",         gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Leg Curl",   optionSet: "C", muscle: "Hamstrings", repMin: 5,  repMax: 10, step: 1,  startWeight: 0, bw: true },
@@ -150,6 +152,7 @@ const CONFIG = {
 
     // ---- Pull (back / biceps / shoulders) ----
     { name: "Lat Pulldown",               gym: "comm", day: "pull", tag: "primary",   slot: "Vertical Pull",        muscle: "Back", repMin: 6,  repMax: 10, step: 5,   startWeight: 50 },
+    { name: "Pull-Ups",                   gym: "comm", day: "pull", tag: "primary",   slot: "Pull-Up",              muscle: "Back", repMin: 4,  repMax: 10, step: 1,   startWeight: 0, bw: true },
     { name: "Chest-Supported Row",        gym: "comm", day: "pull", tag: "primary",   slot: "Chest-Supported Row",  muscle: "Back", repMin: 6,  repMax: 10, step: 5,   startWeight: 40 },
     { name: "Single-Arm Cable Row",       gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation",   optionSet: "A", muscle: "Back", repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
     { name: "T-Bar / Chest-Supported Single-Arm Row", gym: "comm", day: "pull", tag: "accessory", slot: "Pull Row Variation", optionSet: "B", muscle: "Back", repMin: 10, repMax: 15, step: 5, startWeight: 20 },
@@ -2099,6 +2102,22 @@ img, video, canvas, svg { max-width: 100%; }
         if (m) ex.muscle = m;
       });
       s.programVersion = 6;
+    }
+
+    // Seventh migration: add Machine Hip Abduction (rehab, next to the
+    // existing adductor work) + Leg Extension (fixed quad-isolation
+    // option on Lower B) + Pull-Ups (always-on primary on Pull day).
+    // Purely additive, same merge-by-name+day pattern as earlier migrations.
+    if ((s.programVersion || 0) < 7) {
+      const existingExKeys7 = new Set(s.exercises.map(e => (e.name + '|' + e.day).toLowerCase()));
+      (CONFIG.defaultExercises || []).forEach((e, i) => {
+        const key = (e.name + '|' + e.day).toLowerCase();
+        if (!existingExKeys7.has(key)) {
+          s.exercises.push(Object.assign({ id: 'seed7_' + i + '_' + Date.now() }, e));
+          existingExKeys7.add(key);
+        }
+      });
+      s.programVersion = 7;
     }
 
     return s;
