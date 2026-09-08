@@ -292,7 +292,7 @@ body::after {
       <div class="tile-spacer"></div>
       <h2 class="tile-title">Main</h2>
       <div class="tile-foot">
-        <span class="tile-sub">Your day at a glance</span>
+        <span class="tile-sub" id="tileInsightMain">Your day at a glance</span>
         <span class="tile-arrow">→</span>
       </div>
     </a>
@@ -306,21 +306,7 @@ body::after {
       <div class="tile-spacer"></div>
       <h2 class="tile-title">Fitness</h2>
       <div class="tile-foot">
-        <span class="tile-sub">Workouts, splits, sessions</span>
-        <span class="tile-arrow">→</span>
-      </div>
-    </a>
-
-    <!-- Small tile -->
-    <a class="tile" href="health.html" style="--accent:#A7F3D0">
-      <div class="tile-top">
-        <span class="tile-num">·03</span>
-        <span class="tile-emoji">💊</span>
-      </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Health</h2>
-      <div class="tile-foot">
-        <span class="tile-sub">Whoop vitals</span>
+        <span class="tile-sub" id="tileInsightFitness">Workouts, splits, sessions</span>
         <span class="tile-arrow">→</span>
       </div>
     </a>
@@ -328,13 +314,13 @@ body::after {
     <!-- Wide tile -->
     <a class="tile wide" href="FROK-finance-standalone.html" style="--accent:#F2C063">
       <div class="tile-top">
-        <span class="tile-num">·04</span>
+        <span class="tile-num">·03</span>
         <span class="tile-emoji">📊</span>
       </div>
       <div class="tile-spacer"></div>
       <h2 class="tile-title">Finance</h2>
       <div class="tile-foot">
-        <span class="tile-sub">Net worth & spending</span>
+        <span class="tile-sub" id="tileInsightFinance">Net worth & spending</span>
         <span class="tile-arrow">→</span>
       </div>
     </a>
@@ -342,13 +328,13 @@ body::after {
     <!-- Small tile -->
     <a class="tile" href="golf.html" style="--accent:#6EE7B7">
       <div class="tile-top">
-        <span class="tile-num">·05</span>
+        <span class="tile-num">·04</span>
         <span class="tile-emoji">⛳</span>
       </div>
       <div class="tile-spacer"></div>
       <h2 class="tile-title">Golf</h2>
       <div class="tile-foot">
-        <span class="tile-sub">Rounds & handicap</span>
+        <span class="tile-sub" id="tileInsightGolf">Rounds & handicap</span>
         <span class="tile-arrow">→</span>
       </div>
     </a>
@@ -599,6 +585,87 @@ body::after {
     if (!t || !t.access) { window.location.href = 'health.html'; return; }
     $('whAction').textContent = 'Syncing…'; syncWhoop();
   });
+})();
+</script>
+
+<!-- ===== Tile insights — a quick read of each page's live localStorage
+     state, since everything here shares one origin. Best-effort: any
+     page that hasn't been opened yet just falls back to its default
+     copy rather than showing an error. ===== -->
+<script>
+(function () {
+  'use strict';
+  function readJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
+
+  // ---- Main: time-of-day phase (mirrors main.html's day ring) ----
+  (function () {
+    const WAKE_HOUR = 8, SLEEP_HOUR = 24;
+    const now = new Date();
+    const hours = now.getHours() + now.getMinutes() / 60;
+    const el = document.getElementById('tileInsightMain');
+    if (!el) return;
+    if (hours < WAKE_HOUR) { el.textContent = '😴 Still sleeping'; return; }
+    if (hours >= SLEEP_HOUR) { el.textContent = '⚠️ Past bedtime'; return; }
+    const percent = (hours - WAKE_HOUR) / (SLEEP_HOUR - WAKE_HOUR) * 100;
+    let phase = 'Morning';
+    if (percent >= 90) phase = 'Bedtime soon';
+    else if (percent >= 75) phase = 'Evening';
+    else if (percent >= 50) phase = 'Afternoon';
+    else if (percent >= 25) phase = 'Midday';
+    el.textContent = phase + ' · ' + Math.floor(percent) + '% through your day';
+  })();
+
+  // ---- Fitness: today's split day, from gym.html's rotation state ----
+  (function () {
+    const el = document.getElementById('tileInsightFitness');
+    if (!el) return;
+    const s = readJSON('po_coach_v1');
+    if (!s || !Array.isArray(s.splitRotation) || !s.splitRotation.length || !s.splitAnchor) return;
+    try {
+      const rot = s.splitRotation;
+      const a = new Date(s.splitAnchor.date);
+      const t = new Date();
+      a.setHours(0,0,0,0); t.setHours(0,0,0,0);
+      const diffDays = Math.round((t - a) / 86400000);
+      const idx = ((s.splitAnchor.index + diffDays) % rot.length + rot.length) % rot.length;
+      el.textContent = 'Today: ' + rot[idx];
+    } catch (e) {}
+  })();
+
+  // ---- Finance: net worth total, summed across categories (CHF base) ----
+  (function () {
+    const el = document.getElementById('tileInsightFinance');
+    if (!el) return;
+    const cats = ['bank', 'stocks', 'crypto', 'other'];
+    let total = 0, any = false;
+    cats.forEach(c => {
+      const items = readJSON('nw:' + c);
+      if (Array.isArray(items) && items.length) {
+        any = true;
+        items.forEach(it => { total += Number(it.amount) || 0; });
+      }
+    });
+    if (!any) return;
+    el.textContent = 'Net worth: CHF ' + Math.round(total).toLocaleString('en-US');
+  })();
+
+  // ---- Golf: rough handicap index, same calc as golf.html ----
+  (function () {
+    const el = document.getElementById('tileInsightGolf');
+    if (!el) return;
+    const rounds = readJSON('golf:rounds');
+    if (!Array.isArray(rounds) || !rounds.length) return;
+    const comparable = rounds
+      .slice()
+      .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0))
+      .slice(0, 20)
+      .map(r => typeof r.differential === 'number' ? (r.holes === 9 ? r.differential * 2 : r.differential) : null)
+      .filter(d => typeof d === 'number');
+    if (comparable.length < 3) { el.textContent = comparable.length + '/3 rounds logged'; return; }
+    const best = comparable.slice().sort((a, b) => a - b).slice(0, Math.min(8, comparable.length));
+    const avg = Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
+    el.textContent = 'Handicap: ~' + avg;
+  })();
 })();
 </script>
 </body>
