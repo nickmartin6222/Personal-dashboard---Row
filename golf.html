@@ -479,6 +479,17 @@ body::after {
     if (!(score > 0) || !(par > 0)) return null;
     return Math.round(((score - par) * 113 / (slope > 0 ? slope : 113)) * 10) / 10;
   }
+  // A real 9-hole par is roughly half an 18-hole one (typically 27-40).
+  // If an 18-hole-scale number ends up in Par while 9 holes is selected —
+  // a course's saved 18-hole par autofilling before the holes toggle was
+  // switched, or just typing what you know the full course plays to —
+  // the differential comes out roughly double what it should be (e.g. a
+  // 47 over a "par 72" nine reads as -25 instead of the actual ~+2.1).
+  // Auto-halve instead of trusting it as-is.
+  function sanePar(par, holes) {
+    if (holes === 9 && par > 45) return Math.round(par / 2);
+    return par;
+  }
   // Rough comparable value for mixing 9- and 18-hole rounds into one
   // handicap average — doubling a 9-hole differential is an approximation,
   // not the real WHS 9-hole combination method.
@@ -659,7 +670,7 @@ body::after {
 
   function updateDiffHint() {
     const score = parseFloat($('gInputScore').value);
-    const par = parseFloat($('gInputPar').value);
+    const par = sanePar(parseFloat($('gInputPar').value), formHoles);
     const slope = parseFloat($('gInputSlope').value);
     const d = computeDifferential(score, par, slope);
     const hint = $('gDiffHint');
@@ -684,7 +695,7 @@ body::after {
     const courses = loadCourses();
     const c = courses[name];
     if (c) {
-      const par = formHoles === 9 ? c.par9 : c.par18;
+      const par = sanePar(formHoles === 9 ? c.par9 : c.par18, formHoles);
       if (par > 0) $('gInputPar').value = par;
       if (c.slope > 0) $('gInputSlope').value = c.slope;
       updateDiffHint();
@@ -700,7 +711,7 @@ body::after {
     // back to the standard default so the field is rarely empty.
     const name = $('gInputCourse').value.trim().toLowerCase();
     const c = name ? loadCourses()[name] : null;
-    const savedPar = c ? (formHoles === 9 ? c.par9 : c.par18) : null;
+    const savedPar = c ? sanePar(formHoles === 9 ? c.par9 : c.par18, formHoles) : null;
     $('gInputPar').value = savedPar > 0 ? savedPar : defaultPar();
     updateDiffHint();
   });
@@ -719,7 +730,7 @@ body::after {
   $('gSaveBtn').addEventListener('click', () => {
     const score = parseInt($('gInputScore').value, 10);
     if (!score || score < 18) { $('gInputScore').focus(); return; }
-    const par = parseFloat($('gInputPar').value) || defaultPar();
+    const par = sanePar(parseFloat($('gInputPar').value) || defaultPar(), formHoles);
     const slope = parseFloat($('gInputSlope').value);
     const course = $('gInputCourse').value.trim();
     const round = {
@@ -768,6 +779,11 @@ body::after {
         r.par = (r.holes || 18) === 9 ? 36 : 72;
         changed = true;
       }
+      // Same fix as sanePar() above, applied retroactively — a 9-hole
+      // round saved with an 18-hole-scale par (e.g. 72) produces a
+      // differential roughly double what it should be.
+      const corrected = sanePar(r.par, r.holes || 18);
+      if (corrected !== r.par) { r.par = corrected; changed = true; }
       const fixed = computeDifferential(r.score, r.par, r.slope);
       if (fixed !== r.differential) { r.differential = fixed; changed = true; }
     });

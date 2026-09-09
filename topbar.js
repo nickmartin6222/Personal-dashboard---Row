@@ -47,18 +47,24 @@
   transition: background 0.15s;
 }
 .home-btn:hover { background: rgba(255, 255, 255, 0.08); }
+/* Same pill + sliding dot as the dashboard's own toggle (index.html
+   .theme-toggle) — colors hardcoded here since this file runs on pages
+   that don't share the dashboard's --card/--sage variables. */
 .theme-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 44px; height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 12px;
-  font-size: 18px; line-height: 1;
-  cursor: pointer;
+  width: 52px; height: 30px; flex-shrink: 0; padding: 3px;
+  border-radius: 999px; border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04); cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+  display: flex; align-items: center;
+  transition: background 0.2s ease;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
 }
-.theme-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.theme-btn .theme-btn-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #6EE3A4;
+  transition: transform 0.25s ease, background 0.2s ease;
+}
+.theme-btn.is-light .theme-btn-dot { transform: translateX(22px); background: #5F7A63; }
 /* Fixed top-right chrome for pages that suppress the normal topbar
    (currently just finance) — a persistent way home without relying on
    scroll position or a browser back gesture. */
@@ -119,20 +125,30 @@ body.has-bottombar {
 /* === Light theme overrides ===
    Additive only — never edits the rules above, so dark mode (the
    default, no [data-theme] attribute) can't be affected by this. */
+/* No solid bar — blends into the page's own cream background instead
+   of sitting on top of it as a stark white slab. The individual button
+   pills still carry their own background below, so the icons stay
+   visible against whatever scrolls underneath. Extra bottom padding
+   gives the page heading room to breathe instead of crowding the bar. */
 [data-theme="light"] .topbar {
-  background: #FFFFFF;
-  border-bottom-color: rgba(20,18,15,0.08);
+  background: transparent;
+  border-bottom: none;
+  padding-bottom: 20px;
 }
 [data-theme="light"] .topbar-finance-btn,
-[data-theme="light"] .home-btn,
-[data-theme="light"] .theme-btn {
+[data-theme="light"] .home-btn {
   background: #FFFFFF;
   border-color: rgba(20,18,15,0.12);
+  box-shadow: 0 2px 10px rgba(20,18,15,0.08);
 }
 [data-theme="light"] .topbar-finance-btn:hover,
-[data-theme="light"] .home-btn:hover,
-[data-theme="light"] .theme-btn:hover {
+[data-theme="light"] .home-btn:hover {
   background: rgba(20,18,15,0.06);
+}
+[data-theme="light"] .theme-btn {
+  background: #FFFFFF;
+  border-color: rgba(28,30,27,0.14);
+  box-shadow: 0 2px 10px rgba(28,30,27,0.10);
 }
 [data-theme="light"] .topbar-finance-icon {
   filter: grayscale(100%) brightness(0.7);
@@ -321,15 +337,16 @@ body.topbar-modal-open {
     btn.id = 'themeBtn';
     btn.className = 'theme-btn';
     btn.setAttribute('aria-label', 'Toggle light / dark theme');
-    function paintIcon() {
-      btn.textContent = document.documentElement.getAttribute('data-theme') === 'light' ? '🌙' : '☀️';
+    btn.innerHTML = '<span class="theme-btn-dot"></span>';
+    function paintState() {
+      btn.classList.toggle('is-light', document.documentElement.getAttribute('data-theme') === 'light');
     }
-    paintIcon();
+    paintState();
     btn.addEventListener('click', () => {
       const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'mint' : 'sage';
       try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
       applyStoredTheme();
-      paintIcon();
+      paintState();
     });
 
     const topbar = document.getElementById('topbar');
