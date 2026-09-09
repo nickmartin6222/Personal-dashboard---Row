@@ -91,8 +91,16 @@ html, body {
   overflow-x: hidden;
 }
 /* Locked while a modal is open, so the page behind a bottom-sheet can't
-   scroll underneath it — a common mobile paper-cut this avoids. */
-html.modal-open, html.modal-open body { overflow: hidden; height: 100%; }
+   scroll underneath it. body.modal-open pins the page at its current
+   scroll offset via position:fixed (set from JS as --scroll-lock-top)
+   instead of plain overflow:hidden — toggling overflow alone resets
+   scrollTop to 0 on many mobile browsers, which is what was throwing
+   you back to the top every time a sheet closed. */
+body.modal-open {
+  position: fixed; left: 0; right: 0;
+  top: calc(-1 * var(--scroll-lock-top, 0px));
+  width: 100%;
+}
 img, svg, canvas { max-width: 100%; }
 button { font-family: inherit; }
 
@@ -166,9 +174,19 @@ button { font-family: inherit; }
   display: flex; align-items: center; gap: 6px;
   font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
   color: var(--mint); background: rgba(110,231,183,0.12); border-radius: 999px;
-  padding: 5px 9px; white-space: nowrap;
+  padding: 5px 9px; white-space: nowrap; border: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 [data-theme="light"] .wcard-status { background: rgba(76,122,91,0.10); }
+.wcard-status-edit { opacity: 0.6; }
+.wcard-log-row { display: flex; gap: 8px; margin-top: 10px; }
+.wcard-log-input {
+  flex: 1; min-width: 0; background: var(--bg-raised); border: 1px solid var(--border-strong);
+  border-radius: 10px; color: var(--text-1); font-size: 16px; padding: 10px 12px;
+}
+.wcard-log-btn {
+  flex: none; padding: 10px 18px; border-radius: 10px; border: none;
+  background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 13px; cursor: pointer;
+}
 .wcard-chart-wrap { position: relative; margin: 8px 0 0; height: 46px; }
 .wcard-tooltip {
   position: absolute; top: -6px; transform: translate(-50%, -100%);
@@ -224,6 +242,22 @@ button { font-family: inherit; }
 .widget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; margin-bottom: 14px; }
 @media (max-width: 640px) { .widget-grid { grid-template-columns: 1fr; } }
 .widget-grid > .card { display: flex; flex-direction: column; }
+/* Today's Workout + Recent Activity side by side with Mark Done full-
+   width underneath, same as before, on desktop — but on mobile, where
+   everything stacks in one column anyway, Mark Done needs to land
+   right after Today's Workout instead of after Recent Activity. Named
+   grid areas let the two breakpoints reorder independently without
+   moving anything in the DOM. */
+.widget-grid-3 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "tw ra" "ws ws";
+}
+.widget-grid-3 .tw-card { grid-area: tw; }
+.widget-grid-3 .ra-card { grid-area: ra; }
+.widget-grid-3 .ws-card { grid-area: ws; margin-bottom: 0; }
+@media (max-width: 640px) {
+  .widget-grid-3 { grid-template-columns: 1fr; grid-template-areas: "tw" "ws" "ra"; }
+}
 .tw-card .tw-checklist { display: flex; flex-direction: column; flex: 1; }
 .tw-card .exercise-list { flex: 1; }
 .ra-card { display: flex; flex-direction: column; }
@@ -376,6 +410,17 @@ button { font-family: inherit; }
 .set-edit-save, .set-edit-cancel { border: none; border-radius: 7px; padding: 5px 9px; font-size: 11px; font-weight: 700; cursor: pointer; }
 .set-edit-save { background: var(--lime); color: var(--lime-ink); }
 .set-edit-cancel { background: var(--bg-raised); color: var(--text-3); }
+.edit-duration-btn {
+  width: 100%; margin: 0 0 8px; padding: 8px; border-radius: var(--r-sm);
+  border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2);
+  font-size: 11.5px; font-weight: 700; cursor: pointer;
+}
+.duration-edit-row { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; flex-wrap: wrap; }
+.duration-edit-label { font-family: var(--font-mono); font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.duration-edit-row .edit-duration {
+  width: 64px; background: var(--bg-raised); border: 1px solid var(--border-strong);
+  border-radius: 7px; color: var(--text-1); font-family: var(--font-mono); font-size: 16px; padding: 6px;
+}
 .delete-session-btn {
   width: 100%; margin: 2px 0 10px; padding: 9px; border-radius: var(--r-sm);
   border: 1px solid rgba(255,138,138,0.3); background: rgba(255,138,138,0.08);
@@ -396,6 +441,8 @@ button { font-family: inherit; }
 .lib-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .lib-group-name { font-size: 13px; font-weight: 700; flex: 1; overflow-wrap: anywhere; }
 .lib-group-count { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); }
+.lib-activity-track { width: 52px; height: 6px; border-radius: 999px; background: var(--bg-raised); overflow: hidden; flex: none; }
+.lib-activity-fill { height: 100%; border-radius: 999px; transition: width 0.3s ease; }
 .lib-chevron { color: var(--text-3); font-size: 13px; transition: transform 0.2s ease; }
 .lib-chevron.is-open { transform: rotate(180deg); }
 .lib-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 12px; }
@@ -582,7 +629,11 @@ button { font-family: inherit; }
         <div class="wcard-num"><span id="wNum">—</span><span class="wcard-unit" id="wUnit">kg</span></div>
         <div class="wcard-streak" id="wStreak" style="display:none">🔥 <span id="wStreakTxt"></span></div>
       </div>
-      <div class="wcard-status" id="wStatus" style="display:none">✓ <span id="wStatusTxt">Logged today</span></div>
+      <button type="button" class="wcard-status" id="wStatus" style="display:none">✓ <span id="wStatusTxt">Logged today</span> <span class="wcard-status-edit">✎</span></button>
+    </div>
+    <div class="wcard-log-row" id="wcardLogRow">
+      <input type="number" step="0.1" inputmode="decimal" class="wcard-log-input" id="wcardLogInput" placeholder="Enter weight (kg)" aria-label="Today's weight">
+      <button type="button" class="wcard-log-btn" id="wcardLogBtn">Save</button>
     </div>
     <div class="wcard-chart-wrap" id="wChartWrap" style="display:none">
       <svg id="wChart" viewBox="0 0 320 46" preserveAspectRatio="none" width="100%" height="46">
@@ -645,8 +696,10 @@ button { font-family: inherit; }
     </section>
   </div>
 
-  <!-- 4. TODAY'S WORKOUT + RECENT ACTIVITY -->
-  <div class="widget-grid">
+  <!-- 4. TODAY'S WORKOUT + WORKOUT SUMMARY + RECENT ACTIVITY — one grid
+       so mobile can reorder Mark Done to sit right after Today's
+       Workout while desktop keeps it full-width beneath the pair. -->
+  <div class="widget-grid widget-grid-3">
 
     <section class="card tw-card">
       <div class="tw-head" id="twHead" role="button" tabindex="0" aria-expanded="false">
@@ -676,6 +729,33 @@ button { font-family: inherit; }
       </div>
     </section>
 
+    <section class="card ws-card">
+      <div class="ws-top">
+        <div>
+          <div class="card-eyebrow" id="wsEyebrow">TODAY</div>
+          <div class="ws-stats-row">
+            <span class="ws-num" id="wsSets">0</span><span class="ws-num-label">sets</span>
+            <span class="ws-dot">·</span>
+            <span class="ws-vol" id="wsVol">0 kg lifted</span>
+          </div>
+        </div>
+        <div class="ws-actions">
+          <button class="ws-done-pill is-pending" id="wsDoneBtn" type="button">Mark workout done</button>
+          <button class="ws-expand-btn" id="wsExpandBtn" type="button" aria-label="Show what's logged today" aria-expanded="false">
+            <span id="wsExpandChevron">⌄</span>
+          </button>
+        </div>
+      </div>
+      <div class="ws-logged-body" id="wsLoggedBody" hidden>
+        <ul class="exercise-list" id="wsLoggedList"></ul>
+      </div>
+      <button class="ws-past-toggle" id="wsPastToggle" type="button" aria-expanded="false">
+        <span>Past workouts <span class="ws-past-count" id="wsPastCount">0</span></span>
+        <span class="ws-past-arrow" id="wsPastArrow">▾</span>
+      </button>
+      <div class="ws-past-body" id="wsPastBody" hidden></div>
+    </section>
+
     <section class="card ra-card">
       <div class="card-eyebrow" style="margin-bottom:2px">RECENT ACTIVITY</div>
       <ul class="session-list" id="sessionList"></ul>
@@ -683,34 +763,6 @@ button { font-family: inherit; }
     </section>
 
   </div>
-
-  <!-- WORKOUT SUMMARY (full width, sits under Today's Workout / Recent Activity) -->
-  <section class="card ws-card">
-    <div class="ws-top">
-      <div>
-        <div class="card-eyebrow" id="wsEyebrow">TODAY</div>
-        <div class="ws-stats-row">
-          <span class="ws-num" id="wsSets">0</span><span class="ws-num-label">sets</span>
-          <span class="ws-dot">·</span>
-          <span class="ws-vol" id="wsVol">0 kg lifted</span>
-        </div>
-      </div>
-      <div class="ws-actions">
-        <button class="ws-done-pill is-pending" id="wsDoneBtn" type="button">Mark workout done</button>
-        <button class="ws-expand-btn" id="wsExpandBtn" type="button" aria-label="Show what's logged today" aria-expanded="false">
-          <span id="wsExpandChevron">⌄</span>
-        </button>
-      </div>
-    </div>
-    <div class="ws-logged-body" id="wsLoggedBody" hidden>
-      <ul class="exercise-list" id="wsLoggedList"></ul>
-    </div>
-    <button class="ws-past-toggle" id="wsPastToggle" type="button" aria-expanded="false">
-      <span>Past workouts <span class="ws-past-count" id="wsPastCount">0</span></span>
-      <span class="ws-past-arrow" id="wsPastArrow">▾</span>
-    </button>
-    <div class="ws-past-body" id="wsPastBody" hidden></div>
-  </section>
 
   <!-- 5. EXERCISE LIBRARY + MUSCLE ANATOMY -->
   <div class="widget-grid">
@@ -860,13 +912,29 @@ button { font-family: inherit; }
   function esc(s) { return String(s).replace(/"/g, '&quot;'); }
 
   // Modal helpers — lock page scroll behind whichever bottom sheet is
-  // open (mobile: without this, the page underneath can scroll while a
-  // modal is up, which feels broken) and keep the lock on as long as
-  // any modal is still open.
+  // open, and restore it to the EXACT spot the page was at when the
+  // sheet closed. Pinning body with position:fixed (rather than plain
+  // overflow:hidden) is what makes that possible — overflow toggling
+  // alone silently resets scrollTop to 0 on most mobile browsers.
   var MODAL_IDS = ['exModalBg', 'allSessionsModalBg', 'addModalBg', 'dayDetailModalBg', 'exHistoryModalBg', 'scheduleModalBg'];
+  var scrollLockY = 0;
   function anyModalOpen() { return MODAL_IDS.some(function (id) { return document.getElementById(id).style.display === 'flex'; }); }
-  function openModal(id) { document.getElementById(id).style.display = 'flex'; document.documentElement.classList.add('modal-open'); }
-  function closeModal(id) { document.getElementById(id).style.display = 'none'; if (!anyModalOpen()) document.documentElement.classList.remove('modal-open'); }
+  function openModal(id) {
+    var wasLocked = anyModalOpen();
+    document.getElementById(id).style.display = 'flex';
+    if (!wasLocked) {
+      scrollLockY = window.scrollY || document.documentElement.scrollTop || 0;
+      document.documentElement.style.setProperty('--scroll-lock-top', scrollLockY + 'px');
+      document.body.classList.add('modal-open');
+    }
+  }
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+    if (!anyModalOpen()) {
+      document.body.classList.remove('modal-open');
+      window.scrollTo(0, scrollLockY);
+    }
+  }
 
   // ------------------------------------------------------------------
   // Program data. Single gym now (Commercial only — the Home Gym toggle
@@ -877,11 +945,32 @@ button { font-family: inherit; }
   // ------------------------------------------------------------------
   var WEEKDAY_SPLIT = ['Rest', 'Push', 'Lower A', 'Rest', 'Pull', 'Lower B', 'Rest']; // Sun..Sat
   var DAY_ORDER = ['Lower A', 'Push', 'Lower B', 'Pull'];
-  var SCHEDULE_KEY = 'po_preview_weekday_split_v1';
+  // Reads/writes po_coach_v1.weekdaySplit directly (the exact array
+  // gym.html itself uses, and what the home dashboard's Fitness tile
+  // reads for "today's split") rather than a separate preview-only key
+  // — so editing the schedule here actually updates it everywhere,
+  // not just on this page. Deliberately NOT using loadLiveState() /
+  // LIVE_STATE_KEY here since those are declared further down the
+  // script and this runs immediately at load.
+  var SCHEDULE_KEY = 'po_preview_weekday_split_v1'; // legacy fallback only
   (function loadSchedule() {
-    try { var raw = localStorage.getItem(SCHEDULE_KEY); if (raw) { var arr = JSON.parse(raw); if (Array.isArray(arr) && arr.length === 7) WEEKDAY_SPLIT = arr; } } catch (e) {}
+    try {
+      var raw = localStorage.getItem('po_coach_v1');
+      if (raw) {
+        var live = JSON.parse(raw);
+        if (live && Array.isArray(live.weekdaySplit) && live.weekdaySplit.length === 7) { WEEKDAY_SPLIT = live.weekdaySplit; return; }
+      }
+    } catch (e) {}
+    try { var raw2 = localStorage.getItem(SCHEDULE_KEY); if (raw2) { var arr = JSON.parse(raw2); if (Array.isArray(arr) && arr.length === 7) WEEKDAY_SPLIT = arr; } } catch (e) {}
   })();
-  function saveSchedule() { try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(WEEKDAY_SPLIT)); } catch (e) {} }
+  function saveSchedule() {
+    try {
+      var raw = localStorage.getItem('po_coach_v1');
+      var live = raw ? JSON.parse(raw) : { exercises: [], logs: {} };
+      live.weekdaySplit = WEEKDAY_SPLIT;
+      localStorage.setItem('po_coach_v1', JSON.stringify(live));
+    } catch (e) {}
+  }
 
   // Each day type gets its own accent color, reused wherever a day
   // appears (header badge, day tabs, Today's Workout heading, session
@@ -940,19 +1029,19 @@ button { font-family: inherit; }
           { name: 'Incline Cable Fly', muscle: 'Chest', repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 }
         ]},
         { area: 'Push Shoulder Press', sets: 3, options: [
-          { name: 'DB Shoulder Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 2.5, startWeight: 17.5 },
-          { name: 'Arnold Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 2.5, startWeight: 15 },
-          { name: 'Landmine Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 5, startWeight: 20 }
+          { name: 'DB Shoulder Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 2.5, startWeight: 17.5, perSide: true },
+          { name: 'Arnold Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true },
+          { name: 'Landmine Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 5, startWeight: 20, perSide: true }
         ]},
         { area: 'Push Lateral Raise', sets: 3, options: [
-          { name: 'Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 1.25, startWeight: 7.5 },
-          { name: 'Cable Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 2.5, startWeight: 7.5 },
+          { name: 'Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 1.25, startWeight: 7.5, perSide: true },
+          { name: 'Cable Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 2.5, startWeight: 7.5, perSide: true },
           { name: 'Machine Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 5, startWeight: 20 }
         ]},
         { area: 'Push Pushdown', sets: 3, options: [
           { name: 'Cable Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 25 },
           { name: 'Rope Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 },
-          { name: 'Single-Arm Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 1.25, startWeight: 12.5 }
+          { name: 'Single-Arm Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 1.25, startWeight: 12.5, perSide: true }
         ]},
         { area: 'Push Triceps Extension', sets: 3, options: [
           { name: 'Overhead DB Extension', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
@@ -971,7 +1060,7 @@ button { font-family: inherit; }
       muscles: 'Quads · Hamstrings · Calves',
       areas: [
         { area: 'Squat', sets: 4, options: [{ name: 'Goblet / Front Squat', muscle: 'Quads', repMin: 6, repMax: 10, step: 2.5, startWeight: 20 }] },
-        { area: 'Split Squat', sets: 4, options: [{ name: 'Bulgarian Split Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 2.5, startWeight: 15 }] },
+        { area: 'Split Squat', sets: 4, options: [{ name: 'Bulgarian Split Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true }] },
         { area: 'Hip External Rotation', sets: 3, options: [{ name: 'Hip External Rotation', muscle: 'Hips', repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true }] },
         { area: 'Leg Extension', sets: 3, options: [{ name: 'Leg Extension', muscle: 'Quads', repMin: 10, repMax: 15, step: 5, startWeight: 30 }] },
         { area: 'Lower B Leg Curl', sets: 3, options: [
@@ -999,9 +1088,9 @@ button { font-family: inherit; }
         { area: 'Pull-Up', sets: 4, options: [{ name: 'Pull-Ups', muscle: 'Back', repMin: 4, repMax: 10, step: 1, startWeight: 0, bw: true }] },
         { area: 'Chest-Supported Row', sets: 4, options: [{ name: 'Chest-Supported T-Bar Row', muscle: 'Back', repMin: 6, repMax: 10, step: 5, startWeight: 40 }] },
         { area: 'Pull Row Variation', sets: 3, options: [
-          { name: 'Single-Arm Cable Row', muscle: 'Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
-          { name: 'T-Bar / Chest-Supported Single-Arm Row', muscle: 'Back', repMin: 10, repMax: 15, step: 5, startWeight: 20 },
-          { name: 'Kroc Row', muscle: 'Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 }
+          { name: 'Single-Arm Cable Row', muscle: 'Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 20, perSide: true },
+          { name: 'T-Bar / Chest-Supported Single-Arm Row', muscle: 'Back', repMin: 10, repMax: 15, step: 5, startWeight: 20, perSide: true },
+          { name: 'Kroc Row', muscle: 'Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5, perSide: true }
         ]},
         { area: 'Pull Rear Delt', sets: 3, options: [
           { name: 'Face Pulls', muscle: 'Rear Delts', repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
@@ -1009,14 +1098,14 @@ button { font-family: inherit; }
           { name: 'Reverse Pec Deck', muscle: 'Rear Delts', repMin: 12, repMax: 15, step: 5, startWeight: 25 }
         ]},
         { area: 'Pull Curl 1', sets: 3, options: [
-          { name: 'DB Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5 },
+          { name: 'DB Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5, perSide: true },
           { name: 'Cable Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 2.5, startWeight: 20 },
           { name: 'Preacher Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 2.5, startWeight: 20 }
         ]},
         { area: 'Pull Curl 2', sets: 3, options: [
-          { name: 'Hammer Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5 },
-          { name: 'Incline DB Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 10 },
-          { name: 'Cross-Body Hammer Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5 }
+          { name: 'Hammer Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5, perSide: true },
+          { name: 'Incline DB Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 10, perSide: true },
+          { name: 'Cross-Body Hammer Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5, perSide: true }
         ]},
         { area: 'Pull Core', sets: 3, options: [
           { name: 'Hanging Knee Raise', muscle: 'Core', repMin: 8, repMax: 15, step: 1, startWeight: 0, bw: true },
@@ -1062,6 +1151,17 @@ button { font-family: inherit; }
   // — so once you've logged Push day once, next time you land on Push
   // day the suggestion is built from what you really did, not a guess.
   function lastLogFor(ex) {
+    // Check today's still-in-progress session FIRST — it hasn't been
+    // committed to SESSIONS yet, so without this, re-opening something
+    // you just logged this session would show stale older history (or
+    // the mock default) instead of what you literally just entered.
+    if (currentSession) {
+      for (var k = currentSession.sets.length - 1; k >= 0; k--) {
+        if (currentSession.sets[k].name === ex.name) {
+          return { weight: currentSession.sets[k].weight, reps: currentSession.sets[k].reps, dateKey: wtDateKey(new Date()) };
+        }
+      }
+    }
     var sorted = SESSIONS.slice().sort(function (a, b) { return b.dateKey.localeCompare(a.dateKey); });
     for (var i = 0; i < sorted.length; i++) {
       var sess = sorted[i];
@@ -1179,17 +1279,37 @@ button { font-family: inherit; }
   function wtDateKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function wtFmtDate(key) { var p = key.split('-').map(Number); var d = new Date(p[0], p[1] - 1, p[2]); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
 
+  function wtSave(arr) { try { localStorage.setItem(WT_KEY, JSON.stringify(arr)); } catch (e) {} }
+  // Matches gym.html's real wtSaveEntry() exactly — one entry per
+  // calendar day, upserted in place — so this writes into the same
+  // po_coach_weights store (and rides the same cloud sync) rather than
+  // keeping its own separate copy.
+  function wtSaveEntry(weight) {
+    var entries = wtLoad();
+    var key = wtDateKey(new Date());
+    var existing = entries.find(function (e) { return e.dateKey === key; });
+    if (existing) existing.weight = weight;
+    else { entries.push({ dateKey: key, weight: weight }); entries.sort(function (a, b) { return a.dateKey.localeCompare(b.dateKey); }); }
+    wtSave(entries);
+  }
+  var wLogEditing = false;
   function renderWeight() {
     var entries = wtLoad();
     document.getElementById('wUnit').textContent = UNITS;
     var todayKey = wtDateKey(new Date());
     var last = entries[entries.length - 1];
+    var todayEntry = entries.find(function (e) { return e.dateKey === todayKey; });
+    var logRow = document.getElementById('wcardLogRow');
+    var showLogRow = !todayEntry || wLogEditing;
+    logRow.style.display = showLogRow ? 'flex' : 'none';
+    if (showLogRow) document.getElementById('wcardLogInput').value = todayEntry ? todayEntry.weight.toFixed(1) : '';
 
     if (!entries.length) {
       document.getElementById('wNum').textContent = '—';
       document.getElementById('wEmpty').style.display = '';
       document.getElementById('wChartWrap').style.display = 'none';
       document.getElementById('wMeta').textContent = '';
+      document.getElementById('wStatus').style.display = 'none';
       return;
     }
     document.getElementById('wNum').textContent = last.weight.toFixed(1);
@@ -1200,7 +1320,8 @@ button { font-family: inherit; }
     if (!byKey[todayKey] && entries.length) cursor = new Date(entries[entries.length - 1].dateKey.replace(/-/g, '/'));
     while (byKey[wtDateKey(cursor)]) { streak++; cursor.setDate(cursor.getDate() - 1); }
     if (streak > 0) { document.getElementById('wStreak').style.display = ''; document.getElementById('wStreakTxt').textContent = streak + ' day streak'; }
-    if (byKey[todayKey]) { document.getElementById('wStatus').style.display = 'inline-flex'; document.getElementById('wStatusTxt').textContent = 'Logged today · ' + byKey[todayKey].weight.toFixed(1) + ' ' + UNITS; }
+    document.getElementById('wStatus').style.display = todayEntry ? 'inline-flex' : 'none';
+    if (todayEntry) document.getElementById('wStatusTxt').textContent = 'Logged today · ' + todayEntry.weight.toFixed(1) + ' ' + UNITS;
     document.getElementById('wMeta').textContent = entries.length + ' entries';
 
     var wrap = document.getElementById('wChartWrap');
@@ -1253,6 +1374,22 @@ button { font-family: inherit; }
       hit.ontouchend = function () { touchHideTimer = setTimeout(function () { hit.onmouseleave(); }, 1500); };
     }
   }
+  function commitWeightLog() {
+    var v = parseFloat(document.getElementById('wcardLogInput').value);
+    if (!v || v <= 0) return;
+    wtSaveEntry(v);
+    wLogEditing = false;
+    renderWeight();
+  }
+  document.getElementById('wcardLogBtn').addEventListener('click', commitWeightLog);
+  document.getElementById('wcardLogInput').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') commitWeightLog(); });
+  // Tapping "Logged today" reopens the input, pre-filled, so a mis-tap
+  // is easy to correct without hunting for a separate edit control.
+  document.getElementById('wStatus').addEventListener('click', function () {
+    wLogEditing = true;
+    renderWeight();
+    document.getElementById('wcardLogInput').focus();
+  });
 
   // ------------------------------------------------------------------
   // Shared line/area chart renderer — every chart on the page (score,
@@ -1498,9 +1635,20 @@ button { font-family: inherit; }
     document.getElementById('twCount').textContent = list.length + ' exercise' + (list.length === 1 ? '' : 's');
     var html = list.map(function (ex) {
       var done = !!doneState[ex.name];
+      // Once checked off, show what was actually logged (weight/reps
+      // really entered) instead of continuing to show the target
+      // placeholder — that's the whole point of crossing it off.
+      var rightStr = ex.sets + ' × ' + ex.reps;
+      if (done) {
+        var loggedEntries = todaySetsForName(ex.name);
+        if (loggedEntries.length) {
+          var exMeta = EX_INDEX[ex.name];
+          rightStr = loggedEntries.map(function (s) { return s.setsCount + '×' + s.reps + (exMeta && exMeta.bw ? '' : ' @ ' + s.weight + UNITS + (exMeta && exMeta.perSide ? '/side' : '')); }).join(', ');
+        }
+      }
       return '<li class="ex-row' + (done ? ' is-done' : '') + '" data-name="' + esc(ex.name) + '">' +
         '<button type="button" class="ex-check' + (done ? ' is-done' : '') + '">' + (done ? '✓' : '') + '</button>' +
-        '<div class="ex-tap"><span class="ex-name">' + ex.name + '</span><span class="ex-target">' + ex.sets + ' × ' + ex.reps + '</span></div>' +
+        '<div class="ex-tap"><span class="ex-name">' + ex.name + '</span><span class="ex-target">' + esc(rightStr) + '</span></div>' +
         '</li>';
     }).join('');
     document.getElementById('exerciseList').innerHTML = html || '<div class="act-empty">Nothing selected for ' + esc(confirmedDay) + ' yet — expand Today\'s Workout to pick exercises.</div>';
@@ -1523,8 +1671,10 @@ button { font-family: inherit; }
       // Checking a box quick-logs it: sets = the area's target sets,
       // weight/reps = last known (same defaults the modal opens with),
       // so ticking things off is enough on its own — opening the modal
-      // is only needed to log something different.
-      ensureSession();
+      // is only needed to log something different. This does NOT start
+      // the timer — logging and timing are independent now; the clock
+      // only ever starts when you explicitly tap Start.
+      ensurePendingSession();
       var already = currentSession.sets.some(function (s) { return s.name === name; });
       if (!already) {
         var ex = EX_INDEX[name];
@@ -1537,6 +1687,7 @@ button { font-family: inherit; }
       // either the quick-log above or the detailed modal).
       currentSession.sets = currentSession.sets.filter(function (s) { return s.name !== name; });
     }
+    saveCurrentSession();
     renderChecklist();
     renderWorkoutSummary();
   }
@@ -1545,8 +1696,17 @@ button { font-family: inherit; }
     renderHeader(activeDay);
     confirmedDay = activeDay;
     lastCommitted = JSON.parse(JSON.stringify(picks[activeDay]));
+    // Reconcile: an exercise deselected from the picker needs to
+    // actually disappear everywhere it was counted, not just from the
+    // checklist — otherwise it silently keeps contributing to today's
+    // sets/kg tally even though it no longer shows as part of the plan.
+    var validNames = {};
+    todaysExerciseList(confirmedDay).forEach(function (ex) { validNames[ex.name] = true; });
+    if (currentSession) { currentSession.sets = currentSession.sets.filter(function (s) { return validNames[s.name]; }); saveCurrentSession(); }
+    Object.keys(doneState).forEach(function (name) { if (!validNames[name]) doneState[name] = false; });
     renderChecklist();
     renderAnatomy();
+    renderWorkoutSummary();
   }
 
   function openPicker() {
@@ -1567,20 +1727,22 @@ button { font-family: inherit; }
   document.getElementById('twHead').addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); document.getElementById('twHead').click(); } });
   document.getElementById('confirmBtn').addEventListener('click', function () { savePicks(); commitDay(); closePicker(); });
 
-  // Lazily create (and start timing) today's live session the first
-  // time anything is logged — via the checkbox, the detailed modal, or
-  // the explicit Start Workout button. Whichever happens first is when
-  // the clock actually starts. Time is tracked as elapsedMs (banked
-  // from finished run segments) + segmentStart (when the current
-  // running segment began, null while paused) so Pause genuinely stops
-  // the clock rather than just freezing the display.
-  function ensureSession() {
+  // Logging (checkbox / modal) and the timer are now fully independent.
+  // ensurePendingSession() just opens today's logging bucket — it never
+  // touches the clock. Only tapping Start explicitly starts timing (see
+  // startTimer() below); Pause/Resume control it from there; Finish
+  // commits whatever's logged with whatever time was actually tracked
+  // (0 / "—" if you never started it — fix it after the fact via the
+  // duration edit in Recent Activity). The whole thing is persisted to
+  // localStorage after every change, so backgrounding the browser or a
+  // mobile tab reload mid-session no longer loses it — see
+  // saveCurrentSession() / restoreCurrentSession() near the bottom of
+  // this section.
+  function ensurePendingSession() {
     if (currentSession) return;
-    currentSession = { day: confirmedDay, elapsedMs: 0, segmentStart: Date.now(), sets: [], _timer: null };
-    document.getElementById('startBtn').classList.add('is-active');
-    document.getElementById('cancelWorkoutBtn').hidden = false;
-    document.getElementById('pauseWorkoutBtn').hidden = false;
-    startTicking();
+    currentSession = { day: confirmedDay, elapsedMs: 0, segmentStart: null, everStarted: false, sets: [], _timer: null };
+    updateSessionButtonsUI();
+    saveCurrentSession();
   }
   function sessionElapsedMs() {
     return currentSession.elapsedMs + (currentSession.segmentStart ? Date.now() - currentSession.segmentStart : 0);
@@ -1595,23 +1757,67 @@ button { font-family: inherit; }
     tickLabel(); // update immediately — don't wait up to 1s for the first interval tick
     currentSession._timer = setInterval(tickLabel, 1000);
   }
+  // The ONLY thing that starts the clock — explicit Start tap.
+  function startTimer() {
+    ensurePendingSession();
+    if (currentSession.segmentStart) return; // already running
+    currentSession.everStarted = true;
+    currentSession.segmentStart = Date.now();
+    startTicking();
+    updateSessionButtonsUI();
+    saveCurrentSession();
+  }
   function pauseSession() {
     if (!currentSession || !currentSession.segmentStart) return;
     currentSession.elapsedMs += Date.now() - currentSession.segmentStart;
     currentSession.segmentStart = null;
     clearInterval(currentSession._timer);
-    var secs = Math.floor(currentSession.elapsedMs / 1000);
-    var mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
-    document.getElementById('startBtnLabel').textContent = '⏸ ' + mm + ':' + ss + ' (paused) — Finish Workout';
-    document.getElementById('pauseWorkoutBtnIcon').textContent = '▶';
-    document.getElementById('pauseWorkoutBtn').title = 'Resume';
+    updateSessionButtonsUI();
+    saveCurrentSession();
   }
   function resumeSession() {
     if (!currentSession || currentSession.segmentStart) return;
     currentSession.segmentStart = Date.now();
     startTicking();
-    document.getElementById('pauseWorkoutBtnIcon').textContent = '⏸';
-    document.getElementById('pauseWorkoutBtn').title = 'Pause';
+    updateSessionButtonsUI();
+    saveCurrentSession();
+  }
+  // Centralizes what the Start/Pause/Cancel row looks like for every
+  // state: nothing pending, pending-but-never-started, running, paused.
+  function updateSessionButtonsUI() {
+    var startBtn = document.getElementById('startBtn');
+    var label = document.getElementById('startBtnLabel');
+    var pauseBtn = document.getElementById('pauseWorkoutBtn');
+    var pauseIcon = document.getElementById('pauseWorkoutBtnIcon');
+    var cancelBtn = document.getElementById('cancelWorkoutBtn');
+    if (!currentSession) {
+      startBtn.classList.remove('is-active');
+      label.textContent = '▶ Start Workout';
+      pauseBtn.hidden = true;
+      cancelBtn.hidden = true;
+      return;
+    }
+    cancelBtn.hidden = false; // something exists to discard, timed or not
+    if (currentSession.segmentStart) {
+      startBtn.classList.add('is-active');
+      pauseBtn.hidden = false;
+      pauseIcon.textContent = '⏸'; pauseBtn.title = 'Pause';
+      tickLabel();
+    } else if (currentSession.everStarted) {
+      startBtn.classList.add('is-active');
+      pauseBtn.hidden = false;
+      pauseIcon.textContent = '▶'; pauseBtn.title = 'Resume';
+      var secs = Math.floor(currentSession.elapsedMs / 1000);
+      var mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
+      label.textContent = '⏸ ' + mm + ':' + ss + ' (paused) — Finish Workout';
+    } else {
+      // Logged via checkbox/modal but Start was never tapped — the
+      // button still reads "Start Workout" (tapping it now begins
+      // timing from this point on; whatever's already logged stays).
+      startBtn.classList.remove('is-active');
+      label.textContent = '▶ Start Workout';
+      pauseBtn.hidden = true;
+    }
   }
   // Commits today's live session into history: pushes a Recent
   // Activity entry with the real elapsed time and logged volume, and
@@ -1619,9 +1825,9 @@ button { font-family: inherit; }
   // Finish Workout button and Mark Workout Done, so either path works
   // and neither double-commits (currentSession is null once committed).
   function commitSession() {
-    if (!currentSession || !currentSession.sets.length) { currentSession = null; return; }
+    if (!currentSession || !currentSession.sets.length) { currentSession = null; clearSavedCurrentSession(); updateSessionButtonsUI(); return; }
     clearInterval(currentSession._timer);
-    var durationMin = Math.max(1, Math.round(sessionElapsedMs() / 60000));
+    var durationMin = currentSession.everStarted ? Math.round(sessionElapsedMs() / 60000) : 0;
     var volume = currentSession.sets.reduce(function (sum, s) { return sum + s.setsCount * s.reps * s.weight; }, 0);
     SESSIONS.unshift({ id: Date.now(), day: currentSession.day, dateKey: wtDateKey(new Date()), durationMin: durationMin, volume: volume, sets: currentSession.sets.map(function (s, i) { return Object.assign({ id: Date.now() + i }, s); }) });
     saveSessions();
@@ -1632,7 +1838,8 @@ button { font-family: inherit; }
     STRENGTH.weeklyHistory[STRENGTH.weeklyHistory.length - 1] += Math.round(volume);
     renderStrength();
     currentSession = null;
-    stopSessionUI();
+    clearSavedCurrentSession();
+    updateSessionButtonsUI();
   }
   // Discards the live session entirely — a false start, or logged the
   // wrong day by mistake. Un-checks everything it had quick-logged and
@@ -1643,25 +1850,47 @@ button { font-family: inherit; }
     var names = Array.from(new Set(currentSession.sets.map(function (s) { return s.name; })));
     names.forEach(function (name) { doneState[name] = false; });
     currentSession = null;
-    stopSessionUI();
+    clearSavedCurrentSession();
+    updateSessionButtonsUI();
     renderChecklist();
     renderWorkoutSummary();
   }
-  function stopSessionUI() {
-    document.getElementById('startBtn').classList.remove('is-active');
-    document.getElementById('startBtnLabel').textContent = '▶ Start Workout';
-    document.getElementById('cancelWorkoutBtn').hidden = true;
-    document.getElementById('pauseWorkoutBtn').hidden = true;
-    document.getElementById('pauseWorkoutBtnIcon').textContent = '⏸';
+  // Persist the live session (sets + timer state) so backgrounding the
+  // browser or a mobile reload mid-workout doesn't wipe it. Timer state
+  // is just two numbers (banked ms + a running-segment timestamp), so
+  // restoring is exact even across however long the page was closed.
+  var CURRENT_SESSION_KEY = 'po_preview_current_session_v1';
+  function saveCurrentSession() {
+    try {
+      if (!currentSession) { localStorage.removeItem(CURRENT_SESSION_KEY); return; }
+      localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify({
+        day: currentSession.day, sets: currentSession.sets, elapsedMs: currentSession.elapsedMs,
+        segmentStart: currentSession.segmentStart, everStarted: currentSession.everStarted
+      }));
+    } catch (e) {}
   }
-  // Start / Finish Workout — finishing adds real elapsed time to the
-  // weekly total, counts a workout toward the weekly goal, and pushes
-  // a new session (with real duration + logged volume) into Recent
-  // Activity / Workout Summary. Pause genuinely stops the clock (e.g.
-  // for a rest break away from the app); Cancel discards it entirely.
+  function clearSavedCurrentSession() { try { localStorage.removeItem(CURRENT_SESSION_KEY); } catch (e) {} }
+  function restoreCurrentSession() {
+    try {
+      var raw = localStorage.getItem(CURRENT_SESSION_KEY);
+      if (!raw) return;
+      var saved = JSON.parse(raw);
+      if (!saved || !Array.isArray(saved.sets)) return;
+      currentSession = { day: saved.day, sets: saved.sets, elapsedMs: saved.elapsedMs || 0, segmentStart: saved.segmentStart || null, everStarted: !!saved.everStarted, _timer: null };
+      Array.from(new Set(currentSession.sets.map(function (s) { return s.name; }))).forEach(function (name) { doneState[name] = true; });
+      if (currentSession.segmentStart) startTicking();
+    } catch (e) {}
+  }
+  // Start / Finish Workout — Start begins timing (creating today's
+  // logging bucket too, if nothing was logged yet); once started, the
+  // same button finishes, whether it's currently running or paused.
+  // Finishing adds real elapsed time to the weekly total, counts a
+  // workout toward the weekly goal, and pushes a new session into
+  // Recent Activity / Workout Summary. Pause genuinely stops the clock;
+  // Cancel discards everything pending, timed or not.
   document.getElementById('startBtn').addEventListener('click', function () {
-    if (!currentSession) { ensureSession(); renderChecklist(); }
-    else { commitSession(); refreshAllSessionViews(); renderChecklist(); } // finishes whether running or paused
+    if (!currentSession || !currentSession.everStarted) { startTimer(); renderChecklist(); }
+    else { commitSession(); refreshAllSessionViews(); renderChecklist(); }
   });
   document.getElementById('pauseWorkoutBtn').addEventListener('click', function () {
     if (!currentSession) return;
@@ -1678,7 +1907,7 @@ button { font-family: inherit; }
     var ex = EX_INDEX[name];
     if (!ex) return;
     var hadSession = !!currentSession;
-    ensureSession();
+    ensurePendingSession();
     if (!hadSession) renderChecklist();
     modalEx = ex;
     var last = lastLogFor(ex);
@@ -1688,12 +1917,13 @@ button { font-family: inherit; }
     modalSets = areaDef ? areaDef.sets : 3;
     document.getElementById('exModalTitle').textContent = ex.name;
     document.getElementById('repsFieldLabel').textContent = ex.holdSeconds ? 'Seconds held' : 'Reps';
-    document.getElementById('weightFieldLabel').textContent = 'Weight (' + UNITS + ')';
+    document.getElementById('weightFieldLabel').textContent = 'Weight (' + UNITS + ')' + (ex.perSide ? ' — per side' : '');
     document.getElementById('weightFieldWrap').style.display = ex.bw ? 'none' : '';
     document.getElementById('weightVal').value = modalWeight;
     document.getElementById('lastTimeRow').style.display = '';
     var lastUnit = ex.holdSeconds ? 's' : (ex.bw ? ' reps' : '');
-    document.getElementById('lastTimeVal').textContent = (ex.bw ? (last.reps + lastUnit) : (last.weight + UNITS + ' × ' + last.reps + (ex.holdSeconds ? 's' : ''))) + (last.dateKey ? ' · ' + dayLabelForKey(last.dateKey) : '');
+    var lastWeightStr = last.weight + UNITS + (ex.perSide ? '/side' : '');
+    document.getElementById('lastTimeVal').textContent = (ex.bw ? (last.reps + lastUnit) : (lastWeightStr + ' × ' + last.reps + (ex.holdSeconds ? 's' : ''))) + (last.dateKey ? ' · ' + dayLabelForKey(last.dateKey) : '');
     var repMin = Math.max(1, ex.repMin - 2), repMax = ex.repMax + 5;
     var repsHtml = '';
     for (var r = repMin; r <= repMax; r++) repsHtml += '<button type="button" class="pill-btn' + (r === modalReps ? ' active' : '') + '" data-r="' + r + '">' + r + '</button>';
@@ -1710,7 +1940,8 @@ button { font-family: inherit; }
     var box = document.getElementById('rxBox');
     if (!rx) { box.dataset.type = ''; document.getElementById('rxTag').textContent = '—'; document.getElementById('rxReason').textContent = 'Log your first set to get a suggestion.'; return; }
     box.dataset.type = rx.type;
-    document.getElementById('rxTag').textContent = rx.tag + (rx.weight ? ' — ' + rx.weight + UNITS + ' × ' + rx.reps : ' — ' + rx.reps + ' reps');
+    var rxUnit = modalEx.perSide ? UNITS + '/side' : UNITS;
+    document.getElementById('rxTag').textContent = rx.tag + (rx.weight ? ' — ' + rx.weight + rxUnit + ' × ' + rx.reps : ' — ' + rx.reps + ' reps');
     document.getElementById('rxReason').textContent = rx.reason;
   }
   function bindModalControls() {
@@ -1729,6 +1960,7 @@ button { font-family: inherit; }
   document.getElementById('logSetBtn').addEventListener('click', function () {
     currentSession.sets.push({ name: modalEx.name, setsCount: modalSets, reps: modalReps, weight: modalEx.bw ? 0 : modalWeight });
     doneState[modalEx.name] = true;
+    saveCurrentSession();
     closeModal('exModalBg');
     renderChecklist();
     renderWorkoutSummary();
@@ -1750,11 +1982,14 @@ button { font-family: inherit; }
     if (key === daysAgoKey(1)) return 'Yesterday';
     return wtFmtDate(key);
   }
-  // Persisted for real, in this browser's localStorage — a logged
-  // workout survives a reload today, tomorrow, and in six months, the
-  // same way the weight log does. The moment you log or edit anything
-  // here, this key takes over and stays saved from then on.
-  var SESSIONS_KEY = 'po_preview_sessions_v2';
+  // Local fallback snapshot only — real po_coach_v1 is now the
+  // authoritative source (see SESSIONS init below) since Finish/Mark
+  // Done write there directly and it's the same store gym.html and
+  // every other device read. Bumped to v3: v2 was accumulating stale
+  // sample/test data from before this page went live, which was
+  // permanently shadowing real history once anything got saved to it —
+  // exactly what was making "last time" show placeholders.
+  var SESSIONS_KEY = 'po_preview_sessions_v3';
   function saveSessions() { try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(SESSIONS)); } catch (e) {} }
   function loadSessions() {
     try { var raw = localStorage.getItem(SESSIONS_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
@@ -1859,7 +2094,16 @@ button { font-family: inherit; }
       return { id: si + 1, day: dayName, dateKey: dk, durationMin: 0, volume: volume, sets: sets };
     });
   }
-  var SESSIONS = loadSessions() || buildSessionsFromLiveState() || [
+  // Real po_coach_v1 wins whenever it has anything, rebuilt fresh on
+  // every load — it's the cross-device, Supabase-synced truth, and
+  // since Finish/Mark Done write there directly now, it reflects
+  // everything logged through this page too. The local snapshot is
+  // only consulted if real data genuinely doesn't exist yet (brand
+  // new install on this device). One accepted tradeoff: an edit or
+  // delete made only through this page's Recent Activity (not yet
+  // mirrored back into po_coach_v1) won't survive a reload — a real
+  // gap, worth knowing, and far better than "last time" being wrong.
+  var SESSIONS = buildSessionsFromLiveState() || loadSessions() || [
     { id: 1, day: 'Push', dateKey: daysAgoKey(1), durationMin: 52, volume: 11820, sets: [
       { id: 101, name: 'Barbell Bench Press', setsCount: 4, reps: 6, weight: 82.5 },
       { id: 102, name: 'Incline Barbell Press', setsCount: 4, reps: 6, weight: 47.5 },
@@ -1953,7 +2197,7 @@ button { font-family: inherit; }
   }
   recomputeScoreFromSessions();
 
-  var expandedSessionId = null, editingSetId = null;
+  var expandedSessionId = null, editingSetId = null, editingDurationId = null;
 
   function sessionRowHtml(sess) {
     var expanded = expandedSessionId === sess.id;
@@ -1981,6 +2225,13 @@ button { font-family: inherit; }
           '<div class="set-detail">' + st.setsCount + ' × ' + st.reps + (st.weight ? ' @ ' + st.weight + UNITS : ' · bodyweight') + '</div></div>' +
           '<div class="set-actions"><button type="button" class="icon-btn edit-set-btn" aria-label="Edit">✎</button><button type="button" class="icon-btn danger remove-set-btn" aria-label="Remove">🗑</button></div></li>';
       }).join('') + '</ul>' +
+        (editingDurationId === sess.id
+          ? '<div class="duration-edit-row" data-sess="' + sess.id + '">' +
+            '<span class="duration-edit-label">Minutes</span>' +
+            '<input type="number" class="edit-duration" value="' + (sess.durationMin || '') + '" min="0" placeholder="0">' +
+            '<button type="button" class="set-edit-save duration-edit-save">Save</button>' +
+            '<button type="button" class="set-edit-cancel duration-edit-cancel">Cancel</button></div>'
+          : '<button type="button" class="edit-duration-btn" data-sess="' + sess.id + '">✎ Edit time (' + timeStr + ')</button>') +
         '<button type="button" class="delete-session-btn" data-sess="' + sess.id + '">🗑 Delete this workout</button>';
     }
     return '<li class="session-row">' + head + body + '</li>';
@@ -2035,6 +2286,25 @@ button { font-family: inherit; }
         saveSessions();
         refreshAllSessionViews();
       });
+    });
+    // Fix a missed/wrong duration by hand — the direct answer to "the
+    // timer didn't run, can I just type in how long it actually was."
+    container.querySelectorAll('.edit-duration-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) { ev.stopPropagation(); editingDurationId = +btn.dataset.sess; refreshAllSessionViews(); });
+    });
+    container.querySelectorAll('.duration-edit-save').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var row = btn.closest('.duration-edit-row'); var sessId = +row.dataset.sess;
+        var sess = SESSIONS.find(function (s) { return s.id === sessId; });
+        sess.durationMin = Math.max(0, +row.querySelector('.edit-duration').value || 0);
+        saveSessions();
+        editingDurationId = null;
+        refreshAllSessionViews();
+      });
+    });
+    container.querySelectorAll('.duration-edit-cancel').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) { ev.stopPropagation(); editingDurationId = null; refreshAllSessionViews(); });
     });
   }
   function renderActivity() {
@@ -2120,7 +2390,7 @@ button { font-family: inherit; }
       return s.sets.length > 0;
     });
     if (changed) saveSessions();
-    if (currentSession) currentSession.sets = currentSession.sets.filter(function (st) { return st.name !== name; });
+    if (currentSession) { currentSession.sets = currentSession.sets.filter(function (st) { return st.name !== name; }); saveCurrentSession(); }
     doneState[name] = false;
     renderChecklist();
     refreshAllSessionViews();
@@ -2132,7 +2402,7 @@ button { font-family: inherit; }
     el.innerHTML = names.map(function (name) {
       var ex = EX_INDEX[name];
       var entries = todaySetsForName(name);
-      var summary = entries.map(function (s) { return s.setsCount + '×' + s.reps + (ex && ex.bw ? '' : ' @ ' + s.weight + UNITS); }).join(', ');
+      var summary = entries.map(function (s) { return s.setsCount + '×' + s.reps + (ex && ex.bw ? '' : ' @ ' + s.weight + UNITS + (ex && ex.perSide ? '/side' : '')); }).join(', ');
       return '<li class="ex-row is-done" data-name="' + esc(name) + '">' +
         '<button type="button" class="ex-check is-done">✓</button>' +
         '<div class="ex-tap"><span class="ex-name">' + esc(name) + '</span><span class="ex-target">' + esc(summary) + '</span></div>' +
@@ -2184,6 +2454,7 @@ button { font-family: inherit; }
     renderActivity();
     renderWorkoutSummary();
     renderDateStrip();
+    renderLibrary();
     if (wsPastOpen) renderPastWorkouts();
     if (document.getElementById('allSessionsModalBg').style.display === 'flex') renderAllSessionsModal();
   }
@@ -2255,20 +2526,49 @@ button { font-family: inherit; }
   // muscle, expandable per group.
   // ------------------------------------------------------------------
   var libOpen = {};
+  // How many sets you've actually logged per muscle group, across all
+  // real history in SESSIONS — sets rather than weight×reps so
+  // bodyweight work (pull-ups, planks) counts the same as loaded work
+  // instead of registering as zero. This is what drives both the sort
+  // order and the bar length below, and since it reads SESSIONS live,
+  // it updates the moment anything new gets logged (renderLibrary()
+  // runs from refreshAllSessionViews(), the same hub every log/edit
+  // already funnels through).
+  function computeMuscleActivity() {
+    var counts = {};
+    SESSIONS.forEach(function (sess) {
+      sess.sets.forEach(function (st) {
+        var ex = EX_INDEX[st.name];
+        if (!ex || !ex.muscle) return;
+        counts[ex.muscle] = (counts[ex.muscle] || 0) + st.setsCount;
+      });
+    });
+    return counts;
+  }
   function renderLibrary() {
     var groups = {};
     Object.keys(EX_INDEX).forEach(function (name) {
       var ex = EX_INDEX[name];
       (groups[ex.muscle] = groups[ex.muscle] || []).push(name);
     });
-    var order = Object.keys(MUSCLE_COLORS).filter(function (m) { return groups[m]; })
-      .concat(Object.keys(groups).filter(function (m) { return !MUSCLE_COLORS[m]; }));
+    var activity = computeMuscleActivity();
+    var maxActivity = Math.max(1, Math.max.apply(null, Object.keys(groups).map(function (m) { return activity[m] || 0; })));
+    // Most-worked muscle group first, longest bar at the top, ties
+    // broken by the existing palette order for stability.
+    var paletteOrder = Object.keys(MUSCLE_COLORS);
+    var order = Object.keys(groups).sort(function (a, b) {
+      var diff = (activity[b] || 0) - (activity[a] || 0);
+      if (diff !== 0) return diff;
+      return paletteOrder.indexOf(a) - paletteOrder.indexOf(b);
+    });
     document.getElementById('libraryList').innerHTML = order.map(function (m) {
       var open = !!libOpen[m];
       var color = MUSCLE_COLORS[m] || '#888';
+      var pct = Math.round(((activity[m] || 0) / maxActivity) * 100);
       return '<div class="lib-group">' +
         '<div class="lib-group-head" data-m="' + esc(m) + '"><span class="lib-dot" style="background:' + color + '"></span>' +
         '<span class="lib-group-name">' + esc(m) + '</span><span class="lib-group-count">' + groups[m].length + '</span>' +
+        '<div class="lib-activity-track" title="' + (activity[m] || 0) + ' sets logged"><div class="lib-activity-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
         '<span class="lib-chevron' + (open ? ' is-open' : '') + '">⌄</span></div>' +
         (open ? '<div class="lib-chips">' + groups[m].map(function (n) { return '<button type="button" class="lib-chip" data-ex="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>' : '') +
         '</div>';
@@ -2516,6 +2816,8 @@ button { font-family: inherit; }
   // ------------------------------------------------------------------
   // init
   // ------------------------------------------------------------------
+  restoreCurrentSession();
+  updateSessionButtonsUI();
   renderHeader(confirmedDay);
   renderDateStrip();
   renderWeight();
