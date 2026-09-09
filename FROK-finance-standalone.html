@@ -6,17 +6,16 @@
 <meta name="theme-color" content="#0a0a0b">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Finances — standalone</title>
+<script src="/api/config"></script>
 <script src="topbar.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
 <!--
-  STANDALONE BUILD — single self-contained file, no server.
-  • Data lives only in this browser (localStorage). No cloud sync.
-  • AI features (image scanner + Nova coach) call Anthropic DIRECTLY
-    from the browser using an API key you paste in the "AI key" modal.
-    The key is stored only in localStorage on this device and is sent
-    only to api.anthropic.com.
-  • A browser-exposed key can be read by anyone with access to this
-    device — use a key with limits you're comfortable with, and clear
-    it (empty the field + Save) when you're done.
+  Cross-device build — data syncs via Supabase (same pattern as
+  golf.html / nutrition.html), so entries made on one device show up
+  on every other one. AI features (image scanner + Nova coach) call
+  Anthropic through the server-side /api/nova proxy — no API key is
+  ever stored in or sent from the browser.
 -->
 <style>
 :root {
@@ -2211,30 +2210,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <div class="shell">
 
-<!-- ===== AI KEY BUTTON (standalone: opens the browser-key modal) ===== -->
-<button type="button" class="fin-back-btn" id="aiKeyBtn" aria-label="Manage AI key">
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"></circle><path d="M10.7 12.3 19 4"></path><path d="M16 7l3 3"></path><path d="M14 9l2 2"></path></svg>
-  <span>AI key</span>
-</button>
-
-<!-- ===== AI KEY MODAL (standalone — browser-direct Anthropic key) ===== -->
-<div class="aikey-overlay" id="aikeyOverlay" hidden>
-  <div class="aikey-modal" role="dialog" aria-modal="true" aria-labelledby="aikeyTitle">
-    <button type="button" class="aikey-close" id="aikeyClose" aria-label="Close">×</button>
-    <div class="aikey-eyebrow">API KEY</div>
-    <h2 class="aikey-title" id="aikeyTitle">Power the <em>AI features</em></h2>
-    <p class="aikey-note" id="aikeyHint">This standalone has no server, so AI features call Anthropic directly from your browser using a key you paste here. The key is stored only in this browser (localStorage) — nowhere else.</p>
-    <label class="aikey-label" for="aikeyInput">ANTHROPIC API KEY · POWERS NOVA + IMAGE SCANNER</label>
-    <input type="password" id="aikeyInput" class="aikey-input" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
-    <p class="aikey-sub">Get one at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
-    <div class="aikey-actions">
-      <button type="button" class="aikey-btn" id="aikeyCancel">cancel</button>
-      <button type="button" class="aikey-btn aikey-btn-save" id="aikeySave">Save key</button>
-    </div>
-    <p class="aikey-warn">Note: a browser-exposed key can be read by anyone with access to this device. Use a key with limits you're comfortable with, and remove it (clear the field + Save) when you're done.</p>
-  </div>
-</div>
-
 <!-- ===== FINANCE TICKER (rotating subscription renewals) ===== -->
 <div class="finance-ticker hidden" id="financeTicker">
   <span class="ticker-tag" id="tickerTag">RENEWS</span>
@@ -2698,63 +2673,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   // ============================================================
-  // AI BRIDGE (standalone) — the AI features call Anthropic directly
-  // from the browser using a key the user pastes (stored in
-  // localStorage on this device only). callClaude() is shared by Nova
-  // and the image scanner. No server, no key ever leaves for anywhere
-  // but api.anthropic.com.
+  // AI BRIDGE — Nova and the image scanner both call Anthropic
+  // through the server-side /api/nova proxy (mirrors /api/stock-price.js).
+  // No key is ever stored in or sent from the browser.
   // ============================================================
-  const AI_KEY_LS = 'ai_anthropic_key';
-  const AI_DEFAULT_HINT = 'This standalone has no server, so AI features call Anthropic directly from your browser using a key you paste here. The key is stored only in this browser (localStorage) — nowhere else.';
-  function getAiKey() { try { return localStorage.getItem(AI_KEY_LS) || ''; } catch (e) { return ''; } }
-  function setAiKey(v) { try { if (v) localStorage.setItem(AI_KEY_LS, v); else localStorage.removeItem(AI_KEY_LS); } catch (e) {} }
-
-  const aikeyOverlay = document.getElementById('aikeyOverlay');
-  const aikeyInput   = document.getElementById('aikeyInput');
-  const aikeyHint    = document.getElementById('aikeyHint');
-  function openKeyModal(alertMsg) {
-    if (!aikeyOverlay) return;
-    if (aikeyInput) aikeyInput.value = getAiKey();
-    if (aikeyHint) {
-      aikeyHint.textContent = alertMsg || AI_DEFAULT_HINT;
-      aikeyHint.classList.toggle('alert', !!alertMsg);
-    }
-    aikeyOverlay.hidden = false;
-    setTimeout(() => { if (aikeyInput) aikeyInput.focus(); }, 30);
-  }
-  function closeKeyModal() { if (aikeyOverlay) aikeyOverlay.hidden = true; }
-  (function wireKeyModal() {
-    const btn = document.getElementById('aiKeyBtn');
-    const closeB = document.getElementById('aikeyClose');
-    const cancelB = document.getElementById('aikeyCancel');
-    const saveB = document.getElementById('aikeySave');
-    if (btn) btn.addEventListener('click', () => openKeyModal());
-    if (closeB) closeB.addEventListener('click', closeKeyModal);
-    if (cancelB) cancelB.addEventListener('click', closeKeyModal);
-    if (saveB) saveB.addEventListener('click', () => { setAiKey(aikeyInput.value.trim()); closeKeyModal(); });
-    if (aikeyOverlay) aikeyOverlay.addEventListener('click', (e) => { if (e.target === aikeyOverlay) closeKeyModal(); });
-    if (aikeyInput) aikeyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { setAiKey(aikeyInput.value.trim()); closeKeyModal(); } });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && aikeyOverlay && !aikeyOverlay.hidden) closeKeyModal(); });
-  })();
-
-  // Shared call to Anthropic's Messages API from the browser.
-  // Throws { code:'NO_KEY' } if no key is set, or { code:'API' } on error.
   async function callClaude(body) {
-    const key = getAiKey();
-    if (!key) { const e = new Error('NO_KEY'); e.code = 'NO_KEY'; throw e; }
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
+    const r = await fetch('/api/nova', {
       method: 'POST',
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'content-type': 'application/json'
-      },
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body)
     });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) {
-      const msg = (data && data.error && data.error.message) || ('Anthropic API error (' + r.status + ')');
+      const msg = (data && data.error && (data.error.message || data.error)) || ('Nova API error (' + r.status + ')');
       const e = new Error(msg); e.code = 'API'; throw e;
     }
     return data;
@@ -4911,12 +4842,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         convo.push({ role: 'assistant', content: reply });
       } catch (e) {
         pending.classList.remove('nova-msg-loading');
-        if (e && e.code === 'NO_KEY') {
-          pending.textContent = '⚠ Add your Anthropic API key to chat with Nova — tap “AI key” at the top.';
-          openKeyModal('Nova needs an Anthropic API key. Paste one below to start chatting.');
-        } else {
-          pending.textContent = '⚠ ' + ((e && e.message) || "Couldn't reach Nova.");
-        }
+        pending.textContent = '⚠ ' + ((e && e.message) || "Couldn't reach Nova.");
       } finally {
         sendBtn.disabled = false;
         messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -5181,12 +5107,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         if (!block || !block.input) { showError('Could not read that image. Try a clearer screenshot or photo.'); return; }
         showConfirm(block.input, img.dataUrl);
       } catch (e) {
-        if (e && e.code === 'NO_KEY') {
-          showError('Add your Anthropic API key to read images — tap “AI key” at the top.');
-          openKeyModal('The image scanner needs an Anthropic API key. Paste one below to start scanning.');
-        } else {
-          showError((e && e.message) || "Couldn't reach the image reader.");
-        }
+        showError((e && e.message) || "Couldn't reach the image reader.");
       }
     }
 
@@ -5270,10 +5191,33 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     discardBtn.addEventListener('click', reset);
   })();
 
+  // Re-render every section when cloud sync pulls in a remote change
+  // (dispatched as a 'storage' event by the initCloudSync onApplied
+  // hook below) — without this, a value entered on another device only
+  // shows up here after a manual reload.
+  window.addEventListener('storage', () => {
+    renderAllNetWorth();
+    renderSubs();
+    renderWishlist();
+    renderOrders();
+  });
+
 })();
 </script>
 
-<!-- Cloud sync removed in the standalone build — data stays in this browser only. -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof initCloudSync !== 'function') return;
+  initCloudSync({
+    appKey: 'finance-nw',
+    syncedKeys: ['subs', 'wishlist', 'incoming_orders', 'nw_currency', 'stocks:snapshot', 'stocks:lastFetchTs'],
+    syncedPrefixes: ['nw:'],
+    onApplied: function () {
+      window.dispatchEvent(new Event('storage'));
+    }
+  });
+});
+</script>
 
 <!-- ===== Vitality backdrop — particle spawner ===== -->
 <script id="vty-backdrop-js">
@@ -5311,7 +5255,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
      it's possible to tell at a glance whether you're looking at a
      cached copy or the actual latest deploy. Compare against what
      Claude tells you the current build is. -->
-<div style="position:fixed;bottom:4px;left:8px;z-index:1;font-family:ui-monospace,monospace;font-size:9px;color:rgba(255,255,255,0.15);pointer-events:none;">build 2026-09-08e</div>
+<div style="position:fixed;bottom:4px;left:8px;z-index:1;font-family:ui-monospace,monospace;font-size:9px;color:rgba(255,255,255,0.15);pointer-events:none;">build 2026-09-10a</div>
 
 </body>
 </html>
