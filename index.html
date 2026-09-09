@@ -245,23 +245,31 @@ body::after {
 .fin-stocks-row {
   grid-column: 1 / -1; margin-top: 4px; padding-top: 16px;
   border-top: 1px solid var(--border);
-  display: flex; flex-direction: column; gap: 10px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
 }
 .fin-stocks-row:empty { display: none; }
 .fin-stock-item {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  padding: 12px 10px; border-radius: 12px;
+  background: var(--card-soft); border: 1px solid var(--border);
 }
-.fin-stock-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
-.fin-stock-ticker { font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
-.fin-stock-spacer { flex: 1; }
-.fin-stock-val { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; text-align: right; }
+.fin-stock-name { font-size: 11.5px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-stock-ticker { font-size: 10px; color: var(--text-tertiary); margin-top: -3px; letter-spacing: 0.03em; }
+.fin-stock-val { font-family: var(--font-mono); font-size: 14px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .fin-stock-chg {
-  font-family: var(--font-mono); font-size: 12px; font-weight: 800;
-  padding: 4px 9px; border-radius: 999px; margin-left: 10px;
-  flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 800;
+  padding: 3px 8px; border-radius: 999px;
+  align-self: flex-start;
 }
 .fin-stock-chg.up { background: color-mix(in srgb, var(--positive) 16%, transparent); color: var(--positive); }
 .fin-stock-chg.down { background: color-mix(in srgb, var(--negative) 14%, transparent); color: var(--negative); }
+@media (max-width: 480px) {
+  .fin-stocks-row { gap: 6px; }
+  .fin-stock-item { padding: 9px 7px; }
+  .fin-stock-name { font-size: 10px; }
+  .fin-stock-val { font-size: 12px; }
+  .fin-stock-chg { font-size: 9.5px; padding: 2px 6px; }
+}
 
 /* ===== Small tile row (Gym / Golf / Nutrition) ===== */
 .mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
@@ -776,17 +784,23 @@ body::after {
     const items = readJSON('nw:stocks', []);
     const snap = readJSON('stocks:snapshot', {});
     const { ccy, rate } = displayCcy();
-    const held = (Array.isArray(items) ? items : []).filter(it => it.ticker && (Number(it.amount) || 0) > 0);
+    // Any held ticker shows a tile, even before its first live price
+    // lands (amount still 0) — hiding it entirely made it look like the
+    // holding was never entered at all, when it just hadn't priced yet.
+    const held = (Array.isArray(items) ? items : []).filter(it => it.ticker);
     if (!held.length) { row.innerHTML = ''; return; }
     row.innerHTML = held.slice(0, 3).map(it => {
       const q = snap[it.ticker] || {};
       const chg = typeof q.changePercent === 'number' ? q.changePercent : null;
       const up = chg == null || chg >= 0;
-      const valStr = ccy + ' ' + Math.round((Number(it.amount) || 0) * rate).toLocaleString('en-US');
+      const hasAmount = (Number(it.amount) || 0) > 0;
+      const valStr = hasAmount
+        ? (ccy + ' ' + Math.round((Number(it.amount) || 0) * rate).toLocaleString('en-US'))
+        : 'Pending…';
       const chgStr = chg == null ? '—' : (up ? '+' : '') + chg.toFixed(2) + '%';
       return '<div class="fin-stock-item">'
-        + '<div><div class="fin-stock-name">' + it.name + '</div><div class="fin-stock-ticker">' + it.ticker + '</div></div>'
-        + '<div class="fin-stock-spacer"></div>'
+        + '<div class="fin-stock-name">' + it.name + '</div>'
+        + '<div class="fin-stock-ticker">' + it.ticker + '</div>'
         + '<div class="fin-stock-val">' + valStr + '</div>'
         + '<div class="fin-stock-chg ' + (up ? 'up' : 'down') + '">' + chgStr + '</div>'
         + '</div>';

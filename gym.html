@@ -130,6 +130,7 @@ const CONFIG = {
     { name: "Cable Crunch",               gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "A", muscle: "Core", repMin: 10, repMax: 15, step: 5,   startWeight: 20 },
     { name: "Ab Wheel Rollout",           gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "B", muscle: "Core", repMin: 6,  repMax: 12, step: 1,   startWeight: 0, bw: true },
     { name: "Weighted Sit-Up",            gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "C", muscle: "Core", repMin: 10, repMax: 15, step: 2.5, startWeight: 5 },
+    { name: "Ab Crunch Machine",          gym: "comm", day: "push", tag: "accessory", slot: "Push Core", optionSet: "D", muscle: "Core", repMin: 10, repMax: 15, step: 5,   startWeight: 25 },
 
     // ---- Lower B ----
     { name: "Goblet / Front Squat",       gym: "comm", day: "lowerB", tag: "primary",   slot: "Squat",               muscle: "Quads", repMin: 6,  repMax: 10, step: 2.5, startWeight: 20 },
@@ -1046,6 +1047,25 @@ img, video, canvas, svg { max-width: 100%; }
 .po-tw-past-empty {
   text-align: center; padding: 16px;
   color: var(--text-3); font-size: 12px; font-style: italic;
+}
+.po-tw-past-day-h { cursor: pointer; }
+.po-tw-past-day.is-open { background: rgba(255,255,255,0.045); }
+.po-tw-past-detail {
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.po-tw-detail-ex-name {
+  font-size: 12px; font-weight: 700; color: var(--text-1); margin-bottom: 4px;
+}
+.po-tw-detail-sets {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.po-tw-detail-set {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  color: var(--text-2); background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border); border-radius: 7px; padding: 3px 7px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ============================================================
@@ -2279,6 +2299,22 @@ img, video, canvas, svg { max-width: 100%; }
       s.programVersion = 8;
     }
 
+    // Ninth migration: add Ab Crunch Machine as a 4th Push-day core
+    // option (alongside Cable Crunch / Ab Wheel Rollout / Weighted
+    // Sit-Up) — a distinct machine-based crunch, not the old retired
+    // "Core Finisher" placeholder. Purely additive, same merge pattern.
+    if ((s.programVersion || 0) < 9) {
+      const existingExKeys9 = new Set(s.exercises.map(e => (e.name + '|' + e.day).toLowerCase()));
+      (CONFIG.defaultExercises || []).forEach((e, i) => {
+        const key = (e.name + '|' + e.day).toLowerCase();
+        if (!existingExKeys9.has(key)) {
+          s.exercises.push(Object.assign({ id: 'seed9_' + i + '_' + Date.now() }, e));
+          existingExKeys9.add(key);
+        }
+      });
+      s.programVersion = 9;
+    }
+
     return s;
   }
   function saveState() {
@@ -2975,7 +3011,24 @@ img, video, canvas, svg { max-width: 100%; }
       const timeRange = (sum.firstTime && sum.lastTime)
         ? ' · ' + fmtTime12h(sum.firstTime) + (sum.lastTime > sum.firstTime ? '–' + fmtTime12h(sum.lastTime) : '')
         : '';
-      return '<div class="po-tw-past-day">'
+      // Full set-by-set breakdown, built now but hidden until tapped —
+      // exactly what was logged for each exercise that day, in order.
+      const detailHtml = sum.perEx.map(e => {
+        const setsHtml = e.sets
+          .slice()
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+          .map(s => {
+            const valStr = e.ex.bw
+              ? (s.reps + (e.ex.holdSeconds ? 's' : ' reps'))
+              : (s.weight + u + ' × ' + s.reps + (e.ex.holdSeconds ? 's' : ' reps'));
+            return '<span class="po-tw-detail-set">' + escape(valStr) + '</span>';
+          }).join('');
+        return '<div class="po-tw-detail-ex">'
+          + '<div class="po-tw-detail-ex-name">' + escape(e.ex.name) + '</div>'
+          + '<div class="po-tw-detail-sets">' + setsHtml + '</div>'
+          + '</div>';
+      }).join('');
+      return '<div class="po-tw-past-day" data-daykey="' + dk + '">'
         + '<div class="po-tw-past-day-h">'
         +   '<span class="po-tw-past-day-date">' + fmtPastDate(dk) + '</span>'
         +   '<span class="po-tw-past-day-summary">'
@@ -2986,8 +3039,17 @@ img, video, canvas, svg { max-width: 100%; }
         + '<div class="po-tw-past-day-summary" style="margin-top:6px; font-size:11px; color:var(--text-3);">'
         +   escape(exNames)
         + '</div>'
+        + '<div class="po-tw-past-detail" hidden>' + detailHtml + '</div>'
         + '</div>';
     }).join('');
+    body.querySelectorAll('.po-tw-past-day').forEach(row => {
+      const header = row.querySelector('.po-tw-past-day-h');
+      header.addEventListener('click', () => {
+        const detail = row.querySelector('.po-tw-past-detail');
+        detail.hidden = !detail.hidden;
+        row.classList.toggle('is-open', !detail.hidden);
+      });
+    });
   }
 
   $('poTwDoneBtn').addEventListener('click', () => {
@@ -4103,6 +4165,14 @@ img, video, canvas, svg { max-width: 100%; }
   // JSON of the last state we sent or received — used to ignore
   // realtime echoes of our own pushes so we don't infinite-loop.
   let pcLastSyncedJson = null;
+  // Set the instant any local write happens after boot. The initial
+  // remote pull below is a network round-trip — if the user logs a set
+  // (or taps Mark done) before it resolves, applying that stale fetch
+  // would silently erase what they just entered, since focus isn't on
+  // an input at that point so pcIsUserEditing() won't catch it. When
+  // this is true by the time the pull resolves, local is newer than
+  // what we fetched, so push local up instead of overwriting it.
+  let pcLocalChangedSinceBoot = false;
 
   const _pcOrigSet = localStorage.setItem.bind(localStorage);
   const _pcOrigRemove = localStorage.removeItem.bind(localStorage);
@@ -4112,13 +4182,13 @@ img, video, canvas, svg { max-width: 100%; }
   localStorage.setItem = function(k, v) {
     _pcOrigSet(k, v);
     try {
-      if (!pcSuppressSync && PC_SYNCED_KEYS.indexOf(k) !== -1) pcSchedulePush();
+      if (!pcSuppressSync && PC_SYNCED_KEYS.indexOf(k) !== -1) { pcLocalChangedSinceBoot = true; pcSchedulePush(); }
     } catch (e) {}
   };
   localStorage.removeItem = function(k) {
     _pcOrigRemove(k);
     try {
-      if (!pcSuppressSync && PC_SYNCED_KEYS.indexOf(k) !== -1) pcSchedulePush();
+      if (!pcSuppressSync && PC_SYNCED_KEYS.indexOf(k) !== -1) { pcLocalChangedSinceBoot = true; pcSchedulePush(); }
     } catch (e) {}
   };
 
@@ -4269,8 +4339,12 @@ img, video, canvas, svg { max-width: 100%; }
       const { data, error } = await pcSupa
         .from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
       if (!error && data && data.data && Object.keys(data.data).length > 0) {
-        pcLastSyncedJson = JSON.stringify(data.data);
-        pcMaybeApplyRemote(data.data);
+        if (pcLocalChangedSinceBoot) {
+          pcSchedulePush();
+        } else {
+          pcLastSyncedJson = JSON.stringify(data.data);
+          pcMaybeApplyRemote(data.data);
+        }
       } else if (Object.keys(pcCollectState()).length > 0) {
         pcSchedulePush();
       }

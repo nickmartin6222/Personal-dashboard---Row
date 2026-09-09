@@ -32,6 +32,13 @@
     let pushTimer = null;
     let suppressSync = false;
     let lastSyncedJson = null;
+    // Set the instant any local write happens after boot. The initial
+    // remote pull below is async (a network round-trip) — if the user
+    // logs something before it resolves, applying that stale pull would
+    // silently wipe out what they just entered. When this is true by the
+    // time the pull comes back, local is newer than what we fetched, so
+    // push local up instead of overwriting it with the fetched copy.
+    let localChangedSinceBoot = false;
 
     function matches(k) {
       if (!k) return false;
@@ -63,11 +70,11 @@
     const origRemove = localStorage.removeItem.bind(localStorage);
     localStorage.setItem = function (k, v) {
       origSet(k, v);
-      try { if (!suppressSync && matches(k)) schedulePush(); } catch (e) {}
+      try { if (!suppressSync && matches(k)) { localChangedSinceBoot = true; schedulePush(); } } catch (e) {}
     };
     localStorage.removeItem = function (k) {
       origRemove(k);
-      try { if (!suppressSync && matches(k)) schedulePush(); } catch (e) {}
+      try { if (!suppressSync && matches(k)) { localChangedSinceBoot = true; schedulePush(); } } catch (e) {}
     };
 
     function applyRemote(remote) {
@@ -138,8 +145,12 @@
         const { data, error } = await supa
           .from('app_state').select('data').eq('key', appKey).maybeSingle();
         if (!error && data && data.data && Object.keys(data.data).length > 0) {
-          lastSyncedJson = JSON.stringify(data.data);
-          applyRemote(data.data);
+          if (localChangedSinceBoot) {
+            schedulePush();
+          } else {
+            lastSyncedJson = JSON.stringify(data.data);
+            applyRemote(data.data);
+          }
         } else if (Object.keys(collect()).length > 0) {
           schedulePush();
         }

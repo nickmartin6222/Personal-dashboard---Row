@@ -2707,7 +2707,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     let changed = false;
     withTicker.forEach(it => {
       const q = quotes[it.ticker];
-      if (!q || q.error || !(q.price > 0)) return;
+      if (!q || q.error || !(q.price > 0)) {
+        // Surface WHY it's stuck on "Pending price" right on the row —
+        // the old behavior just left the tooltip's generic guess (check
+        // your API token) which is also invisible on mobile since
+        // tooltips need a hover state touchscreens don't have.
+        it.lastPriceError = (q && q.error) || 'no response from price API';
+        changed = true;
+        return;
+      }
+      delete it.lastPriceError;
       const ccy = tickerCurrency(it.ticker);
       const rate = exchangeRates[ccy] || 1; // CHF -> ccy rate (1 CHF = rate ccy)
       const priceCHF = q.price / rate;
@@ -2835,6 +2844,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       row.appendChild(amt);
       row.appendChild(del);
       list.appendChild(row);
+      // Visible (not just tooltip — tooltips don't work on mobile touch)
+      // reason a ticker is stuck on "Pending price…", so it's actually
+      // diagnosable from the phone that's stuck, not just desktop hover.
+      if (neverPriced && it.lastPriceError) {
+        const errRow = document.createElement('div');
+        errRow.style.cssText = 'padding:0 0 6px 30px;margin-top:-4px;font-size:10.5px;color:#FF8A8A;opacity:0.85;';
+        errRow.textContent = it.ticker + ': ' + it.lastPriceError;
+        list.appendChild(errRow);
+      }
     });
     document.getElementById(cat.totalId).textContent = fmtMoney(total);
     return total;
