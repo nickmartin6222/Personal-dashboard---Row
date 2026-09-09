@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="lock.js"></script>
+<script src="/api/config"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<title>Dashboard — Mint preview</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
+<script src="topbar.js" defer></script>
+<style>
+/* ===== DESIGN PREVIEW #3 — same Goals-first page structure as the
+   sage draft, back on the app's original black + mint palette. This
+   is the "keep the new layout, revert the color experiment" version.
+   Isolated demo file — not linked from the app's nav, index.html
+   untouched. Shares localStorage with the real pages (same origin),
+   so every number here is your real live data. ===== */
+:root {
+  --bg: #050506;
+  --card: rgba(255,255,255,0.04);
+  --card-soft: rgba(255,255,255,0.06);
+  --card-solid: #0E0E10;
+  --border: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.10);
+  --text-primary: #FAFAFA;
+  --text-secondary: #B8B6B0;
+  --text-tertiary: #76746E;
+  --sage: #6EE3A4;
+  --sage-deep: #1C3B2C;
+  --sage-pale: rgba(110,227,164,0.14);
+  --positive: #6EE3A4;
+  --negative: #FF8A8A;
+  --gold: #F2C063;
+  --blue: #7DD3FC;
+  --shadow-sm: rgba(0,0,0,0.35);
+  --shadow-md: rgba(0,0,0,0.4);
+  --shadow-lg: rgba(0,0,0,0.5);
+  --blob-warm: rgba(224,118,88,0.16);
+  --blob-cool: rgba(180,180,200,0.06);
+  --dot-texture: rgba(255,255,255,0.014);
+  --on-accent: #06120C;
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+/* ===== Theme toggle — sage-green + white, matching the sage
+   Finance draft's exact palette, so Gym/Golf/Nutrition mini-tiles
+   here read as one consistent system with it when toggled on. ===== */
+:root[data-theme="sage"] {
+  --bg: #EDEEE9;
+  --card: #FFFFFF;
+  --card-soft: #F5F6F1;
+  --card-solid: #FFFFFF;
+  --border: rgba(28,30,27,0.08);
+  --border-strong: rgba(28,30,27,0.14);
+  --text-primary: #1C1E1B;
+  --text-secondary: #63675F;
+  --text-tertiary: #9A9E93;
+  --sage: #5F7A63;
+  --sage-deep: #3F5443;
+  --sage-pale: #E4EBE1;
+  --positive: #4C7A5B;
+  --negative: #C2554B;
+  --gold: #C99A44;
+  --blue: #4F7FBF;
+  --shadow-sm: rgba(28,30,27,0.10);
+  --shadow-md: rgba(28,30,27,0.08);
+  --shadow-lg: rgba(28,30,27,0.14);
+  --blob-warm: rgba(217,139,95,0.14);
+  --blob-cool: rgba(28,30,27,0.05);
+  --dot-texture: rgba(28,30,27,0.05);
+  --on-accent: #FFFFFF;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+body {
+  min-height: 100vh; padding: max(24px, env(safe-area-inset-top)) 18px 60px;
+  position: relative; overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background:
+    radial-gradient(circle at 82% 14%, var(--blob-warm), transparent 45%),
+    radial-gradient(circle at 18% 90%, var(--blob-cool), transparent 50%);
+  filter: blur(40px); pointer-events: none; z-index: -2;
+}
+body::after {
+  content: ''; position: fixed; inset: 0;
+  background-image: radial-gradient(var(--dot-texture) 1px, transparent 1px);
+  background-size: 3px 3px; pointer-events: none; z-index: -1;
+}
+
+.preview-banner {
+  position: relative; max-width: 1100px; margin: 0 auto 18px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 16px; border-radius: 12px;
+  background: var(--sage-deep); color: #EAFBF2;
+  font-size: 12px; font-weight: 600;
+}
+.preview-banner a { color: var(--sage); font-weight: 700; }
+.page { position: relative; }
+
+.page { max-width: 1100px; margin: 0 auto; }
+.hub-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+.greeting { font-family: var(--font); font-size: 26px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+.greeting-sub { font-size: 13px; color: var(--text-tertiary); margin-top: 4px; }
+.gear-btn {
+  width: 44px; height: 44px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 13px; border: 1px solid var(--border-strong);
+  background: var(--card); color: var(--text-secondary);
+  cursor: pointer; box-shadow: 0 6px 16px var(--shadow-sm);
+}
+.gear-btn svg { width: 20px; height: 20px; }
+
+/* Theme toggle — mint (dark) <-> sage (light), same page structure
+   either way. Persists to localStorage so it stays put on reload. */
+.theme-toggle {
+  width: 52px; height: 30px; flex-shrink: 0; padding: 3px;
+  border-radius: 999px; border: 1px solid var(--border-strong);
+  background: var(--card); cursor: pointer;
+  box-shadow: 0 6px 16px var(--shadow-sm);
+  display: flex; align-items: center;
+  transition: background 0.2s ease;
+}
+.theme-toggle-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--sage);
+  transition: transform 0.25s ease, background 0.2s ease;
+}
+:root[data-theme="sage"] .theme-toggle-dot { transform: translateX(22px); }
+
+.section-title {
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 28px 0 12px;
+}
+.section-title:first-of-type { margin-top: 0; }
+
+/* ===== Goals row ===== */
+.goals-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 720px) { .goals-grid { grid-template-columns: repeat(2, 1fr); } }
+.goal-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; padding: 18px;
+  box-shadow: 0 8px 24px var(--shadow-md);
+}
+.goal-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.goal-card-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.goal-card-pct { font-family: var(--font); font-size: 13px; font-weight: 800; color: var(--sage); font-variant-numeric: tabular-nums; }
+.goal-card-vals { font-size: 12px; color: var(--text-tertiary); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.goal-bar-track { height: 8px; border-radius: 999px; background: var(--sage-pale); overflow: hidden; }
+.goal-bar-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+.goal-edit-btn {
+  margin-top: 12px; width: 100%; padding: 8px; border-radius: 9px;
+  border: 1px solid var(--border-strong); background: transparent;
+  color: var(--text-tertiary); font-family: inherit; font-size: 11px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.02em;
+}
+.goal-edit-btn:hover { background: var(--card-soft); color: var(--text-primary); }
+.goal-edit-row { display: flex; gap: 6px; margin-top: 10px; }
+.goal-edit-row input {
+  flex: 1; min-width: 0; padding: 7px 9px; border-radius: 8px;
+  border: 1px solid var(--border-strong); font-family: inherit; font-size: 12px;
+  background: var(--card-soft); color: var(--text-primary); outline: none;
+}
+.goal-edit-row button {
+  padding: 7px 12px; border-radius: 8px; border: 0;
+  background: var(--sage); color: var(--on-accent); font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+
+/* ===== Generic card ===== */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 22px;
+  box-shadow: 0 8px 24px var(--shadow-md);
+}
+
+/* ===== Finance overview ===== */
+.fin-overview { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; }
+@media (max-width: 780px) { .fin-overview { grid-template-columns: 1fr; } }
+.fin-total-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); }
+.fin-total-val { font-family: var(--font); font-size: 34px; font-weight: 800; color: var(--text-primary); margin-top: 4px; letter-spacing: -0.02em; }
+.fin-total-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+.fin-chart-wrap { margin-top: 16px; }
+.fin-chart-svg { width: 100%; height: 120px; display: block; overflow: visible; }
+.fin-donut-row { display: flex; align-items: center; gap: 18px; }
+.fin-donut { width: 96px; height: 96px; border-radius: 50%; flex-shrink: 0; position: relative; }
+.fin-donut::after { content: ''; position: absolute; inset: 18px; border-radius: 50%; background: var(--card-solid); }
+.fin-legend { display: flex; flex-direction: column; gap: 7px; min-width: 0; flex: 1; }
+.fin-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+.fin-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.fin-legend-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-legend-pct { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+/* Stock holdings — folded into the same Finance overview card, not a
+   separate widget, sized to fit all of them on one banner. */
+.fin-stocks-row {
+  grid-column: 1 / -1; margin-top: 4px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.fin-stocks-row:empty { display: none; }
+.fin-stock-item {
+  display: flex; align-items: center; gap: 12px;
+}
+.fin-stock-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.fin-stock-ticker { font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
+.fin-stock-spacer { flex: 1; }
+.fin-stock-val { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; text-align: right; }
+.fin-stock-chg {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 800;
+  padding: 4px 9px; border-radius: 999px; margin-left: 10px;
+  flex-shrink: 0;
+}
+.fin-stock-chg.up { background: color-mix(in srgb, var(--positive) 16%, transparent); color: var(--positive); }
+.fin-stock-chg.down { background: color-mix(in srgb, var(--negative) 14%, transparent); color: var(--negative); }
+
+/* ===== Small tile row (Gym / Golf / Nutrition) ===== */
+.mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 720px) { .mini-grid { grid-template-columns: 1fr; } }
+.mini-tile {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; padding: 20px;
+  text-decoration: none; display: block;
+  box-shadow: 0 8px 24px var(--shadow-md);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.mini-tile:hover { transform: translateY(-2px); box-shadow: 0 12px 30px var(--shadow-lg); }
+.mini-tile-top { display: flex; align-items: center; justify-content: space-between; }
+.mini-tile-emoji { font-size: 22px; }
+.mini-tile-arrow { color: var(--text-tertiary); font-size: 16px; }
+.mini-tile-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 14px; }
+.mini-tile-val { font-family: var(--font); font-size: 24px; font-weight: 800; color: var(--text-primary); margin-top: 3px; letter-spacing: -0.02em; }
+.mini-tile-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="preview-banner">
+  New dashboard layout (Goals + Finance overview + Fitness/Golf/Nutrition), back on the app's original black + mint palette — with a mint/sage toggle (top right) to compare against the sage draft. Nothing live is affected.
+  <a href="index.html">← Back to the real dashboard</a>
+</div>
+
+<div class="page">
+
+  <div class="hub-head">
+    <div>
+      <div class="greeting">Hello, Nick!</div>
+      <div class="greeting-sub" id="dateSub">—</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="theme-toggle" type="button" id="themeToggle" aria-label="Toggle color theme">
+        <span class="theme-toggle-dot"></span>
+      </button>
+      <button class="gear-btn" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="section-title">Goals</div>
+  <div class="goals-grid" id="goalsGrid"></div>
+
+  <div class="section-title">Finance overview</div>
+  <a class="card" href="FROK-finance-standalone.html" style="text-decoration:none; display:block;">
+    <div class="fin-overview">
+      <div>
+        <div class="fin-total-label">Net worth</div>
+        <div class="fin-total-val" id="finTotal">—</div>
+        <div class="fin-total-sub" id="finBreakdown"></div>
+        <div class="fin-chart-wrap">
+          <svg class="fin-chart-svg" id="finChartSvg" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div class="fin-donut-row">
+        <div class="fin-donut" id="finDonut"></div>
+        <div class="fin-legend" id="finLegend"></div>
+      </div>
+      <div class="fin-stocks-row" id="finStocksRow"></div>
+    </div>
+  </a>
+
+  <div class="section-title">Fitness, golf &amp; nutrition</div>
+  <div class="mini-grid">
+    <a class="mini-tile" href="gym.html">
+      <div class="mini-tile-top"><span class="mini-tile-emoji">💪</span><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Today</div>
+      <div class="mini-tile-val" id="gymVal">—</div>
+      <div class="mini-tile-sub">Fitness split</div>
+    </a>
+    <a class="mini-tile" href="golf.html">
+      <div class="mini-tile-top"><span class="mini-tile-emoji">⛳</span><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Handicap</div>
+      <div class="mini-tile-val" id="golfVal">—</div>
+      <div class="mini-tile-sub">Rounds &amp; trend</div>
+    </a>
+    <a class="mini-tile" href="nutrition.html">
+      <div class="mini-tile-top"><span class="mini-tile-emoji">🥗</span><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Today</div>
+      <div class="mini-tile-val" id="nutVal">—</div>
+      <div class="mini-tile-sub">Goals hit</div>
+    </a>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  function readJSON(key, fallback) { try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; } catch (e) { return fallback; } }
+  function writeJSON(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
+
+  // ============================================================
+  // THEME TOGGLE — mint (dark, default) <-> sage (light). Same
+  // markup/structure either way, just swapping which CSS variable
+  // values are in effect via [data-theme]. Persisted so it survives
+  // a reload.
+  // ============================================================
+  const THEME_KEY = 'dash:colorTheme';
+  function applyTheme(theme) {
+    if (theme === 'sage') document.documentElement.setAttribute('data-theme', 'sage');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  const savedTheme = localStorage.getItem(THEME_KEY) || 'mint';
+  applyTheme(savedTheme);
+  $('themeToggle').addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'sage' ? 'mint' : 'sage';
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  });
+
+  const dows = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  $('dateSub').textContent = dows[now.getDay()] + ', ' + mons[now.getMonth()] + ' ' + now.getDate();
+
+  // ============================================================
+  // GOALS — savings/stock read from Finance's own categories;
+  // handicap/weight use a direction-agnostic "distance covered"
+  // formula, auto-capturing a start value the first time a target
+  // is set so lower-is-better (handicap) and either-direction
+  // (weight) goals both just work.
+  // ============================================================
+  const GOALS_KEY = 'goals:targets';
+  // handicapStart/weightStart are real historical baselines (confirmed:
+  // handicap started at 25, weight at 78) — not auto-captured from
+  // wherever you happen to be right now, so the bar actually shows how
+  // far you've already come, not a bar that starts empty forever.
+  const DEFAULT_GOALS = { savings: 15000, stock: 15000, handicap: 15, weight: 83, handicapStart: 25, weightStart: 78 };
+
+  function loadGoals() {
+    const g = readJSON(GOALS_KEY, null);
+    const merged = (g && typeof g === 'object') ? Object.assign({}, DEFAULT_GOALS, g) : Object.assign({}, DEFAULT_GOALS);
+    // Starting baselines are fixed historical facts (handicap started at
+    // 25, weight at 78), not something that should ever come from a
+    // stale stored value — an earlier build auto-captured "wherever you
+    // are right now" as the start, which got saved to localStorage and
+    // would otherwise silently keep overriding the real baseline forever.
+    merged.handicapStart = DEFAULT_GOALS.handicapStart;
+    merged.weightStart = DEFAULT_GOALS.weightStart;
+    return merged;
+  }
+  function saveGoals(g) { writeJSON(GOALS_KEY, g); }
+
+  // Same currency the Finance page displays in — nw:* amounts are
+  // stored in CHF internally, so convert before comparing to a target
+  // you set in your real display currency (AUD).
+  function displayCcy() {
+    const ccy = readJSON('nw_currency', 'AUD');
+    const rates = readJSON('fx:rates', { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 });
+    return { ccy, rate: rates[ccy] || 1 };
+  }
+  function nwCategoryTotal(catKey) {
+    const items = readJSON('nw:' + catKey, []);
+    if (!Array.isArray(items)) return 0;
+    const totalCHF = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+    return totalCHF * displayCcy().rate;
+  }
+  function currentHandicap() {
+    const rounds = readJSON('golf:rounds', []);
+    if (!Array.isArray(rounds) || !rounds.length) return null;
+    const comparable = rounds.slice()
+      .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0))
+      .slice(0, 20)
+      .map(r => typeof r.differential === 'number' ? (r.holes === 9 ? r.differential * 2 : r.differential) : null)
+      .filter(d => typeof d === 'number');
+    if (comparable.length < 3) return null;
+    const best = comparable.slice().sort((a, b) => a - b).slice(0, Math.min(8, comparable.length));
+    return Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
+  }
+  function currentWeight() {
+    const arr = readJSON('po_coach_weights', []);
+    if (!Array.isArray(arr) || !arr.length) return null;
+    const sorted = arr.slice().sort((a, b) => (a.dateKey || '').localeCompare(b.dateKey || ''));
+    return sorted[sorted.length - 1].weight;
+  }
+
+  // Simple current/target ratio, capped 0-100%.
+  function ratioProgress(current, target) {
+    if (!(target > 0)) return 0;
+    return Math.max(0, Math.min(100, (current / target) * 100));
+  }
+  // Distance-covered progress: works whether current needs to go up or
+  // down to reach target, using a captured starting point.
+  function distanceProgress(start, current, target) {
+    if (start == null || current == null || start === target) return 0;
+    const pct = ((start - current) / (start - target)) * 100;
+    return Math.max(0, Math.min(100, pct));
+  }
+
+  const GOAL_DEFS = [
+    {
+      key: 'savings', label: 'Savings', color: '#4C7A5B',
+      current: () => nwCategoryTotal('bank'),
+      target: (g) => g.savings,
+      progress: (g, cur) => ratioProgress(cur, g.savings),
+      fmt: (v) => displayCcy().ccy + ' ' + Math.round(v).toLocaleString()
+    },
+    {
+      key: 'stock', label: 'Stock amount', color: '#4F7FBF',
+      current: () => nwCategoryTotal('stocks'),
+      target: (g) => g.stock,
+      progress: (g, cur) => ratioProgress(cur, g.stock),
+      fmt: (v) => displayCcy().ccy + ' ' + Math.round(v).toLocaleString()
+    },
+    {
+      key: 'handicap', label: 'Golf handicap', color: '#C99A44',
+      current: () => currentHandicap(),
+      target: (g) => g.handicap,
+      progress: (g, cur) => distanceProgress(g.handicapStart, cur == null ? g.handicapStart : cur, g.handicap),
+      fmt: (v) => v == null ? 'no rounds yet' : v.toFixed(1)
+    },
+    {
+      key: 'weight', label: 'Body weight', color: '#8A6BB5',
+      current: () => currentWeight(),
+      target: (g) => g.weight,
+      progress: (g, cur) => distanceProgress(g.weightStart, cur == null ? g.weightStart : cur, g.weight),
+      fmt: (v) => v == null ? 'no weigh-ins yet' : v + ' kg'
+    }
+  ];
+
+  let editingGoal = null;
+
+  function renderGoals() {
+    const goals = loadGoals();
+    $('goalsGrid').innerHTML = GOAL_DEFS.map(def => {
+      const cur = def.current();
+      const pct = Math.round(def.progress(goals, cur));
+      const isEditing = editingGoal === def.key;
+      return '<div class="goal-card" data-key="' + def.key + '">'
+        + '<div class="goal-card-top"><span class="goal-card-label">' + def.label + '</span><span class="goal-card-pct">' + pct + '%</span></div>'
+        + '<div class="goal-card-vals">' + def.fmt(cur) + ' &rarr; ' + def.fmt(def.target(goals)) + '</div>'
+        + '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%;background:' + def.color + '"></div></div>'
+        + (isEditing
+            ? '<div class="goal-edit-row"><input type="number" inputmode="decimal" id="goalInput_' + def.key + '" value="' + def.target(goals) + '"><button type="button" data-save="' + def.key + '">Save</button></div>'
+            : '<button type="button" class="goal-edit-btn" data-edit="' + def.key + '">Edit target</button>')
+        + '</div>';
+    }).join('');
+
+    $('goalsGrid').querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => { editingGoal = btn.dataset.edit; renderGoals(); });
+    });
+    $('goalsGrid').querySelectorAll('[data-save]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.save;
+        const val = parseFloat($('goalInput_' + key).value);
+        const g = loadGoals();
+        if (!isNaN(val) && val > 0) {
+          g[key] = val;
+          saveGoals(g);
+        }
+        editingGoal = null;
+        renderGoals();
+      });
+    });
+  }
+
+  // ============================================================
+  // FINANCE OVERVIEW — same net-worth/pie logic as the real
+  // dashboard, plus a small trend line from nw:history.
+  // ============================================================
+  function renderFinance() {
+    const CAT_KEYS = ['bank', 'stocks', 'crypto', 'other'];
+    const PALETTE = ['#4C7A5B', '#4F7FBF', '#8A6BB5', '#C99A44', '#C2554B', '#5F7A63', '#7A9A4A', '#3F5443'];
+    function defaultColor(catKey, it) {
+      const seed = catKey + ':' + (it.ticker || it.name || '');
+      let hash = 0;
+      for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+      return PALETTE[hash % PALETTE.length];
+    }
+    let total = 0;
+    const slices = [];
+    CAT_KEYS.forEach(catKey => {
+      const items = readJSON('nw:' + catKey, []);
+      if (!Array.isArray(items)) return;
+      items.forEach(it => {
+        const amt = Number(it.amount) || 0;
+        if (amt <= 0) return;
+        total += amt;
+        slices.push({ name: it.name || catKey, color: it.color || defaultColor(catKey, it), amount: amt });
+      });
+    });
+    const ccy = readJSON('nw_currency', 'AUD');
+    const rates = readJSON('fx:rates', { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 });
+    const rate = rates[ccy] || 1;
+    const displayTotal = total * rate;
+    $('finTotal').textContent = total > 0 ? (ccy + ' ' + Math.round(displayTotal).toLocaleString('en-US')) : '—';
+    const bank = nwCategoryTotal('bank'), stocks = nwCategoryTotal('stocks');
+    $('finBreakdown').textContent = total > 0 ? ('bank ' + ccy + ' ' + Math.round(bank).toLocaleString('en-US') + ' · stocks ' + ccy + ' ' + Math.round(stocks).toLocaleString('en-US')) : 'No holdings logged yet';
+
+    slices.sort((a, b) => b.amount - a.amount);
+    const donutEl = $('finDonut');
+    if (slices.length && total > 0) {
+      let acc = 0;
+      const stops = slices.map(s => {
+        const from = (acc / total) * 100; acc += s.amount; const to = (acc / total) * 100;
+        return s.color + ' ' + from.toFixed(2) + '% ' + to.toFixed(2) + '%';
+      });
+      donutEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
+    } else {
+      donutEl.style.background = 'var(--card-soft)';
+    }
+    const shown = slices.slice(0, 5);
+    const rest = slices.length - shown.length;
+    $('finLegend').innerHTML = shown.map(s => {
+      const pct = Math.round((s.amount / total) * 100);
+      return '<div class="fin-legend-row"><span class="fin-legend-dot" style="background:' + s.color + '"></span>'
+        + '<span class="fin-legend-name">' + s.name + '</span><span class="fin-legend-pct">' + pct + '%</span></div>';
+    }).join('') + (rest > 0 ? '<div class="fin-legend-row"><span class="fin-legend-name">+' + rest + ' more</span></div>' : '');
+
+    // Trend line from nw:history (CHF-based snapshots)
+    const hist = readJSON('nw:history', []);
+    const svg = $('finChartSvg');
+    if (!Array.isArray(hist) || hist.length < 2) { svg.innerHTML = ''; return; }
+    const vals = hist.map(h => h.v);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const range = Math.max(1, max - min);
+    const W = 300, H = 100, pad = 4;
+    const x = (i) => pad + (i / (hist.length - 1)) * (W - pad * 2);
+    const y = (v) => H - pad - ((v - min) / range) * (H - pad * 2);
+    const lineD = hist.map((h, i) => (i === 0 ? 'M' : 'L') + x(i).toFixed(1) + ',' + y(h.v).toFixed(1)).join(' ');
+    const areaD = lineD + ' L' + x(hist.length - 1).toFixed(1) + ',' + H + ' L' + x(0).toFixed(1) + ',' + H + ' Z';
+    svg.innerHTML =
+      '<defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1">'
+      + '<stop offset="0%" stop-color="#4C7A5B" stop-opacity="0.28"/><stop offset="100%" stop-color="#4C7A5B" stop-opacity="0"/>'
+      + '</linearGradient></defs>'
+      + '<path d="' + areaD + '" fill="url(#finAreaGrad)"></path>'
+      + '<path d="' + lineD + '" fill="none" stroke="#4C7A5B" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>';
+  }
+
+  // ============================================================
+  // GYM / GOLF / NUTRITION mini tiles
+  // ============================================================
+  function renderMiniTiles() {
+    const s = readJSON('po_coach_v1', null);
+    if (s && Array.isArray(s.weekdaySplit) && s.weekdaySplit.length === 7) {
+      $('gymVal').textContent = s.weekdaySplit[new Date().getDay()] || '—';
+    }
+    const hcp = currentHandicap();
+    $('golfVal').textContent = hcp == null ? '—' : hcp.toFixed(1);
+
+    const MACRO_KEYS = ['calories', 'protein', 'carbs', 'fibre', 'fat'];
+    const d = new Date();
+    const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const log = readJSON('nutrition:log', {});
+    const today = (log && typeof log === 'object') ? (log[dk] || {}) : {};
+    const hit = MACRO_KEYS.filter(k => today[k] === 'hit').length;
+    $('nutVal').textContent = hit + '/' + MACRO_KEYS.length;
+  }
+
+  // ============================================================
+  // STOCK HOLDINGS — the actual tickers you're invested in, folded
+  // into the Finance overview card below the chart/donut (not a
+  // separate widget). Value = your real position size (units x live
+  // price, same as Finance's own math, converted to display
+  // currency); movement = the live day-change% from stocks:snapshot,
+  // the same cache FROK-finance-standalone.html's refresh writes.
+  // ============================================================
+  function renderStockHoldings() {
+    const row = $('finStocksRow');
+    if (!row) return;
+    const items = readJSON('nw:stocks', []);
+    const snap = readJSON('stocks:snapshot', {});
+    const { ccy, rate } = displayCcy();
+    const held = (Array.isArray(items) ? items : []).filter(it => it.ticker && (Number(it.amount) || 0) > 0);
+    if (!held.length) { row.innerHTML = ''; return; }
+    row.innerHTML = held.slice(0, 3).map(it => {
+      const q = snap[it.ticker] || {};
+      const chg = typeof q.changePercent === 'number' ? q.changePercent : null;
+      const up = chg == null || chg >= 0;
+      const valStr = ccy + ' ' + Math.round((Number(it.amount) || 0) * rate).toLocaleString('en-US');
+      const chgStr = chg == null ? '—' : (up ? '+' : '') + chg.toFixed(2) + '%';
+      return '<div class="fin-stock-item">'
+        + '<div><div class="fin-stock-name">' + it.name + '</div><div class="fin-stock-ticker">' + it.ticker + '</div></div>'
+        + '<div class="fin-stock-spacer"></div>'
+        + '<div class="fin-stock-val">' + valStr + '</div>'
+        + '<div class="fin-stock-chg ' + (up ? 'up' : 'down') + '">' + chgStr + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function renderAll() { renderGoals(); renderFinance(); renderStockHoldings(); renderMiniTiles(); }
+  renderAll();
+  window.addEventListener('storage', renderAll);
+})();
+</script>
+</body>
+</html>
