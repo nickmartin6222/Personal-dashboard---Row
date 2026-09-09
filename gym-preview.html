@@ -358,7 +358,17 @@ button { font-family: inherit; }
 .lib-chip:hover, .lib-chip:active { border-color: var(--border-strong); color: var(--text-1); }
 
 /* ---------- date strip (calendar review) ---------- */
-.date-strip { display: flex; gap: 6px; margin-top: 12px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+.date-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+.date-nav-btn {
+  width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); flex: none;
+  background: var(--bg-raised); color: var(--text-2); font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+}
+.date-nav-btn:disabled { opacity: 0.3; cursor: default; }
+.date-nav-btn:not(:disabled):hover, .date-nav-btn:not(:disabled):active { color: var(--text-1); border-color: var(--border-strong); }
+.date-nav-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-2); letter-spacing: 0.02em; }
+.date-nav-label.is-jump { color: var(--lime); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.date-strip { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
 .date-strip::-webkit-scrollbar { display: none; }
 .date-cell {
   flex: 1 0 40px; min-width: 40px; display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -474,6 +484,11 @@ button { font-family: inherit; }
       <span class="gp-badge" id="gpBadge">—</span>
     </div>
     <div class="gp-sub" id="gpSub">—</div>
+    <div class="date-nav">
+      <button type="button" class="date-nav-btn" id="dateNavPrev" aria-label="Previous week">‹</button>
+      <span class="date-nav-label" id="dateNavLabel">This week</span>
+      <button type="button" class="date-nav-btn" id="dateNavNext" aria-label="Next week" disabled>›</button>
+    </div>
     <div class="date-strip" id="dateStrip"></div>
   </div>
 
@@ -1279,6 +1294,7 @@ button { font-family: inherit; }
     var durationMin = Math.max(1, Math.round((Date.now() - currentSession.startTime) / 60000));
     var volume = currentSession.sets.reduce(function (sum, s) { return sum + s.setsCount * s.reps * s.weight; }, 0);
     SESSIONS.unshift({ id: Date.now(), day: currentSession.day, dateKey: wtDateKey(new Date()), durationMin: durationMin, volume: volume, sets: currentSession.sets.map(function (s, i) { return Object.assign({ id: Date.now() + i }, s); }) });
+    saveSessions();
     STRENGTH.hours += durationMin / 60;
     STRENGTH.done = Math.min(STRENGTH.goal, STRENGTH.done + 1);
     STRENGTH.volume += Math.round(volume);
@@ -1376,7 +1392,19 @@ button { font-family: inherit; }
     if (key === daysAgoKey(1)) return 'Yesterday';
     return wtFmtDate(key);
   }
-  var SESSIONS = [
+  // Persisted for real, in this browser's localStorage — a logged
+  // workout survives a reload today, tomorrow, and in six months, the
+  // same way the weight log does. First-ever visit seeds four sample
+  // sessions from the last week and a half so there's something to
+  // look at; the moment you log or edit anything, that seed is
+  // replaced by your real saved history and stays saved from then on.
+  var SESSIONS_KEY = 'po_preview_sessions_v1';
+  function saveSessions() { try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(SESSIONS)); } catch (e) {} }
+  function loadSessions() {
+    try { var raw = localStorage.getItem(SESSIONS_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+    return null;
+  }
+  var SESSIONS = loadSessions() || [
     { id: 1, day: 'Push', dateKey: daysAgoKey(1), durationMin: 52, volume: 11820, sets: [
       { id: 101, name: 'Barbell Bench Press', setsCount: 4, reps: 6, weight: 82.5 },
       { id: 102, name: 'Incline DB Press', setsCount: 3, reps: 9, weight: 27.5 },
@@ -1447,6 +1475,7 @@ button { font-family: inherit; }
         var sess = SESSIONS.find(function (s) { return s.id === sessId; });
         sess.sets = sess.sets.filter(function (s) { return s.id !== setId; });
         sess.volume = sess.sets.reduce(function (sum, s) { return sum + s.setsCount * s.reps * s.weight; }, 0);
+        saveSessions();
         refreshAllSessionViews();
       });
     });
@@ -1460,6 +1489,7 @@ button { font-family: inherit; }
         st.reps = +row.querySelector('.edit-reps').value || st.reps;
         st.weight = parseFloat(row.querySelector('.edit-weight').value);
         sess.volume = sess.sets.reduce(function (sum, s) { return sum + s.setsCount * s.reps * s.weight; }, 0);
+        saveSessions();
         editingSetId = null;
         refreshAllSessionViews();
       });
@@ -1550,18 +1580,22 @@ button { font-family: inherit; }
   }
 
   // ------------------------------------------------------------------
-  // Calendar date strip — Mon-Sun of the current week, today
-  // highlighted, a dot under any day with a logged session. Tapping a
-  // past day opens a read-only summary of that day; tapping today just
-  // stays on the live view (and closes the summary if one was open).
+  // Calendar date strip — a real, navigable week view, not just a
+  // fixed snapshot of "this week." weekOffset pages the whole strip
+  // back (or forward, up to the present) 7 days at a time, so a
+  // workout from 6 months ago is genuinely reachable, not just this
+  // week's. Today is highlighted, a dot marks any day with a logged
+  // session. Tapping a past day opens a read-only summary of that day;
+  // tapping today (or the "This week" label) returns to the live view.
   // ------------------------------------------------------------------
   var selectedDateKey = null;
+  var weekOffset = 0;
   function renderDateStrip() {
     var today = new Date();
     var todayKey = wtDateKey(today);
     var dow = today.getDay(); // 0=Sun..6=Sat
     var mondayOffset = dow === 0 ? -6 : 1 - dow;
-    var monday = new Date(today); monday.setDate(today.getDate() + mondayOffset);
+    var monday = new Date(today); monday.setDate(today.getDate() + mondayOffset + weekOffset * 7);
     var cells = [];
     for (var i = 0; i < 7; i++) {
       var d = new Date(monday); d.setDate(monday.getDate() + i);
@@ -1579,7 +1613,15 @@ button { font-family: inherit; }
     document.querySelectorAll('.date-cell:not([disabled])').forEach(function (btn) {
       btn.addEventListener('click', function () { onSelectDate(btn.dataset.key); });
     });
+    var label = document.getElementById('dateNavLabel');
+    label.textContent = weekOffset === 0 ? 'This week' :
+      cells[0].d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' – ' + cells[6].d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    label.classList.toggle('is-jump', weekOffset !== 0);
+    document.getElementById('dateNavNext').disabled = weekOffset >= 0;
   }
+  document.getElementById('dateNavPrev').addEventListener('click', function () { weekOffset--; renderDateStrip(); });
+  document.getElementById('dateNavNext').addEventListener('click', function () { if (weekOffset < 0) { weekOffset++; renderDateStrip(); } });
+  document.getElementById('dateNavLabel').addEventListener('click', function () { if (weekOffset !== 0) { weekOffset = 0; renderDateStrip(); } });
   function onSelectDate(key) {
     if (key === wtDateKey(new Date())) { closeDayDetail(); return; }
     selectedDateKey = key;
