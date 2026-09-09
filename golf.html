@@ -207,6 +207,7 @@ body::after {
 
 /* ===== Trend graph ===== */
 .golf-chart-card {
+  position: relative;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -220,6 +221,17 @@ body::after {
   color: var(--good); transition: color 0.4s ease;
 }
 .golf-chart-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 4; vector-effect: non-scaling-stroke; }
+.golf-chart-hover-line { stroke: currentColor; stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.5; pointer-events: none; }
+.golf-chart-hover-dot { fill: currentColor; stroke: var(--bg-card); stroke-width: 2; pointer-events: none; filter: drop-shadow(0 0 4px currentColor); }
+.golf-chart-tooltip {
+  position: absolute; top: 40px; z-index: 3; transform: translateX(-50%);
+  background: var(--bg); border: 1px solid var(--border-strong);
+  border-radius: 8px; padding: 5px 9px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-primary);
+  white-space: nowrap; pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+}
+.golf-chart-tooltip .golf-chart-tooltip-date { display: block; font-size: 9px; font-weight: 600; color: var(--text-tertiary); margin-top: 1px; }
 .golf-chart-empty {
   text-align: center; font-size: 12px; font-style: italic;
   color: var(--text-tertiary); padding: 40px 0;
@@ -440,6 +452,7 @@ body::after {
       </div>
     </div>
     <svg class="golf-chart-svg" id="gChartSvg" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+    <div class="golf-chart-tooltip" id="gChartTooltip" hidden></div>
     <div class="golf-chart-empty" id="gChartEmpty">Log 2+ rounds (matching this filter) to see a trend.</div>
     <div class="golf-chart-stats" id="gChartStats" style="display:none">
       <div class="golf-stat"><div class="golf-stat-label">Best</div><div class="golf-stat-val" id="gStatBest">—</div></div>
@@ -625,6 +638,7 @@ body::after {
     }
     return d.join(' ');
   }
+  let gChartHoverPoints = [];
   function renderChart(rounds) {
     const svg = $('gChartSvg');
     const empty = $('gChartEmpty');
@@ -634,6 +648,7 @@ body::after {
       svg.innerHTML = '';
       empty.style.display = 'block';
       stats.style.display = 'none';
+      gChartHoverPoints = [];
       return;
     }
     empty.style.display = 'none';
@@ -670,13 +685,56 @@ body::after {
       + '<line class="golf-chart-grid" x1="0" x2="' + W + '" y1="110" y2="110"/>'
       + '<line x1="' + pad + '" y1="' + avgY + '" x2="' + (W - pad) + '" y2="' + avgY + '" stroke="var(--border-strong)" stroke-width="1" stroke-dasharray="4 3"></line>'
       + '<path d="' + areaD + '" fill="url(#gChartGrad)"></path>'
-      + '<path d="' + lineD + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" style="filter: drop-shadow(0 0 6px currentColor)"></path>';
+      + '<path d="' + lineD + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" style="filter: drop-shadow(0 0 6px currentColor)"></path>'
+      + '<line id="gChartHoverLine" class="golf-chart-hover-line" x1="0" y1="0" x2="0" y2="' + H + '" hidden></line>'
+      + '<circle id="gChartHoverDot" class="golf-chart-hover-dot" r="4" cx="0" cy="0" hidden></circle>';
 
     $('gStatBest').textContent = String(min);
     $('gStatAvg').textContent = avg.toFixed(1);
     $('gStatWorst').textContent = String(max);
     $('gStatCount').textContent = String(chrono.length);
+
+    // Hover lookup — real score + course/date per point.
+    gChartHoverPoints = chrono.map((r, i) => ({ x: points[i].x, y: points[i].y, score: r.score, date: r.date, course: r.course }));
   }
+  (function setupGChartHover() {
+    const svg = $('gChartSvg');
+    const card = document.querySelector('.golf-chart-card');
+    const tooltip = $('gChartTooltip');
+    if (!svg || !card || !tooltip) return;
+    function showAt(clientX) {
+      if (!gChartHoverPoints.length) return;
+      const hoverLine = document.getElementById('gChartHoverLine');
+      const hoverDot = document.getElementById('gChartHoverDot');
+      if (!hoverLine || !hoverDot) return;
+      const rect = svg.getBoundingClientRect();
+      if (!rect.width) return;
+      const relX = ((clientX - rect.left) / rect.width) * 300;
+      let nearest = gChartHoverPoints[0], minDist = Infinity;
+      gChartHoverPoints.forEach(p => { const d = Math.abs(p.x - relX); if (d < minDist) { minDist = d; nearest = p; } });
+      hoverLine.setAttribute('x1', nearest.x); hoverLine.setAttribute('x2', nearest.x);
+      hoverLine.hidden = false;
+      hoverDot.setAttribute('cx', nearest.x); hoverDot.setAttribute('cy', nearest.y);
+      hoverDot.hidden = false;
+      tooltip.innerHTML = nearest.score + (nearest.course ? ' · ' + escapeHtml(nearest.course) : '')
+        + '<span class="golf-chart-tooltip-date">' + fmtDate(nearest.date) + '</span>';
+      tooltip.hidden = false;
+      const pctX = Math.min(92, Math.max(8, (nearest.x / 300) * 100));
+      tooltip.style.left = pctX + '%';
+    }
+    function hide() {
+      tooltip.hidden = true;
+      const hoverLine = document.getElementById('gChartHoverLine');
+      const hoverDot = document.getElementById('gChartHoverDot');
+      if (hoverLine) hoverLine.hidden = true;
+      if (hoverDot) hoverDot.hidden = true;
+    }
+    svg.addEventListener('mousemove', (e) => showAt(e.clientX));
+    svg.addEventListener('mouseleave', hide);
+    svg.addEventListener('touchstart', (e) => { if (e.touches[0]) showAt(e.touches[0].clientX); }, { passive: true });
+    svg.addEventListener('touchmove', (e) => { if (e.touches[0]) showAt(e.touches[0].clientX); }, { passive: true });
+    svg.addEventListener('touchend', hide);
+  })();
 
   function renderRounds() {
     const all = loadRounds();

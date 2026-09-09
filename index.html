@@ -229,12 +229,23 @@ body::after {
 .fin-total-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); }
 .fin-total-val { font-family: var(--font); font-size: 34px; font-weight: 800; color: var(--text-primary); margin-top: 4px; letter-spacing: -0.02em; }
 .fin-total-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
-.fin-chart-wrap { margin-top: 16px; }
+.fin-chart-wrap { margin-top: 16px; position: relative; }
 .fin-chart-svg {
   width: 100%; height: 120px; display: block; overflow: visible;
   color: var(--positive); transition: color 0.4s ease;
 }
 .fin-chart-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 4; vector-effect: non-scaling-stroke; }
+.fin-chart-hover-line { stroke: currentColor; stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.5; pointer-events: none; }
+.fin-chart-hover-dot { fill: currentColor; stroke: var(--card); stroke-width: 2; pointer-events: none; filter: drop-shadow(0 0 4px currentColor); }
+.fin-chart-tooltip {
+  position: absolute; top: 6px; z-index: 3; transform: translateX(-50%);
+  background: var(--card-solid); border: 1px solid var(--border-strong);
+  border-radius: 8px; padding: 5px 9px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-primary);
+  white-space: nowrap; pointer-events: none;
+  box-shadow: 0 8px 20px var(--shadow-md);
+}
+.fin-chart-tooltip .fin-chart-tooltip-date { display: block; font-size: 9px; font-weight: 600; color: var(--text-tertiary); margin-top: 1px; }
 .fin-chart-stats {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
   margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
@@ -244,8 +255,13 @@ body::after {
 .fin-stat-label { font-size: 9px; letter-spacing: 0.14em; font-weight: 800; text-transform: uppercase; color: var(--text-tertiary); font-family: var(--font-mono); }
 .fin-stat-val { font-size: 13px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fin-donut-row { display: flex; align-items: center; gap: 18px; }
-.fin-donut { width: 96px; height: 96px; border-radius: 50%; flex-shrink: 0; position: relative; }
-.fin-donut::after { content: ''; position: absolute; inset: 18px; border-radius: 50%; background: var(--card-solid); }
+.fin-donut { width: 96px; height: 96px; flex-shrink: 0; position: relative; }
+.fin-donut-svg { width: 96px; height: 96px; display: block; transform: rotate(-90deg); }
+/* Hover the whole donut to dim every slice except the one under the
+   cursor, matching the Finance page's own pie exactly. */
+.fin-donut-svg path { transition: opacity 0.18s; cursor: pointer; }
+.fin-donut-svg:hover path { opacity: 0.45; }
+.fin-donut-svg path:hover { opacity: 1; }
 .fin-legend { display: flex; flex-direction: column; gap: 7px; min-width: 0; flex: 1; }
 .fin-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
 .fin-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -266,6 +282,7 @@ body::after {
   background: var(--card-soft); border: 1px solid var(--border);
 }
 .fin-stock-name { font-size: 11.5px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-stock-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; flex-shrink: 0; }
 .fin-stock-ticker { font-size: 10px; color: var(--text-tertiary); margin-top: -3px; letter-spacing: 0.03em; }
 .fin-stock-val { font-family: var(--font-mono); font-size: 14px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .fin-stock-chg {
@@ -413,6 +430,7 @@ body::after {
         <div class="fin-total-sub" id="finBreakdown"></div>
         <div class="fin-chart-wrap">
           <svg class="fin-chart-svg" id="finChartSvg" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
+          <div class="fin-chart-tooltip" id="finChartTooltip" hidden></div>
           <div class="fin-chart-stats">
             <div class="fin-stat"><div class="fin-stat-label">1% =</div><div class="fin-stat-val" id="finStat1pct">—</div></div>
             <div class="fin-stat"><div class="fin-stat-label">High</div><div class="fin-stat-val" id="finStatHigh">—</div></div>
@@ -422,7 +440,9 @@ body::after {
         </div>
       </div>
       <div class="fin-donut-row">
-        <div class="fin-donut" id="finDonut"></div>
+        <div class="fin-donut">
+          <svg class="fin-donut-svg" id="finDonutSvg" viewBox="0 0 96 96" aria-hidden="true"></svg>
+        </div>
         <div class="fin-legend" id="finLegend"></div>
       </div>
       <div class="fin-stocks-row" id="finStocksRow"></div>
@@ -723,28 +743,43 @@ body::after {
     });
   }
 
+  // Every holding gets its OWN distinct color (not grouped by category)
+  // so e.g. VDHG and S&P 500 read as clearly different slices instead
+  // of both showing as "stocks" mint — shared by the pie AND the stock
+  // tiles below it, so a holding's color matches in both places. Dark
+  // mode uses the brighter palette (matching Finance's own per-item
+  // swatch colors); light mode keeps the muted palette already
+  // established for the rest of the light theme.
+  const PALETTE_DARK = ['#7DD3FC','#6EE7B7','#C9B8FF','#F2C063','#FF8A8A','#F472B6','#FCD34D','#34D399','#A78BFA','#60A5FA','#FB923C','#4ADE80'];
+  const PALETTE_LIGHT = ['#4C7A5B', '#4F7FBF', '#8A6BB5', '#C99A44', '#C2554B', '#5F7A63', '#7A9A4A', '#3F5443'];
+  function defaultColor(catKey, it) {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const palette = isLight ? PALETTE_LIGHT : PALETTE_DARK;
+    const seed = catKey + ':' + (it.ticker || it.name || '');
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+    return palette[hash % palette.length];
+  }
+  // Same donut-slice arc math as the Finance page's own pie.
+  function donutArcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
+    const x1o = cx + rOuter * Math.cos(startAngle), y1o = cy + rOuter * Math.sin(startAngle);
+    const x2o = cx + rOuter * Math.cos(endAngle),   y2o = cy + rOuter * Math.sin(endAngle);
+    const x1i = cx + rInner * Math.cos(endAngle),   y1i = cy + rInner * Math.sin(endAngle);
+    const x2i = cx + rInner * Math.cos(startAngle), y2i = cy + rInner * Math.sin(startAngle);
+    const large = (endAngle - startAngle) > Math.PI ? 1 : 0;
+    return 'M ' + x1o.toFixed(2) + ' ' + y1o.toFixed(2)
+      + ' A ' + rOuter + ' ' + rOuter + ' 0 ' + large + ' 1 ' + x2o.toFixed(2) + ' ' + y2o.toFixed(2)
+      + ' L ' + x1i.toFixed(2) + ' ' + y1i.toFixed(2)
+      + ' A ' + rInner + ' ' + rInner + ' 0 ' + large + ' 0 ' + x2i.toFixed(2) + ' ' + y2i.toFixed(2)
+      + ' Z';
+  }
   // ============================================================
   // FINANCE OVERVIEW — same net-worth/pie logic as the real
   // dashboard, plus a small trend line from nw:history.
   // ============================================================
+  let finChartHoverPoints = [];
   function renderFinance() {
     const CAT_KEYS = ['bank', 'stocks', 'crypto', 'other'];
-    const PALETTE = ['#4C7A5B', '#4F7FBF', '#8A6BB5', '#C99A44', '#C2554B', '#5F7A63', '#7A9A4A', '#3F5443'];
-    // Dark mode matches the Finance page's own dark-mode pie exactly —
-    // one fixed color per category (every bank account is the same
-    // blue, every stock the same mint) — rather than a per-item hash.
-    // Light mode keeps the muted per-item palette above, matching the
-    // rest of the light theme's own established colors.
-    const CAT_COLORS_DARK = { bank: '#7DD3FC', stocks: '#6EE7B7', crypto: '#FBBF24', other: '#B794F4' };
-    function defaultColor(catKey, it) {
-      if (document.documentElement.getAttribute('data-theme') !== 'light') {
-        return CAT_COLORS_DARK[catKey] || '#FFFFFF';
-      }
-      const seed = catKey + ':' + (it.ticker || it.name || '');
-      let hash = 0;
-      for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-      return PALETTE[hash % PALETTE.length];
-    }
     let total = 0;
     const slices = [];
     CAT_KEYS.forEach(catKey => {
@@ -770,16 +805,24 @@ body::after {
     $('finBreakdown').textContent = total > 0 ? ('bank ' + ccy + ' ' + Math.round(bank).toLocaleString('en-US') + ' · stocks ' + ccy + ' ' + Math.round(stocks).toLocaleString('en-US')) : 'No holdings logged yet';
 
     slices.sort((a, b) => b.amount - a.amount);
-    const donutEl = $('finDonut');
-    if (slices.length && total > 0) {
-      let acc = 0;
-      const stops = slices.map(s => {
-        const from = (acc / total) * 100; acc += s.amount; const to = (acc / total) * 100;
-        return s.color + ' ' + from.toFixed(2) + '% ' + to.toFixed(2) + '%';
-      });
-      donutEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
-    } else {
-      donutEl.style.background = 'var(--card-soft)';
+    const donutSvg = $('finDonutSvg');
+    if (donutSvg) {
+      if (slices.length && total > 0) {
+        // The SVG itself is rotated -90deg via CSS, so slices can just
+        // start at angle 0 (equivalent to 12 o'clock once rotated).
+        let angle = 0;
+        let html = '';
+        slices.forEach(s => {
+          const sliceAngle = (s.amount / total) * Math.PI * 2;
+          const pad = slices.length > 1 ? 0.02 : 0;
+          const a1 = angle + pad, a2 = angle + sliceAngle - pad;
+          if (a2 > a1) html += '<path d="' + donutArcPath(48, 48, 48, 34, a1, a2) + '" fill="' + s.color + '"></path>';
+          angle += sliceAngle;
+        });
+        donutSvg.innerHTML = html;
+      } else {
+        donutSvg.innerHTML = '<circle cx="48" cy="48" r="48" fill="var(--card-soft)"></circle><circle cx="48" cy="48" r="34" fill="var(--card)"></circle>';
+      }
     }
     const shown = slices.slice(0, 5);
     const rest = slices.length - shown.length;
@@ -798,6 +841,7 @@ body::after {
     if (!Array.isArray(hist) || hist.length < 2) {
       svg.innerHTML = '';
       statEls.forEach(el => { if (el) el.textContent = '—'; });
+      finChartHoverPoints = [];
       return;
     }
     const vals = hist.map(h => h.v);
@@ -822,7 +866,9 @@ body::after {
       + '<line class="fin-chart-grid" x1="0" x2="' + W + '" y1="50" y2="50"/>'
       + '<line class="fin-chart-grid" x1="0" x2="' + W + '" y1="80" y2="80"/>'
       + '<path d="' + areaD + '" fill="url(#finAreaGrad)"></path>'
-      + '<path d="' + lineD + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" style="filter: drop-shadow(0 0 6px currentColor)"></path>';
+      + '<path d="' + lineD + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" style="filter: drop-shadow(0 0 6px currentColor)"></path>'
+      + '<line id="finChartHoverLine" class="fin-chart-hover-line" x1="0" y1="0" x2="0" y2="' + H + '" hidden></line>'
+      + '<circle id="finChartHoverDot" class="fin-chart-hover-dot" r="3" cx="0" cy="0" hidden></circle>';
 
     const { ccy: statCcy, rate: statRate } = displayCcy();
     const fmtStat = (v) => statCcy + ' ' + Math.round(v * statRate).toLocaleString('en-US');
@@ -830,6 +876,9 @@ body::after {
     if (statEls[1]) statEls[1].textContent = fmtStat(max);
     if (statEls[2]) statEls[2].textContent = fmtStat(min);
     if (statEls[3]) statEls[3].textContent = String(hist.length);
+
+    // Hover lookup — real value + date per point.
+    finChartHoverPoints = hist.map((h, i) => ({ x: points[i].x, y: points[i].y, v: h.v, t: h.t }));
   }
   // Same Catmull-Rom-ish cubic-bezier smoothing as the Finance page's
   // own chart (nwSmoothPath), so both trend lines curve identically.
@@ -899,8 +948,9 @@ body::after {
         ? (ccy + ' ' + Math.round((Number(it.amount) || 0) * rate).toLocaleString('en-US'))
         : 'Pending…';
       const chgStr = chg == null ? '—' : (up ? '+' : '') + chg.toFixed(2) + '%';
+      const dotColor = it.color || defaultColor('stocks', it);
       return '<div class="fin-stock-item">'
-        + '<div class="fin-stock-name">' + it.name + '</div>'
+        + '<div class="fin-stock-name"><span class="fin-stock-dot" style="background:' + dotColor + '"></span>' + it.name + '</div>'
         + '<div class="fin-stock-ticker">' + it.ticker + '</div>'
         + '<div class="fin-stock-val">' + valStr + '</div>'
         + '<div class="fin-stock-chg ' + (up ? 'up' : 'down') + '">' + chgStr + '</div>'
@@ -911,6 +961,56 @@ body::after {
   function renderAll() { renderGoals(); renderFinance(); renderStockHoldings(); renderMiniTiles(); }
   renderAll();
   window.addEventListener('storage', renderAll);
+
+  // Hover/touch tracking for the net worth chart — shows the exact
+  // value + date for the nearest plotted point, same as Finance's own
+  // chart. The SVG element itself persists across re-renders (only its
+  // innerHTML is replaced), so the listener stays attached; the line/dot
+  // it targets are re-queried each time since they're regenerated.
+  (function setupFinChartHover() {
+    const svg = $('finChartSvg');
+    const wrap = document.querySelector('.fin-chart-wrap');
+    const tooltip = $('finChartTooltip');
+    if (!svg || !wrap || !tooltip) return;
+    function fmtDate(ts) {
+      const d = new Date(ts);
+      const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return mons[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+    function showAt(clientX) {
+      if (!finChartHoverPoints.length) return;
+      const hoverLine = document.getElementById('finChartHoverLine');
+      const hoverDot = document.getElementById('finChartHoverDot');
+      if (!hoverLine || !hoverDot) return;
+      const rect = svg.getBoundingClientRect();
+      if (!rect.width) return;
+      const relX = ((clientX - rect.left) / rect.width) * 300;
+      let nearest = finChartHoverPoints[0], minDist = Infinity;
+      finChartHoverPoints.forEach(p => { const d = Math.abs(p.x - relX); if (d < minDist) { minDist = d; nearest = p; } });
+      hoverLine.setAttribute('x1', nearest.x); hoverLine.setAttribute('x2', nearest.x);
+      hoverLine.hidden = false;
+      hoverDot.setAttribute('cx', nearest.x); hoverDot.setAttribute('cy', nearest.y);
+      hoverDot.hidden = false;
+      const { ccy, rate } = displayCcy();
+      tooltip.innerHTML = ccy + ' ' + Math.round(nearest.v * rate).toLocaleString('en-US')
+        + '<span class="fin-chart-tooltip-date">' + fmtDate(nearest.t) + '</span>';
+      tooltip.hidden = false;
+      const pctX = Math.min(92, Math.max(8, (nearest.x / 300) * 100));
+      tooltip.style.left = pctX + '%';
+    }
+    function hide() {
+      tooltip.hidden = true;
+      const hoverLine = document.getElementById('finChartHoverLine');
+      const hoverDot = document.getElementById('finChartHoverDot');
+      if (hoverLine) hoverLine.hidden = true;
+      if (hoverDot) hoverDot.hidden = true;
+    }
+    svg.addEventListener('mousemove', (e) => showAt(e.clientX));
+    svg.addEventListener('mouseleave', hide);
+    svg.addEventListener('touchstart', (e) => { if (e.touches[0]) showAt(e.touches[0].clientX); }, { passive: true });
+    svg.addEventListener('touchmove', (e) => { if (e.touches[0]) showAt(e.touches[0].clientX); }, { passive: true });
+    svg.addEventListener('touchend', hide);
+  })();
 })();
 </script>
 

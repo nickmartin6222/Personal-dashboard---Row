@@ -824,6 +824,22 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 }
 .nw-chart-wrap.has-data .nw-chart-empty { display: none; }
 
+/* Hover feedback — a marker at the nearest point + a floating value
+   readout, so the exact number a point represents is checkable rather
+   than just eyeballed off the curve. */
+.nw-chart-hover-line { stroke: currentColor; stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.5; pointer-events: none; }
+.nw-chart-hover-dot { fill: currentColor; stroke: var(--bg); stroke-width: 2; pointer-events: none; filter: drop-shadow(0 0 4px currentColor); }
+.nw-chart-tooltip {
+  position: absolute; top: 6px; z-index: 3;
+  transform: translateX(-50%);
+  background: var(--bg-deep); border: 1px solid var(--glass-border-strong, var(--border));
+  border-radius: 8px; padding: 5px 9px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-primary);
+  white-space: nowrap; pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+}
+.nw-chart-tooltip .nw-chart-tooltip-date { display: block; font-size: 9px; font-weight: 600; color: var(--text-tertiary); margin-top: 1px; }
+
 /* Stats overlay sitting at the bottom of the chart card */
 .nw-chart-stats {
   display: grid;
@@ -2356,7 +2372,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           <path id="nwChartLine" fill="none" stroke="currentColor" stroke-width="2.4"
                 stroke-linejoin="round" stroke-linecap="round"
                 style="filter: drop-shadow(0 0 6px currentColor)" d=""/>
+          <line id="nwChartHoverLine" class="nw-chart-hover-line" x1="0" y1="0" x2="0" y2="200" hidden/>
+          <circle id="nwChartHoverDot" class="nw-chart-hover-dot" r="4" cx="0" cy="0" hidden/>
         </svg>
+        <div class="nw-chart-tooltip" id="nwChartTooltip" hidden></div>
         <!-- Stats overlay — fills the empty space inside the chart card.
              Always visible: shows what 1% is, plus high/low/current. -->
         <div class="nw-chart-stats" id="nwChartStats">
@@ -3571,6 +3590,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     return kept;
   }
 
+  let nwChartHoverPoints = [];
   function renderNetWorthChart() {
     const wrap = document.getElementById('nwChartWrap');
     const svg = document.getElementById('nwChartSvg');
@@ -3587,6 +3607,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       areaPath.setAttribute('d', '');
       if (deltaEl) { deltaEl.textContent = '—'; deltaEl.classList.remove('up', 'down'); }
       renderChartStats([]);
+      nwChartHoverPoints = [];
       return;
     }
     wrap.classList.add('has-data');
@@ -3625,6 +3646,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       linePath.setAttribute('d', 'M0,' + y + ' L' + W + ',' + y);
       areaPath.setAttribute('d', 'M0,' + y + ' L' + W + ',' + y + ' L' + W + ',' + H + ' L0,' + H + ' Z');
       renderChartStats(hist);
+      nwChartHoverPoints = [{ x: W / 2, y: y, v: hist[0].v, t: hist[0].t }];
       return;
     }
     const points = hist.map((p, i) => ({
@@ -3636,8 +3658,51 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const lastPt = points[points.length - 1];
     const firstPt = points[0];
     areaPath.setAttribute('d', lineD + ' L' + lastPt.x + ',' + H + ' L' + firstPt.x + ',' + H + ' Z');
+    // Hover lookup — real value + date per point, keyed to the exact
+    // curve position it was actually plotted at.
+    nwChartHoverPoints = hist.map((p, i) => ({ x: points[i].x, y: points[i].y, v: p.v, t: p.t }));
     renderChartStats(hist);
   }
+
+  // Hover/touch tracking — shows the exact value + date for whichever
+  // point on the curve is nearest the cursor, so a position on the line
+  // is checkable against real numbers rather than just eyeballed.
+  (function setupNwChartHover() {
+    const svg = document.getElementById('nwChartSvg');
+    const wrap = document.getElementById('nwChartWrap');
+    const tooltip = document.getElementById('nwChartTooltip');
+    const hoverLine = document.getElementById('nwChartHoverLine');
+    const hoverDot = document.getElementById('nwChartHoverDot');
+    if (!svg || !wrap || !tooltip || !hoverLine || !hoverDot) return;
+    function fmtDate(ts) {
+      const d = new Date(ts);
+      const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return mons[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+    function showAt(clientX) {
+      if (!nwChartHoverPoints.length) return;
+      const rect = svg.getBoundingClientRect();
+      if (!rect.width) return;
+      const relX = ((clientX - rect.left) / rect.width) * 600;
+      let nearest = nwChartHoverPoints[0], minDist = Infinity;
+      nwChartHoverPoints.forEach(p => { const d = Math.abs(p.x - relX); if (d < minDist) { minDist = d; nearest = p; } });
+      hoverLine.setAttribute('x1', nearest.x); hoverLine.setAttribute('x2', nearest.x);
+      hoverLine.hidden = false;
+      hoverDot.setAttribute('cx', nearest.x); hoverDot.setAttribute('cy', nearest.y);
+      hoverDot.hidden = false;
+      tooltip.innerHTML = fmtMoney(nearest.v) + '<span class="nw-chart-tooltip-date">' + fmtDate(nearest.t) + '</span>';
+      tooltip.hidden = false;
+      // Keep the tooltip's own box inside the card horizontally.
+      const pctX = Math.min(92, Math.max(8, (nearest.x / 600) * 100));
+      tooltip.style.left = pctX + '%';
+    }
+    function hide() { tooltip.hidden = true; hoverLine.hidden = true; hoverDot.hidden = true; }
+    svg.addEventListener('mousemove', (e) => showAt(e.clientX));
+    svg.addEventListener('mouseleave', hide);
+    svg.addEventListener('touchstart', (e) => { if (e.touches[0]) showAt(e.touches[0].clientX); }, { passive: true });
+    svg.addEventListener('touchmove', (e) => { if (e.touches[0]) showAt(e.touches[0].clientX); }, { passive: true });
+    svg.addEventListener('touchend', hide);
+  })();
 
   // Stats overlay — what 1% is worth, all-time high/low, snapshot count.
   // Reads the snapshot history (CHF base) and converts to display currency.
