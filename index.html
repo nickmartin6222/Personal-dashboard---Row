@@ -752,8 +752,30 @@ body::after {
   // established for the rest of the light theme.
   const PALETTE_DARK = ['#7DD3FC','#6EE7B7','#C9B8FF','#F2C063','#FF8A8A','#F472B6','#FCD34D','#34D399','#A78BFA','#60A5FA','#FB923C','#4ADE80'];
   const PALETTE_LIGHT = ['#4C7A5B', '#4F7FBF', '#8A6BB5', '#C99A44', '#C2554B', '#5F7A63', '#7A9A4A', '#3F5443'];
+  // Explicit colors for known holdings — a hash-based default can't
+  // guarantee "S&P 500 = green" specifically, just "some distinct
+  // color". Keyed by ticker (stocks) or lowercased name (everything
+  // else, which has no ticker). Same color identity in both themes,
+  // just the matching bright/muted shade.
+  const NAMED_COLORS = {
+    green:  { dark: '#6EE7B7', light: '#4C7A5B' },
+    orange: { dark: '#FB923C', light: '#C99A44' },
+    pink:   { dark: '#F472B6', light: '#B5568F' },
+    purpleLight: { dark: '#C9B8FF', light: '#8A6BB5' },
+    blue:   { dark: '#60A5FA', light: '#4F7FBF' }
+  };
+  const ITEM_COLOR_OVERRIDES = {
+    'ivv.ax': 'green',    // S&P 500
+    'vdhg.ax': 'orange',  // VDHG
+    'ndq.ax': 'pink',     // Nasdaq
+    'macquarie': 'purpleLight',
+    'travel': 'blue'
+  };
   function defaultColor(catKey, it) {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const key = (it.ticker || it.name || '').toLowerCase();
+    const named = ITEM_COLOR_OVERRIDES[key];
+    if (named) return NAMED_COLORS[named][isLight ? 'light' : 'dark'];
     const palette = isLight ? PALETTE_LIGHT : PALETTE_DARK;
     const seed = catKey + ':' + (it.ticker || it.name || '');
     let hash = 0;
