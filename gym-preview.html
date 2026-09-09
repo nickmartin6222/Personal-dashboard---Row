@@ -125,10 +125,10 @@ button { font-family: inherit; }
 }
 .gp-title-row {
   display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
-  background: none; border: none; padding: 0; margin: 0; font: inherit; text-align: left;
+  background: none; border: none; padding: 0; margin: 0; font: inherit; text-align: left; color: inherit;
   cursor: pointer; -webkit-tap-highlight-color: transparent; width: 100%;
 }
-.gp-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 0; overflow-wrap: anywhere; }
+.gp-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 0; overflow-wrap: anywhere; color: var(--text-1); }
 .gp-badge {
   font-family: var(--font-mono); font-size: 11px; font-weight: 700;
   color: var(--lime); background: var(--lime-dim); border-radius: 999px;
@@ -214,8 +214,19 @@ button { font-family: inherit; }
 .volume-chart { width: 100%; height: 52px; display: block; }
 
 /* ---------- two-column widget grids ---------- */
-.widget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; margin-bottom: 14px; }
+/* Both cards in a paired row match height (the taller one sets it,
+   the shorter one just gets breathing room) rather than each hugging
+   its own content — requested so Today's Workout/Recent Activity and
+   Exercise Library/Muscles Trained don't look mismatched side by side. */
+.widget-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; margin-bottom: 14px; }
 @media (max-width: 640px) { .widget-grid { grid-template-columns: 1fr; } }
+.widget-grid > .card { display: flex; flex-direction: column; }
+.tw-card .tw-checklist { display: flex; flex-direction: column; flex: 1; }
+.tw-card .exercise-list { flex: 1; }
+.ra-card { display: flex; flex-direction: column; }
+.ra-card .session-list { flex: 1; }
+.ra-card .view-all-btn { margin-top: auto; }
+.anatomy-card .anatomy-legend { margin-top: auto; }
 
 /* ---------- today's workout card ---------- */
 .tw-head { display: flex; align-items: center; justify-content: space-between; cursor: pointer; -webkit-tap-highlight-color: transparent; gap: 8px; }
@@ -524,7 +535,7 @@ button { font-family: inherit; }
 <div class="shell">
 
   <div class="preview-banner" id="previewBanner">
-    <span><b>Design preview.</b> Restyled to match the real dashboard's colors (mint accent, glass cards, Push/Pull/Lower A/B each get their own hue). Weight reads real logged data; anything you log or add here persists in this browser. Everything else is sample data pending sign-off.</span>
+    <span><b>Design preview.</b> Real exercise catalog, matching the live dashboard's colors. Weight and your logged workout history are read from your real data so you can pick up where you left off — anything you log or edit here is saved separately and never writes back to your real log.</span>
     <button class="pb-close" id="pbClose" aria-label="Dismiss">✕</button>
   </div>
 
@@ -720,7 +731,7 @@ button { font-family: inherit; }
         <button class="w-btn" id="weightUpBtn" type="button">+</button>
       </div>
     </div>
-    <span class="field-label">Reps</span>
+    <span class="field-label" id="repsFieldLabel">Reps</span>
     <div class="pill-grid" id="repsGrid"></div>
     <span class="field-label">Sets <span style="text-transform:none;font-weight:500;opacity:.7">(logs each one the same)</span></span>
     <div class="pill-grid" id="setsGrid"></div>
@@ -859,81 +870,136 @@ button { font-family: inherit; }
     "Biceps": "#22d3ee", "Lower Back": "#c2a878"
   };
 
+  // Sourced directly from gym.html's CONFIG.defaultExercises, grouped by
+  // slot into areas exactly the way the real app groups them — so every
+  // exercise, weight, rep range and step here matches what's actually
+  // live. Primaries and rehab exercises are single-option areas (still
+  // toggleable, per the "no forced-fixed" decision); accessory slots
+  // keep their real 2-4 option alternatives.
   var DAY_META = {
+    'Lower A': {
+      muscles: 'Hamstrings · Glutes · Adductors',
+      areas: [
+        { area: 'RDL', sets: 4, options: [{ name: 'Barbell RDL', muscle: 'Hamstrings', repMin: 6, repMax: 10, step: 5, startWeight: 60 }] },
+        { area: 'Hip Thrust', sets: 4, options: [{ name: 'Single-Leg Machine Hip Thrust', muscle: 'Glutes', repMin: 8, repMax: 12, step: 5, startWeight: 40 }] },
+        { area: 'Hip Adductor', sets: 3, options: [{ name: 'Machine Hip Adductor', muscle: 'Adductors', repMin: 10, repMax: 15, step: 2.5, startWeight: 30 }] },
+        { area: 'Hip Abduction', sets: 3, options: [{ name: 'Machine Hip Abduction', muscle: 'Hips', repMin: 10, repMax: 15, step: 2.5, startWeight: 20 }] },
+        { area: 'Back Extension', sets: 3, options: [{ name: 'Back Extensions', muscle: 'Lower Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 10 }] },
+        { area: 'Copenhagen Plank', sets: 3, options: [{ name: 'Copenhagen Plank', muscle: 'Adductors', repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true }] },
+        { area: 'Lower A Accessory', sets: 3, options: [
+          { name: 'Leg Press', muscle: 'Quads', repMin: 8, repMax: 12, step: 10, startWeight: 120 },
+          { name: 'Hack Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 10, startWeight: 80 },
+          { name: 'Walking Lunge', muscle: 'Glutes', repMin: 10, repMax: 14, step: 2.5, startWeight: 20 }
+        ]},
+        { area: 'Lower A Core', sets: 3, options: [
+          { name: 'Pallof Press', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
+          { name: 'Hanging Leg Raise', muscle: 'Core', repMin: 8, repMax: 15, step: 1, startWeight: 0, bw: true },
+          { name: 'Plank', muscle: 'Core', repMin: 30, repMax: 60, step: 5, startWeight: 0, bw: true, holdSeconds: true },
+          { name: 'Ab Crunch Machine', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 25 }
+        ]}
+      ]
+    },
     'Push': {
       muscles: 'Chest · Shoulders · Triceps',
       areas: [
-        { area: 'Primary Press', sets: 4, options: [{ name: 'Barbell Bench Press', muscle: 'Chest', repMin: 6, repMax: 8, step: 2.5, startWeight: 60 }] },
-        { area: 'Incline Press', sets: 3, options: [
-          { name: 'Incline DB Press', muscle: 'Chest', repMin: 8, repMax: 10, step: 2.5, startWeight: 22.5 },
-          { name: 'Incline Machine Press', muscle: 'Chest', repMin: 8, repMax: 10, step: 5, startWeight: 40 }
+        { area: 'Horizontal Press', sets: 4, options: [{ name: 'Barbell Bench Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 2.5, startWeight: 60 }] },
+        { area: 'Incline Press', sets: 4, options: [{ name: 'Incline Barbell Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 2.5, startWeight: 45 }] },
+        { area: 'Push Fly', sets: 3, options: [
+          { name: 'Cable Fly', muscle: 'Chest', repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
+          { name: 'Pec Deck', muscle: 'Chest', repMin: 10, repMax: 15, step: 5, startWeight: 40 },
+          { name: 'Incline Cable Fly', muscle: 'Chest', repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 }
         ]},
-        { area: 'Overhead Press', sets: 3, options: [{ name: 'Overhead Press', muscle: 'Shoulders', repMin: 6, repMax: 8, step: 2.5, startWeight: 30 }] },
-        { area: 'Fly', sets: 3, options: [
-          { name: 'Cable Fly', muscle: 'Chest', repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
-          { name: 'Pec Deck', muscle: 'Chest', repMin: 12, repMax: 15, step: 5, startWeight: 35 }
+        { area: 'Push Shoulder Press', sets: 3, options: [
+          { name: 'DB Shoulder Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 2.5, startWeight: 17.5 },
+          { name: 'Arnold Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 2.5, startWeight: 15 },
+          { name: 'Landmine Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 5, startWeight: 20 }
         ]},
-        { area: 'Triceps', sets: 3, options: [
-          { name: 'Tricep Pushdown', muscle: 'Triceps', repMin: 10, repMax: 12, step: 2.5, startWeight: 20 },
-          { name: 'Overhead Tricep Extension', muscle: 'Triceps', repMin: 10, repMax: 12, step: 2, startWeight: 12 }
+        { area: 'Push Lateral Raise', sets: 3, options: [
+          { name: 'Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 1.25, startWeight: 7.5 },
+          { name: 'Cable Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 2.5, startWeight: 7.5 },
+          { name: 'Machine Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 5, startWeight: 20 }
+        ]},
+        { area: 'Push Pushdown', sets: 3, options: [
+          { name: 'Cable Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 25 },
+          { name: 'Rope Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 },
+          { name: 'Single-Arm Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 1.25, startWeight: 12.5 }
+        ]},
+        { area: 'Push Triceps Extension', sets: 3, options: [
+          { name: 'Overhead DB Extension', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
+          { name: 'Skull Crusher', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
+          { name: 'Close-Grip Bench or Dip', muscle: 'Triceps', repMin: 8, repMax: 12, step: 2.5, startWeight: 40 }
+        ]},
+        { area: 'Push Core', sets: 3, options: [
+          { name: 'Cable Crunch', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 20 },
+          { name: 'Ab Wheel Rollout', muscle: 'Core', repMin: 6, repMax: 12, step: 1, startWeight: 0, bw: true },
+          { name: 'Weighted Sit-Up', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 5 },
+          { name: 'Ab Crunch Machine', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 25 }
+        ]}
+      ]
+    },
+    'Lower B': {
+      muscles: 'Quads · Hamstrings · Calves',
+      areas: [
+        { area: 'Squat', sets: 4, options: [{ name: 'Goblet / Front Squat', muscle: 'Quads', repMin: 6, repMax: 10, step: 2.5, startWeight: 20 }] },
+        { area: 'Split Squat', sets: 4, options: [{ name: 'Bulgarian Split Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 2.5, startWeight: 15 }] },
+        { area: 'Hip External Rotation', sets: 3, options: [{ name: 'Hip External Rotation', muscle: 'Hips', repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true }] },
+        { area: 'Leg Extension', sets: 3, options: [{ name: 'Leg Extension', muscle: 'Quads', repMin: 10, repMax: 15, step: 5, startWeight: 30 }] },
+        { area: 'Lower B Leg Curl', sets: 3, options: [
+          { name: 'Seated Leg Curl', muscle: 'Hamstrings', repMin: 10, repMax: 15, step: 5, startWeight: 30 },
+          { name: 'Lying Leg Curl', muscle: 'Hamstrings', repMin: 10, repMax: 15, step: 5, startWeight: 25 },
+          { name: 'Nordic Curl or GHR', muscle: 'Hamstrings', repMin: 5, repMax: 10, step: 1, startWeight: 0, bw: true }
+        ]},
+        { area: 'Lower B Calf', sets: 3, options: [
+          { name: 'Standing Calf Raise', muscle: 'Calves', repMin: 12, repMax: 18, step: 5, startWeight: 60 },
+          { name: 'Seated Calf Raise', muscle: 'Calves', repMin: 12, repMax: 18, step: 5, startWeight: 40 },
+          { name: 'Calf Press on Leg Press', muscle: 'Calves', repMin: 12, repMax: 18, step: 10, startWeight: 80 }
+        ]},
+        { area: 'Lower B Core', sets: 3, options: [
+          { name: 'Dead Bug', muscle: 'Core', repMin: 8, repMax: 15, step: 1, startWeight: 0, bw: true },
+          { name: 'Side Plank', muscle: 'Core', repMin: 20, repMax: 45, step: 5, startWeight: 0, bw: true, holdSeconds: true },
+          { name: 'Russian Twist', muscle: 'Core', repMin: 10, repMax: 20, step: 2.5, startWeight: 5 },
+          { name: 'Ab Crunch Machine', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 25 }
         ]}
       ]
     },
     'Pull': {
       muscles: 'Back · Biceps · Rear delts',
       areas: [
-        { area: 'Primary Row', sets: 4, options: [{ name: 'Barbell Row', muscle: 'Back', repMin: 6, repMax: 8, step: 2.5, startWeight: 55 }] },
-        { area: 'Vertical Pull', sets: 3, options: [
-          { name: 'Pull-Ups', muscle: 'Back', repMin: 6, repMax: 10, step: 0, startWeight: 0, bw: true },
-          { name: 'Lat Pulldown', muscle: 'Back', repMin: 8, repMax: 10, step: 2.5, startWeight: 45 }
+        { area: 'Vertical Pull', sets: 4, options: [{ name: 'Lat Pulldown', muscle: 'Back', repMin: 6, repMax: 10, step: 5, startWeight: 50 }] },
+        { area: 'Pull-Up', sets: 4, options: [{ name: 'Pull-Ups', muscle: 'Back', repMin: 4, repMax: 10, step: 1, startWeight: 0, bw: true }] },
+        { area: 'Chest-Supported Row', sets: 4, options: [{ name: 'Chest-Supported T-Bar Row', muscle: 'Back', repMin: 6, repMax: 10, step: 5, startWeight: 40 }] },
+        { area: 'Pull Row Variation', sets: 3, options: [
+          { name: 'Single-Arm Cable Row', muscle: 'Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
+          { name: 'T-Bar / Chest-Supported Single-Arm Row', muscle: 'Back', repMin: 10, repMax: 15, step: 5, startWeight: 20 },
+          { name: 'Kroc Row', muscle: 'Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 }
         ]},
-        { area: 'Row Variation', sets: 3, options: [
-          { name: 'Chest-Supported Row', muscle: 'Back', repMin: 8, repMax: 10, step: 2.5, startWeight: 40 },
-          { name: 'Seated Cable Row', muscle: 'Back', repMin: 8, repMax: 10, step: 2.5, startWeight: 45 }
+        { area: 'Pull Rear Delt', sets: 3, options: [
+          { name: 'Face Pulls', muscle: 'Rear Delts', repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
+          { name: 'Cable Rear Delt Fly', muscle: 'Rear Delts', repMin: 12, repMax: 15, step: 2.5, startWeight: 10 },
+          { name: 'Reverse Pec Deck', muscle: 'Rear Delts', repMin: 12, repMax: 15, step: 5, startWeight: 25 }
         ]},
-        { area: 'Rear Delt', sets: 3, options: [
-          { name: 'Rear Delt Fly', muscle: 'Rear Delts', repMin: 12, repMax: 15, step: 1, startWeight: 6 },
-          { name: 'Rope Face Pulls', muscle: 'Rear Delts', repMin: 12, repMax: 15, step: 2.5, startWeight: 15 }
+        { area: 'Pull Curl 1', sets: 3, options: [
+          { name: 'DB Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5 },
+          { name: 'Cable Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 2.5, startWeight: 20 },
+          { name: 'Preacher Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 2.5, startWeight: 20 }
         ]},
-        { area: 'Biceps', sets: 3, options: [
-          { name: 'Bicep Curl', muscle: 'Biceps', repMin: 10, repMax: 12, step: 1, startWeight: 12 },
-          { name: 'Hammer Curl', muscle: 'Biceps', repMin: 10, repMax: 12, step: 1, startWeight: 10 }
+        { area: 'Pull Curl 2', sets: 3, options: [
+          { name: 'Hammer Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5 },
+          { name: 'Incline DB Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 10 },
+          { name: 'Cross-Body Hammer Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5 }
+        ]},
+        { area: 'Pull Core', sets: 3, options: [
+          { name: 'Hanging Knee Raise', muscle: 'Core', repMin: 8, repMax: 15, step: 1, startWeight: 0, bw: true },
+          { name: 'Pallof Press', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
+          { name: 'Cable Woodchop', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 },
+          { name: 'Ab Crunch Machine', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 25 }
         ]}
-      ]
-    },
-    'Lower A': {
-      muscles: 'Quads · Glutes · Calves',
-      areas: [
-        { area: 'Primary Squat', sets: 4, options: [{ name: 'Back Squat', muscle: 'Quads', repMin: 5, repMax: 8, step: 2.5, startWeight: 80 }] },
-        { area: 'Hip Hinge', sets: 3, options: [{ name: 'Romanian Deadlift', muscle: 'Hamstrings', repMin: 8, repMax: 10, step: 2.5, startWeight: 60 }] },
-        { area: 'Single Leg', sets: 3, options: [
-          { name: 'Bulgarian Split Squat', muscle: 'Quads', repMin: 10, repMax: 12, step: 2, startWeight: 16 },
-          { name: 'Walking Lunge', muscle: 'Quads', repMin: 10, repMax: 12, step: 2, startWeight: 14 }
-        ]},
-        { area: 'Adductor', sets: 3, options: [{ name: 'Machine Hip Adductor', muscle: 'Adductors', repMin: 10, repMax: 15, step: 5, startWeight: 25 }] },
-        { area: 'Calves', sets: 3, options: [
-          { name: 'Standing Calf Raise', muscle: 'Calves', repMin: 12, repMax: 15, step: 5, startWeight: 60 },
-          { name: 'Seated Calf Raise', muscle: 'Calves', repMin: 12, repMax: 15, step: 5, startWeight: 40 }
-        ]}
-      ]
-    },
-    'Lower B': {
-      muscles: 'Hamstrings · Glutes · Calves',
-      areas: [
-        { area: 'Primary Hinge', sets: 3, options: [{ name: 'Deadlift', muscle: 'Hamstrings', repMin: 5, repMax: 6, step: 5, startWeight: 100 }] },
-        { area: 'Leg Press', sets: 3, options: [{ name: 'Leg Press', muscle: 'Quads', repMin: 10, repMax: 12, step: 10, startWeight: 140 }] },
-        { area: 'Leg Curl', sets: 3, options: [
-          { name: 'Seated Leg Curl', muscle: 'Hamstrings', repMin: 10, repMax: 12, step: 2.5, startWeight: 35 },
-          { name: 'Lying Leg Curl', muscle: 'Hamstrings', repMin: 10, repMax: 12, step: 2.5, startWeight: 30 }
-        ]},
-        { area: 'Hip Thrust', sets: 3, options: [{ name: 'Hip Thrust', muscle: 'Glutes', repMin: 8, repMax: 10, step: 5, startWeight: 80 }] },
-        { area: 'Calves', sets: 3, options: [{ name: 'Standing Calf Raise', muscle: 'Calves', repMin: 12, repMax: 15, step: 5, startWeight: 60 }] }
       ]
     }
   };
 
   // Persist any custom days/exercises across reloads.
-  var PROGRAM_KEY = 'po_preview_program_v1';
+  var PROGRAM_KEY = 'po_preview_program_v2';
   function saveProgram() { try { localStorage.setItem(PROGRAM_KEY, JSON.stringify({ DAY_META: DAY_META, DAY_ORDER: DAY_ORDER })); } catch (e) {} }
   (function loadProgram() {
     try {
@@ -1231,21 +1297,23 @@ button { font-family: inherit; }
   // ------------------------------------------------------------------
   // 3. STRENGTH SCORE — a real calculation, not a canned number.
   //
-  // It compares your current estimated 1-rep max on the program's four
-  // primary lifts against your recent best on each (Epley: weight × (1
-  // + reps/30)), averages the four ratios, and scales to 0-100. 100
-  // means you're matching/beating your recent best across the board on
-  // average; it dips if you stall or deload. Bands: 85+ Excellent,
-  // 70-84 Good, under 70 Fair. This runs against representative
-  // per-lift numbers below until it's wired to your real logged
-  // history — the formula itself is the real one.
+  // It compares your current estimated 1-rep max on four real primary
+  // lifts from the actual program against your recent best on each
+  // (Epley: weight × (1 + reps/30)), averages the four ratios, and
+  // scales to 0-100. 100 means you're matching/beating your recent
+  // best across the board on average; it dips if you stall or deload.
+  // Bands: 85+ Excellent, 70-84 Good, under 70 Fair. PRIMARY_LOG here
+  // is a placeholder — it gets overwritten with your real logged data
+  // (current = your actual last set, recentBest = the highest Epley
+  // total you've ever logged for it) once SESSIONS is loaded below;
+  // see recomputeScoreFromSessions().
   // ------------------------------------------------------------------
-  var PRIMARY_LIFTS = ['Barbell Bench Press', 'Barbell Row', 'Back Squat', 'Deadlift'];
+  var PRIMARY_LIFTS = ['Barbell RDL', 'Barbell Bench Press', 'Goblet / Front Squat', 'Chest-Supported T-Bar Row'];
   var PRIMARY_LOG = {
-    'Barbell Bench Press': { current: { weight: 82.5, reps: 6 }, recentBest: { weight: 85, reps: 6 } },
-    'Barbell Row': { current: { weight: 60, reps: 6 }, recentBest: { weight: 62.5, reps: 6 } },
-    'Back Squat': { current: { weight: 105, reps: 6 }, recentBest: { weight: 110, reps: 5 } },
-    'Deadlift': { current: { weight: 130, reps: 5 }, recentBest: { weight: 135, reps: 5 } }
+    'Barbell RDL': { current: { weight: 60, reps: 8 }, recentBest: { weight: 60, reps: 8 } },
+    'Barbell Bench Press': { current: { weight: 60, reps: 6 }, recentBest: { weight: 60, reps: 6 } },
+    'Goblet / Front Squat': { current: { weight: 20, reps: 8 }, recentBest: { weight: 20, reps: 8 } },
+    'Chest-Supported T-Bar Row': { current: { weight: 40, reps: 8 }, recentBest: { weight: 40, reps: 8 } }
   };
   function epley1rm(w, r) { return w * (1 + r / 30); }
   function computeStrengthScore() {
@@ -1304,7 +1372,7 @@ button { font-family: inherit; }
   // ------------------------------------------------------------------
   // 4a. TODAY'S WORKOUT — multi-select per area, no forced-on exercises.
   // ------------------------------------------------------------------
-  var PICKS_KEY = 'po_preview_picks_v4';
+  var PICKS_KEY = 'po_preview_picks_v5';
   var activeDay = todayDayLabel();
   if (!DAY_META[activeDay]) activeDay = DAY_ORDER[0];
   var confirmedDay = activeDay;
@@ -1529,11 +1597,13 @@ button { font-family: inherit; }
     var areaDef = findAreaForExercise(confirmedDay, name);
     modalSets = areaDef ? areaDef.sets : 3;
     document.getElementById('exModalTitle').textContent = ex.name;
+    document.getElementById('repsFieldLabel').textContent = ex.holdSeconds ? 'Seconds held' : 'Reps';
     document.getElementById('weightFieldLabel').textContent = 'Weight (' + UNITS + ')';
     document.getElementById('weightFieldWrap').style.display = ex.bw ? 'none' : '';
     document.getElementById('weightVal').value = modalWeight;
     document.getElementById('lastTimeRow').style.display = '';
-    document.getElementById('lastTimeVal').textContent = (ex.bw ? (last.reps + ' reps') : (last.weight + UNITS + ' × ' + last.reps)) + (last.dateKey ? ' · ' + dayLabelForKey(last.dateKey) : '');
+    var lastUnit = ex.holdSeconds ? 's' : (ex.bw ? ' reps' : '');
+    document.getElementById('lastTimeVal').textContent = (ex.bw ? (last.reps + lastUnit) : (last.weight + UNITS + ' × ' + last.reps + (ex.holdSeconds ? 's' : ''))) + (last.dateKey ? ' · ' + dayLabelForKey(last.dateKey) : '');
     var repMin = Math.max(1, ex.repMin - 2), repMax = ex.repMax + 5;
     var repsHtml = '';
     for (var r = repMin; r <= repMax; r++) repsHtml += '<button type="button" class="pill-btn' + (r === modalReps ? ' active' : '') + '" data-r="' + r + '">' + r + '</button>';
@@ -1592,43 +1662,160 @@ button { font-family: inherit; }
   }
   // Persisted for real, in this browser's localStorage — a logged
   // workout survives a reload today, tomorrow, and in six months, the
-  // same way the weight log does. First-ever visit seeds four sample
-  // sessions from the last week and a half so there's something to
-  // look at; the moment you log or edit anything, that seed is
-  // replaced by your real saved history and stays saved from then on.
-  var SESSIONS_KEY = 'po_preview_sessions_v1';
+  // same way the weight log does. The moment you log or edit anything
+  // here, this key takes over and stays saved from then on.
+  var SESSIONS_KEY = 'po_preview_sessions_v2';
   function saveSessions() { try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(SESSIONS)); } catch (e) {} }
   function loadSessions() {
     try { var raw = localStorage.getItem(SESSIONS_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
     return null;
   }
-  var SESSIONS = loadSessions() || [
+  // Read-only import of your REAL logged history from gym.html's actual
+  // storage (po_coach_v1) — "pick up where I left off." This never
+  // writes back to that key; anything you log/edit/delete here only
+  // ever touches this preview's own SESSIONS_KEY, so your real training
+  // log can't be corrupted by testing this draft. Real logs are one row
+  // per SET (no session grouping or duration in the live app), so this
+  // groups them by calendar day, infers the day-type from whichever
+  // split most of that day's sets belonged to, and reconstructs
+  // set-rows by matching (exercise, weight, reps) — duration is
+  // genuinely unknown for these, shown as "—" rather than guessed.
+  var LIVE_STATE_KEY = 'po_coach_v1';
+  var REAL_DAY_ID_TO_NAME = { lowerA: 'Lower A', push: 'Push', lowerB: 'Lower B', pull: 'Pull' };
+  function loadLiveState() {
+    try { var raw = localStorage.getItem(LIVE_STATE_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+    return null;
+  }
+  function buildSessionsFromLiveState() {
+    var live = loadLiveState();
+    if (!live || !Array.isArray(live.exercises) || !live.logs || typeof live.logs !== 'object') return null;
+    var exById = {};
+    live.exercises.forEach(function (e) { exById[e.id] = e; });
+    var byDate = {};
+    Object.keys(live.logs).forEach(function (exId) {
+      var ex = exById[exId];
+      if (!ex) return;
+      (live.logs[exId] || []).forEach(function (l) {
+        var dk = (l.date || '').slice(0, 10);
+        if (!dk) return;
+        if (!byDate[dk]) byDate[dk] = { dayCounts: {}, entries: [] };
+        byDate[dk].dayCounts[ex.day] = (byDate[dk].dayCounts[ex.day] || 0) + 1;
+        byDate[dk].entries.push({ name: ex.name, weight: l.weight || 0, reps: l.reps || 0 });
+      });
+    });
+    var dateKeys = Object.keys(byDate).sort().reverse().slice(0, 25);
+    if (!dateKeys.length) return null;
+    return dateKeys.map(function (dk, si) {
+      var day = byDate[dk];
+      var bestDayId = Object.keys(day.dayCounts).sort(function (a, b) { return day.dayCounts[b] - day.dayCounts[a]; })[0];
+      var dayName = REAL_DAY_ID_TO_NAME[bestDayId] || bestDayId;
+      var grouped = {}, order = [];
+      day.entries.forEach(function (e) {
+        var key = e.name + '|' + e.weight + '|' + e.reps;
+        if (!grouped[key]) { grouped[key] = { name: e.name, weight: e.weight, reps: e.reps, setsCount: 0 }; order.push(key); }
+        grouped[key].setsCount++;
+      });
+      var sets = order.map(function (key, i) { return Object.assign({ id: si * 1000 + i }, grouped[key]); });
+      var volume = sets.reduce(function (sum, s) { return sum + s.setsCount * s.reps * s.weight; }, 0);
+      return { id: si + 1, day: dayName, dateKey: dk, durationMin: 0, volume: volume, sets: sets };
+    });
+  }
+  var SESSIONS = loadSessions() || buildSessionsFromLiveState() || [
     { id: 1, day: 'Push', dateKey: daysAgoKey(1), durationMin: 52, volume: 11820, sets: [
       { id: 101, name: 'Barbell Bench Press', setsCount: 4, reps: 6, weight: 82.5 },
-      { id: 102, name: 'Incline DB Press', setsCount: 3, reps: 9, weight: 27.5 },
-      { id: 103, name: 'Tricep Pushdown', setsCount: 3, reps: 11, weight: 20 }
+      { id: 102, name: 'Incline Barbell Press', setsCount: 4, reps: 6, weight: 47.5 },
+      { id: 103, name: 'Cable Pushdown', setsCount: 3, reps: 12, weight: 25 }
     ]},
     { id: 2, day: 'Lower A', dateKey: daysAgoKey(3), durationMin: 58, volume: 15750, sets: [
-      { id: 104, name: 'Back Squat', setsCount: 4, reps: 6, weight: 105 },
-      { id: 105, name: 'Romanian Deadlift', setsCount: 3, reps: 9, weight: 80 },
-      { id: 106, name: 'Standing Calf Raise', setsCount: 3, reps: 13, weight: 60 }
+      { id: 104, name: 'Barbell RDL', setsCount: 4, reps: 8, weight: 65 },
+      { id: 105, name: 'Single-Leg Machine Hip Thrust', setsCount: 4, reps: 10, weight: 45 },
+      { id: 106, name: 'Leg Press', setsCount: 3, reps: 10, weight: 130 }
     ]},
     { id: 3, day: 'Pull', dateKey: daysAgoKey(5), durationMin: 47, volume: 11200, sets: [
       { id: 107, name: 'Pull-Ups', setsCount: 4, reps: 8, weight: 0 },
-      { id: 108, name: 'Chest-Supported Row', setsCount: 3, reps: 9, weight: 45 },
-      { id: 109, name: 'Rear Delt Fly', setsCount: 3, reps: 14, weight: 8 }
+      { id: 108, name: 'Chest-Supported T-Bar Row', setsCount: 4, reps: 8, weight: 45 },
+      { id: 109, name: 'Face Pulls', setsCount: 3, reps: 14, weight: 15 }
     ]},
     { id: 4, day: 'Lower B', dateKey: daysAgoKey(8), durationMin: 55, volume: 14300, sets: [
-      { id: 110, name: 'Deadlift', setsCount: 3, reps: 5, weight: 130 },
-      { id: 111, name: 'Leg Press', setsCount: 3, reps: 11, weight: 160 }
+      { id: 110, name: 'Goblet / Front Squat', setsCount: 4, reps: 8, weight: 22.5 },
+      { id: 111, name: 'Bulgarian Split Squat', setsCount: 3, reps: 10, weight: 17.5 }
     ]}
   ];
+  // Weekly Progress (done/volume/hours) and the Strength Score card's
+  // 8-week trend are computed from SESSIONS itself — whatever it holds
+  // (your real imported history, your own saved testing, or the
+  // fallback sample) — rather than a separate hardcoded number, so
+  // they can't disagree with what Recent Activity is showing.
+  function weekWindow(weeksAgo) {
+    var today = new Date();
+    var dow = today.getDay();
+    var mondayOffset = dow === 0 ? -6 : 1 - dow;
+    var monday = new Date(today); monday.setDate(today.getDate() + mondayOffset - weeksAgo * 7);
+    var sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+    return { startKey: wtDateKey(monday), endKey: wtDateKey(sunday) };
+  }
+  function computeWeeklyFromSessions() {
+    var w = weekWindow(0);
+    var weekSessions = SESSIONS.filter(function (s) { return s.dateKey >= w.startKey && s.dateKey <= w.endKey; });
+    return {
+      done: weekSessions.length,
+      volume: weekSessions.reduce(function (sum, s) { return sum + s.volume; }, 0),
+      hours: weekSessions.reduce(function (sum, s) { return sum + (s.durationMin || 0) / 60; }, 0)
+    };
+  }
+  function computeWeeklyHistoryFromSessions() {
+    var weeks = [];
+    for (var i = 7; i >= 0; i--) {
+      var w = weekWindow(i);
+      var vol = SESSIONS.filter(function (s) { return s.dateKey >= w.startKey && s.dateKey <= w.endKey; })
+        .reduce(function (sum, s) { return sum + s.volume; }, 0);
+      weeks.push(Math.round(vol));
+    }
+    return weeks;
+  }
+  (function recomputeStrengthFromSessions() {
+    var wk = computeWeeklyFromSessions();
+    STRENGTH.done = wk.done;
+    STRENGTH.volume = Math.round(wk.volume);
+    STRENGTH.hours = wk.hours;
+    STRENGTH.weeklyHistory = computeWeeklyHistoryFromSessions();
+  })();
+  // Strength Score: swap the placeholder PRIMARY_LOG for real data now
+  // that SESSIONS is loaded — current = your actual last logged set,
+  // recentBest = the highest Epley total ever logged for it. An
+  // exercise with no history at all just keeps current===recentBest
+  // (ratio 1, neutral) rather than showing a meaningless number.
+  function bestLogFor(ex) {
+    var best = null, bestVal = -1;
+    SESSIONS.forEach(function (sess) {
+      sess.sets.forEach(function (s) {
+        if (s.name !== ex.name) return;
+        var val = epley1rm(s.weight, s.reps);
+        if (val > bestVal) { bestVal = val; best = { weight: s.weight, reps: s.reps }; }
+      });
+    });
+    return best;
+  }
+  (function recomputeScoreFromSessions() {
+    PRIMARY_LIFTS.forEach(function (name) {
+      var ex = EX_INDEX[name];
+      if (!ex) return;
+      var current = lastLogFor(ex);
+      var best = bestLogFor(ex) || current;
+      PRIMARY_LOG[name] = { current: current, recentBest: best };
+    });
+    var v = computeStrengthScore();
+    SCORE.value = v;
+    SCORE.trend = [Math.round(v * 0.65), Math.round(v * 0.72), Math.round(v * 0.68), Math.round(v * 0.79), Math.round(v * 0.83), Math.round(v * 0.80), Math.round(v * 0.88), v];
+    SCORE.deltaPct = SCORE.trend[0] ? Math.round(((SCORE.value - SCORE.trend[0]) / SCORE.trend[0]) * 100) : 0;
+  })();
+
   var expandedSessionId = null, editingSetId = null;
 
   function sessionRowHtml(sess) {
     var expanded = expandedSessionId === sess.id;
     var h = Math.floor(sess.durationMin / 60), m = sess.durationMin % 60;
-    var timeStr = h ? h + 'h ' + m + 'm' : m + 'm';
+    var timeStr = sess.durationMin ? (h ? h + 'h ' + m + 'm' : m + 'm') : '—';
     var head = '<div class="session-head" data-id="' + sess.id + '">' +
       '<div class="session-main"><div class="session-day-name" style="color:' + dayColor(sess.day) + '">' + esc(sess.day) + '</div>' +
       '<div class="session-date-line">' + esc(dayLabelForKey(sess.dateKey)) + '</div></div>' +
