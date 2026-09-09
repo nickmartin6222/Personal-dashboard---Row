@@ -5,74 +5,80 @@
 <script src="/api/config"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0b">
-<title>Gym — Preview v4</title>
+<meta name="theme-color" content="#050506">
+<title>Gym — Preview v5</title>
 <script src="topbar.js" defer></script>
 
 <style>
 /* ==========================================================================
-   GYM PREVIEW v4 — round 3. Mobile is the primary target: the shell caps
-   at phone width, every button row wraps, modals are bottom sheets under
-   560px, and nothing here uses a fixed px width that could overflow.
+   GYM PREVIEW v5 — restyled to match the real dashboard's own design
+   system (tokens read straight from index.html / golf.html) instead of
+   the standalone lime-accent look earlier rounds used: near-black flat
+   background, translucent glass cards, mint (#6EE7B7) as the one true
+   accent, gold/blue/lavender borrowed from the dashboard's existing
+   palette for Push/Pull/Lower B so each split reads at a glance (Lower
+   A keeps the mint accent). Variable NAMES are unchanged from earlier
+   rounds (--lime etc.) — only their values moved to match the real
+   site — so nothing downstream needed touching.
 
-   Changes this round: single gym (Commercial only, toggle removed);
-   "fixed" exercises are gone — every area is a multi-select set of
-   options (tick as many as you're doing, e.g. both Pull-Ups AND Lat
-   Pulldown); rep ranges no longer shown on the option chips; Recent
-   Activity leads with the day name, date underneath, kg/time on the
-   right, and "View all" opens a full-history modal; a new full-width
-   Workout Summary strip sits under Today's Workout/Recent Activity;
-   "+" affordances to add a custom day or a custom exercise, persisted
-   to localStorage; Strength Score is now a real (if still mock-fed)
-   calculation — see computeStrengthScore() below.
+   Mobile stays the primary target: the shell caps at phone width,
+   every button row wraps, modals are bottom sheets under 560px.
    ========================================================================== */
 
 :root {
-  --bg: #0a0a0b;
-  --bg-card: #111113;
-  --bg-card-2: #17171a;
-  --bg-raised: rgba(255,255,255,0.04);
-  --text-1: #ffffff;
-  --text-2: rgba(255,255,255,0.62);
-  --text-3: rgba(255,255,255,0.42);
-  --text-4: rgba(255,255,255,0.24);
-  --border: rgba(255,255,255,0.07);
-  --border-strong: rgba(255,255,255,0.16);
-  --lime: #c8ff5c;
-  --lime-dim: rgba(200,255,92,0.14);
-  --lime-ink: #17210a;
-  --mint: #6ee7b7;
-  --warn: #fbbf24;
-  --bad: #ff8a8a;
+  --bg: #050506;
+  --bg-card: rgba(255,255,255,0.04);
+  --bg-card-2: #0E0E10;
+  --bg-raised: rgba(255,255,255,0.05);
+  --text-1: #FAFAFA;
+  --text-2: #B8B6B0;
+  --text-3: #76746E;
+  --text-4: #4D4B47;
+  --border: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.12);
+  --lime: #6EE7B7;
+  --lime-dim: rgba(110,231,183,0.12);
+  --lime-ink: #06120C;
+  --mint: #6EE7B7;
+  --warn: #F2C063;
+  --bad: #FF8A8A;
+  --day-push: #F2C063; --day-push-dim: rgba(242,192,99,0.14);
+  --day-pull: #7DD3FC; --day-pull-dim: rgba(125,211,252,0.14);
+  --day-lowera: #6EE7B7; --day-lowera-dim: rgba(110,231,183,0.14);
+  --day-lowerb: #A78BFA; --day-lowerb-dim: rgba(167,139,250,0.14);
   --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SF Mono, Menlo, Consolas, monospace;
-  --r-lg: 22px;
-  --r-md: 16px;
-  --r-sm: 11px;
+  --r-lg: 18px;
+  --r-md: 14px;
+  --r-sm: 10px;
 }
 :root[data-theme="light"] {
   --bg: #EDEEE9;
   --bg-card: #FFFFFF;
   --bg-card-2: #F5F6F1;
-  --bg-raised: rgba(28,30,27,0.045);
+  --bg-raised: rgba(28,30,27,0.04);
   --text-1: #1C1E1B;
   --text-2: #63675F;
   --text-3: #9A9E93;
   --text-4: #C3C6BD;
-  --border: rgba(28,30,27,0.09);
-  --border-strong: rgba(28,30,27,0.18);
-  --lime: #5C8A1E;
-  --lime-dim: rgba(92,138,30,0.12);
+  --border: rgba(28,30,27,0.08);
+  --border-strong: rgba(28,30,27,0.14);
+  --lime: #4C7A5B;
+  --lime-dim: rgba(76,122,91,0.12);
   --lime-ink: #ffffff;
   --mint: #4C7A5B;
   --warn: #C99A44;
   --bad: #C2554B;
+  --day-push: #C99A44; --day-push-dim: rgba(201,154,68,0.12);
+  --day-pull: #4F7FBF; --day-pull-dim: rgba(79,127,191,0.12);
+  --day-lowera: #4C7A5B; --day-lowera-dim: rgba(76,122,91,0.12);
+  --day-lowerb: #8A6BB5; --day-lowerb-dim: rgba(138,107,181,0.12);
   color-scheme: light;
 }
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, #14141a 0%, #0a0a0b 60%);
+  background: var(--bg);
   color: var(--text-1);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
@@ -84,9 +90,6 @@ html, body {
 /* Locked while a modal is open, so the page behind a bottom-sheet can't
    scroll underneath it — a common mobile paper-cut this avoids. */
 html.modal-open, html.modal-open body { overflow: hidden; height: 100%; }
-[data-theme="light"] html, [data-theme="light"] body {
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, #F1F2ED 0%, #EDEEE9 60%);
-}
 img, svg, canvas { max-width: 100%; }
 button { font-family: inherit; }
 
@@ -120,13 +123,19 @@ button { font-family: inherit; }
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3);
   margin-bottom: 6px;
 }
-.gp-title-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.gp-title-row {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  background: none; border: none; padding: 0; margin: 0; font: inherit; text-align: left;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; width: 100%;
+}
 .gp-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 0; overflow-wrap: anywhere; }
 .gp-badge {
   font-family: var(--font-mono); font-size: 11px; font-weight: 700;
   color: var(--lime); background: var(--lime-dim); border-radius: 999px;
   padding: 4px 10px; letter-spacing: 0.02em;
 }
+.gp-edit-icon { font-size: 12px; color: var(--text-4); }
+.gp-title-row:hover .gp-edit-icon, .gp-title-row:active .gp-edit-icon { color: var(--text-3); }
 .gp-sub { color: var(--text-3); font-size: 13px; margin-top: 4px; }
 
 /* ---------- shared card ---------- */
@@ -143,16 +152,6 @@ button { font-family: inherit; }
   font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3);
 }
-
-/* ---------- coach summary (progressive-overload digest) ---------- */
-.coach-list { list-style: none; margin: 8px 0 0; padding: 0; }
-.coach-row { padding: 9px 0; border-bottom: 1px solid var(--border); }
-.coach-row:last-child { border-bottom: none; }
-.coach-name { font-size: 12.5px; font-weight: 700; overflow-wrap: anywhere; }
-.coach-last { font-size: 11px; color: var(--text-3); margin-top: 2px; }
-.coach-rx { font-size: 11.5px; font-weight: 700; margin-top: 3px; color: var(--text-2); }
-.coach-rx[data-type="up"] { color: var(--lime); }
-.coach-rx[data-type="down"] { color: var(--bad); }
 
 /* ---------- weight tile (compact) ---------- */
 .wcard { padding: 14px 16px; }
@@ -199,7 +198,7 @@ button { font-family: inherit; }
 .scard-of { font-size: 15px; color: var(--text-3); font-weight: 700; margin-left: 2px; }
 .scard-label { font-size: 12px; color: var(--text-3); }
 .progress-track { height: 8px; border-radius: 999px; background: var(--bg-raised); overflow: hidden; margin: 9px 0 12px; }
-.progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lime), #8fd63a); transition: width 0.4s ease; }
+.progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lime), #4FCFA0); transition: width 0.4s ease; }
 .scard-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .stat-tile { background: var(--bg-raised); border-radius: var(--r-md); padding: 10px 11px; border: 1px solid transparent; min-width: 0; }
 .stat-tile.clickable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -451,7 +450,7 @@ button { font-family: inherit; }
 [data-theme="light"] .modal-bg { background: rgba(28,30,27,0.35); }
 @media (min-width: 560px) { .modal-bg { align-items: center; padding: 20px; } }
 .ex-modal {
-  width: 100%; max-width: 440px; background: var(--bg-card); border: 1px solid var(--border-strong);
+  width: 100%; max-width: 440px; background: var(--bg-card-2); border: 1px solid var(--border-strong);
   border-radius: 20px 20px 0 0; padding: 18px;
   max-height: 88vh; max-height: 85dvh; overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -495,6 +494,29 @@ button { font-family: inherit; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); margin: 4px 0 12px; }
 .form-check input { width: 20px; height: 20px; flex: none; }
+
+/* ---------- edit weekly schedule ---------- */
+.schedule-hint { font-size: 12px; color: var(--text-3); line-height: 1.5; margin: 0 0 16px; }
+.schedule-row { margin-bottom: 10px; padding: 12px; border-radius: var(--r-md); background: var(--bg-raised); border: 1px solid transparent; }
+.schedule-row.is-today { border-color: var(--border-strong); }
+.schedule-day-label { font-size: 12.5px; font-weight: 800; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.schedule-today-tag {
+  font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--text-3); background: var(--bg-card); border-radius: 999px; padding: 2px 7px;
+}
+.schedule-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.schedule-opt {
+  font-family: inherit; font-size: 11.5px; font-weight: 700; padding: 7px 11px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--bg-card); color: var(--text-2); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.schedule-opt.active { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+.schedule-actions { display: flex; gap: 10px; margin-top: 6px; }
+.schedule-btn-secondary, .schedule-btn-primary {
+  flex: 1; padding: 12px; border-radius: var(--r-sm); border: none; font-weight: 800; font-size: 13.5px; cursor: pointer;
+}
+.schedule-btn-secondary { background: var(--bg-raised); color: var(--text-2); }
+.schedule-btn-primary { background: var(--lime); color: var(--lime-ink); }
 </style>
 </head>
 <body>
@@ -502,17 +524,18 @@ button { font-family: inherit; }
 <div class="shell">
 
   <div class="preview-banner" id="previewBanner">
-    <span><b>Design preview, round 3.</b> Weight reads real logged data; anything you log or add here (sessions, custom days/exercises) persists in this browser for the session. Everything else is sample data pending sign-off.</span>
+    <span><b>Design preview.</b> Restyled to match the real dashboard's colors (mint accent, glass cards, Push/Pull/Lower A/B each get their own hue). Weight reads real logged data; anything you log or add here persists in this browser. Everything else is sample data pending sign-off.</span>
     <button class="pb-close" id="pbClose" aria-label="Dismiss">✕</button>
   </div>
 
   <!-- 1. HEADER -->
   <div class="gp-header">
     <div class="gp-date" id="gpDate">—</div>
-    <div class="gp-title-row">
+    <button type="button" class="gp-title-row" id="gpTitleRow" aria-label="Edit weekly schedule">
       <h1 class="gp-title" id="gpTitle">—</h1>
       <span class="gp-badge" id="gpBadge">—</span>
-    </div>
+      <span class="gp-edit-icon" aria-hidden="true">✎</span>
+    </button>
     <div class="gp-sub" id="gpSub">—</div>
     <div class="date-nav">
       <button type="button" class="date-nav-btn" id="dateNavPrev" aria-label="Previous week">‹</button>
@@ -521,13 +544,6 @@ button { font-family: inherit; }
     </div>
     <div class="date-strip" id="dateStrip"></div>
   </div>
-
-  <!-- COACH — progressive-overload summary for today's plan, built from
-       what was actually logged last time this exercise came up. -->
-  <section class="card coach-card" id="coachCard" hidden>
-    <div class="card-eyebrow">COACH — BASED ON LAST TIME</div>
-    <ul class="coach-list" id="coachList"></ul>
-  </section>
 
   <!-- 2. WEIGHT (compact tile) -->
   <section class="card wcard">
@@ -761,6 +777,22 @@ button { font-family: inherit; }
   </div>
 </div>
 
+<!-- Edit weekly schedule modal (opened by tapping the header's day heading) -->
+<div class="modal-bg" id="scheduleModalBg" style="display:none">
+  <div class="ex-modal">
+    <div class="ex-modal-head">
+      <span class="ex-modal-title">Edit weekly schedule</span>
+      <button class="ex-modal-close" id="scheduleModalClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <p class="schedule-hint">Pick which split (or Rest) falls on each day of the week. Fixed to the calendar — Monday is always whatever's set here, no drift.</p>
+    <div id="scheduleRows"></div>
+    <div class="schedule-actions">
+      <button type="button" class="schedule-btn-secondary" id="scheduleCancelBtn">Cancel</button>
+      <button type="button" class="schedule-btn-primary" id="scheduleSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Add day / add exercise modal -->
 <div class="modal-bg" id="addModalBg" style="display:none">
   <div class="ex-modal">
@@ -790,7 +822,7 @@ button { font-family: inherit; }
   // open (mobile: without this, the page underneath can scroll while a
   // modal is up, which feels broken) and keep the lock on as long as
   // any modal is still open.
-  var MODAL_IDS = ['exModalBg', 'allSessionsModalBg', 'addModalBg', 'dayDetailModalBg', 'exHistoryModalBg'];
+  var MODAL_IDS = ['exModalBg', 'allSessionsModalBg', 'addModalBg', 'dayDetailModalBg', 'exHistoryModalBg', 'scheduleModalBg'];
   function anyModalOpen() { return MODAL_IDS.some(function (id) { return document.getElementById(id).style.display === 'flex'; }); }
   function openModal(id) { document.getElementById(id).style.display = 'flex'; document.documentElement.classList.add('modal-open'); }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; if (!anyModalOpen()) document.documentElement.classList.remove('modal-open'); }
@@ -804,6 +836,20 @@ button { font-family: inherit; }
   // ------------------------------------------------------------------
   var WEEKDAY_SPLIT = ['Rest', 'Push', 'Lower A', 'Rest', 'Pull', 'Lower B', 'Rest']; // Sun..Sat
   var DAY_ORDER = ['Lower A', 'Push', 'Lower B', 'Pull'];
+  var SCHEDULE_KEY = 'po_preview_weekday_split_v1';
+  (function loadSchedule() {
+    try { var raw = localStorage.getItem(SCHEDULE_KEY); if (raw) { var arr = JSON.parse(raw); if (Array.isArray(arr) && arr.length === 7) WEEKDAY_SPLIT = arr; } } catch (e) {}
+  })();
+  function saveSchedule() { try { localStorage.setItem(SCHEDULE_KEY, JSON.stringify(WEEKDAY_SPLIT)); } catch (e) {} }
+
+  // Each day type gets its own accent color, reused wherever a day
+  // appears (header badge, day tabs, Today's Workout heading, session
+  // rows) so the split is recognizable at a glance. A day added via
+  // "+ Day" falls back to the primary accent.
+  var DAY_COLOR_VARS = { 'Push': '--day-push', 'Pull': '--day-pull', 'Lower A': '--day-lowera', 'Lower B': '--day-lowerb' };
+  var DAY_COLOR_DIM_VARS = { 'Push': '--day-push-dim', 'Pull': '--day-pull-dim', 'Lower A': '--day-lowera-dim', 'Lower B': '--day-lowerb-dim' };
+  function dayColor(day) { return 'var(' + (DAY_COLOR_VARS[day] || '--lime') + ')'; }
+  function dayColorDim(day) { return 'var(' + (DAY_COLOR_DIM_VARS[day] || '--lime-dim') + ')'; }
 
   var MUSCLE_COLORS = {
     "Quads": "#f2a93b", "Hamstrings": "#fb7185", "Glutes": "#f472b6",
@@ -971,9 +1017,57 @@ button { font-family: inherit; }
     document.getElementById('gpTitle').textContent = isRest ? 'Rest Day' : dayLabel + ' Day';
     var meta = DAY_META[dayLabel];
     var exCount = meta ? meta.areas.reduce(function (n, a) { return n + a.options.length; }, 0) : 0;
-    document.getElementById('gpBadge').textContent = isRest ? 'Recovery' : exCount + ' options';
+    var badge = document.getElementById('gpBadge');
+    badge.textContent = isRest ? 'Recovery' : exCount + ' options';
+    badge.style.color = isRest ? 'var(--text-3)' : dayColor(dayLabel);
+    badge.style.background = isRest ? 'var(--bg-raised)' : dayColorDim(dayLabel);
     document.getElementById('gpSub').textContent = isRest ? 'No training planned — recover up' : (meta ? meta.muscles : '');
   }
+
+  // ------------------------------------------------------------------
+  // Edit weekly schedule — which day-type falls on which weekday.
+  // Ported from gym.html's real feature: a fixed Sun-Sat mapping, no
+  // rolling/drifting rotation. Opened by tapping the header's heading.
+  // ------------------------------------------------------------------
+  var WEEK_DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var scheduleDraft = null;
+  function openScheduleModal() {
+    scheduleDraft = WEEKDAY_SPLIT.slice();
+    renderScheduleRows();
+    openModal('scheduleModalBg');
+  }
+  function renderScheduleRows() {
+    var todayDow = new Date().getDay();
+    var options = DAY_ORDER.concat(['Rest']);
+    document.getElementById('scheduleRows').innerHTML = WEEK_DOW_LABELS.map(function (label, i) {
+      var opts = options.map(function (d) {
+        var active = scheduleDraft[i] === d;
+        var c = d === 'Rest' ? null : dayColor(d);
+        return '<button type="button" class="schedule-opt' + (active ? ' active' : '') + '" data-dow="' + i + '" data-val="' + esc(d) + '"' +
+          (active && c ? ' style="background:' + c + ';border-color:' + c + '"' : '') + '>' + esc(d) + '</button>';
+      }).join('');
+      return '<div class="schedule-row' + (i === todayDow ? ' is-today' : '') + '">' +
+        '<div class="schedule-day-label">' + label + (i === todayDow ? '<span class="schedule-today-tag">TODAY</span>' : '') + '</div>' +
+        '<div class="schedule-opts">' + opts + '</div></div>';
+    }).join('');
+    document.querySelectorAll('.schedule-opt').forEach(function (btn) {
+      btn.addEventListener('click', function () { scheduleDraft[+btn.dataset.dow] = btn.dataset.val; renderScheduleRows(); });
+    });
+  }
+  document.getElementById('gpTitleRow').addEventListener('click', openScheduleModal);
+  document.getElementById('scheduleModalClose').addEventListener('click', function () { closeModal('scheduleModalBg'); });
+  document.getElementById('scheduleCancelBtn').addEventListener('click', function () { closeModal('scheduleModalBg'); });
+  document.getElementById('scheduleModalBg').addEventListener('click', function (ev) { if (ev.target.id === 'scheduleModalBg') closeModal('scheduleModalBg'); });
+  document.getElementById('scheduleSaveBtn').addEventListener('click', function () {
+    WEEKDAY_SPLIT = scheduleDraft.slice();
+    saveSchedule();
+    closeModal('scheduleModalBg');
+    // Today's split may have just changed — resync to it, same as a
+    // fresh page load would, unless that's an unmatched custom day.
+    activeDay = todayDayLabel();
+    if (!DAY_META[activeDay]) activeDay = DAY_ORDER[0];
+    commitDay();
+  });
 
   // ------------------------------------------------------------------
   // 2. WEIGHT — real po_coach_weights localStorage data.
@@ -1252,7 +1346,9 @@ button { font-family: inherit; }
 
   function renderDayTabs() {
     var html = DAY_ORDER.map(function (d) {
-      return '<button type="button" class="day-tab' + (d === activeDay ? ' active' : '') + '" data-day="' + esc(d) + '">' + d + '</button>';
+      var active = d === activeDay;
+      return '<button type="button" class="day-tab' + (active ? ' active' : '') + '" data-day="' + esc(d) + '"' +
+        (active ? ' style="background:' + dayColor(d) + ';border-color:' + dayColor(d) + '"' : '') + '>' + d + '</button>';
     }).join('') + '<button type="button" class="day-tab day-tab-add" id="addDayBtn">+ Day</button>';
     document.getElementById('dayTabs').innerHTML = html;
     document.querySelectorAll('.day-tab[data-day]').forEach(function (btn) {
@@ -1298,7 +1394,9 @@ button { font-family: inherit; }
 
   function renderChecklist() {
     var list = todaysExerciseList(confirmedDay);
-    document.getElementById('twDay').textContent = confirmedDay;
+    var twDay = document.getElementById('twDay');
+    twDay.textContent = confirmedDay;
+    twDay.style.color = dayColor(confirmedDay);
     document.getElementById('twCount').textContent = list.length + ' exercise' + (list.length === 1 ? '' : 's');
     var html = list.map(function (ex) {
       var done = !!doneState[ex.name];
@@ -1348,30 +1446,6 @@ button { font-family: inherit; }
     lastCommitted = JSON.parse(JSON.stringify(picks[activeDay]));
     renderChecklist();
     renderAnatomy();
-    renderCoach();
-  }
-  // Coach summary — one line per today's-plan exercise, built from the
-  // real getRx() engine against the real last-logged set for that
-  // exercise (falling back to the mock starting point on day one).
-  // This is the "you did this last time, do this today" digest.
-  function renderCoach() {
-    var list = todaysExerciseList(confirmedDay);
-    var card = document.getElementById('coachCard');
-    if (!list.length) { card.hidden = true; return; }
-    card.hidden = false;
-    document.getElementById('coachList').innerHTML = list.map(function (item) {
-      var ex = EX_INDEX[item.name];
-      var last = lastLogFor(ex);
-      var hasReal = !!last.dateKey;
-      var rx = getRx(ex, [last]);
-      var lastStr = ex.bw ? (last.reps + ' reps') : (last.weight + UNITS + ' × ' + last.reps);
-      var rxStr = rx ? (rx.tag + (rx.weight ? ' → ' + rx.weight + UNITS + ' × ' + rx.reps : ' → ' + rx.reps + ' reps')) : '—';
-      return '<li class="coach-row">' +
-        '<div class="coach-name">' + esc(ex.name) + '</div>' +
-        '<div class="coach-last">' + (hasReal ? 'Last (' + esc(dayLabelForKey(last.dateKey)) + '): ' + lastStr : 'No log yet — starting point: ' + lastStr) + '</div>' +
-        '<div class="coach-rx" data-type="' + (rx ? rx.type : '') + '">' + esc(rxStr) + '</div>' +
-        '</li>';
-    }).join('');
   }
 
   function openPicker() {
@@ -1556,7 +1630,7 @@ button { font-family: inherit; }
     var h = Math.floor(sess.durationMin / 60), m = sess.durationMin % 60;
     var timeStr = h ? h + 'h ' + m + 'm' : m + 'm';
     var head = '<div class="session-head" data-id="' + sess.id + '">' +
-      '<div class="session-main"><div class="session-day-name">' + esc(sess.day) + '</div>' +
+      '<div class="session-main"><div class="session-day-name" style="color:' + dayColor(sess.day) + '">' + esc(sess.day) + '</div>' +
       '<div class="session-date-line">' + esc(dayLabelForKey(sess.dateKey)) + '</div></div>' +
       '<div class="session-right"><div class="session-kg">' + Math.round(sess.volume).toLocaleString() + ' ' + UNITS + '</div>' +
       '<div class="session-time">' + timeStr + '</div></div>' +
@@ -1710,7 +1784,6 @@ button { font-family: inherit; }
     renderActivity();
     renderWorkoutSummary();
     renderDateStrip();
-    renderCoach();
     if (wsPastOpen) renderPastWorkouts();
     if (document.getElementById('allSessionsModalBg').style.display === 'flex') renderAllSessionsModal();
   }
@@ -2061,7 +2134,6 @@ button { font-family: inherit; }
   // ------------------------------------------------------------------
   renderHeader(confirmedDay);
   renderDateStrip();
-  renderCoach();
   renderWeight();
   renderStrength();
   renderChecklist();
