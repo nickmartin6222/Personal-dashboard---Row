@@ -47,6 +47,15 @@
   --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: dark;
+  /* Vitality backdrop (aurora/mountains/particles) — same tokens and
+     same light-theme values as index.html, so the toggle looks
+     identical on both pages. */
+  --vty-aurora-1: rgba(110, 231, 183, 0.16);
+  --vty-aurora-2: rgba(255, 226, 181, 0.07);
+  --vty-fade-1: rgba(14, 38, 30, 0.5);
+  --vty-fade-2: rgba(4, 6, 10, 0.95);
+  --vty-particle: rgba(233, 239, 233, 0.7);
+  --vty-particle-glow: rgba(167, 243, 208, 0.5);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -91,9 +100,9 @@ body::after {
   z-index: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(60% 50% at 50% 30%, rgba(110, 231, 183, 0.16) 0%, rgba(110, 231, 183, 0.06) 32%, rgba(110, 231, 183, 0) 65%),
-    radial-gradient(28% 22% at 50% 38%, rgba(255, 226, 181, 0.07) 0%, rgba(255, 226, 181, 0) 70%),
-    radial-gradient(120% 80% at 50% 100%, rgba(14, 38, 30, 0.5) 0%, rgba(4, 6, 10, 0.95) 75%);
+    radial-gradient(60% 50% at 50% 30%, var(--vty-aurora-1) 0%, color-mix(in srgb, var(--vty-aurora-1) 35%, transparent) 32%, transparent 65%),
+    radial-gradient(28% 22% at 50% 38%, var(--vty-aurora-2) 0%, transparent 70%),
+    radial-gradient(120% 80% at 50% 100%, var(--vty-fade-1) 0%, var(--vty-fade-2) 75%);
   background-repeat: no-repeat;
   background-size: 100% 100%;
 }
@@ -108,6 +117,7 @@ body::after {
   pointer-events: none;
   opacity: 0.8;
 }
+:root[data-theme="light"] .vty-mountains { opacity: 0.4; }
 .vty-mountains svg { width: 100%; height: 100%; display: block; }
 .vty-particles {
   position: fixed;
@@ -120,10 +130,10 @@ body::after {
   position: absolute;
   width: 1.5px;
   height: 1.5px;
-  background: rgba(233, 239, 233, 0.7);
+  background: var(--vty-particle);
   border-radius: 50%;
   animation: vty-backdrop-drift linear infinite;
-  box-shadow: 0 0 6px rgba(167, 243, 208, 0.5);
+  box-shadow: 0 0 6px var(--vty-particle-glow);
 }
 @keyframes vty-backdrop-drift {
   0%   { transform: translate3d(0, 0, 0); opacity: 0; }
@@ -1944,6 +1954,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   --warning: #B4790A;
   --danger: #D23F3F;
   color-scheme: light;
+  /* Same values as index.html's light theme, so the atmospheric
+     backdrop matches exactly on both pages. */
+  --vty-aurora-1: rgba(201, 154, 68, 0.14);
+  --vty-aurora-2: rgba(201, 154, 68, 0.05);
+  --vty-fade-1: rgba(27, 47, 34, 0.14);
+  --vty-fade-2: rgba(27, 47, 34, 0);
+  --vty-particle: rgba(28, 30, 27, 0.30);
+  --vty-particle-glow: rgba(185, 214, 107, 0.35);
 }
 [data-theme="light"] body::before {
   background:
