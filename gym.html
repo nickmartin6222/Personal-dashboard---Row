@@ -1140,6 +1140,25 @@ img, video, canvas, svg { max-width: 100%; }
   text-align: center; font-size: 11px; color: var(--text-3);
   margin-top: 8px;
 }
+.wt-hover-line { stroke: var(--good); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.5; pointer-events: none; }
+.wt-hover-dot { fill: var(--good); stroke: var(--bg-card); stroke-width: 2; pointer-events: none; filter: drop-shadow(0 0 4px var(--good)); }
+.wt-chart-tooltip {
+  position: absolute; top: 2px; z-index: 3; transform: translateX(-50%);
+  background: var(--bg); border: 1px solid var(--border-strong);
+  border-radius: 8px; padding: 5px 9px;
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-1);
+  white-space: nowrap; pointer-events: none;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+}
+.wt-chart-tooltip .wt-chart-tooltip-date { display: block; font-size: 9px; font-weight: 600; color: var(--text-3); margin-top: 1px; }
+.wt-chart-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+}
+@media (max-width: 480px) { .wt-chart-stats { grid-template-columns: repeat(2, 1fr); } }
+.wt-stat { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; background: rgba(255,255,255,0.04); border-radius: 10px; }
+.wt-stat-label { font-size: 9px; letter-spacing: 0.14em; font-weight: 800; text-transform: uppercase; color: var(--text-3); font-family: var(--font-mono); }
+.wt-stat-val { font-size: 13px; font-weight: 700; color: var(--text-1); font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
 .wt-legend {
   display: flex; justify-content: center; gap: 18px; margin-top: 10px;
 }
@@ -1504,7 +1523,7 @@ img, video, canvas, svg { max-width: 100%; }
   background: linear-gradient(180deg, #1C1E1B 0%, #33352F 100%);
   color: #FAFAF8;
 }
-
+[data-theme="light"] .wt-stat { background: rgba(28,30,27,0.04); }
 
 /* ============================================================
    AUTO-GENERATED light-theme overrides (scripted pass) — mirrors every
@@ -1621,8 +1640,17 @@ img, video, canvas, svg { max-width: 100%; }
           <line class="wt-grid" x1="0" y1="65" x2="320" y2="65"></line>
           <line class="wt-grid" x1="0" y1="110" x2="320" y2="110"></line>
           <g id="wtChartContent"></g>
+          <line id="wtHoverLine" class="wt-hover-line" x1="0" y1="0" x2="0" y2="130" hidden/>
+          <circle id="wtHoverDot" class="wt-hover-dot" r="4" cx="0" cy="0" hidden/>
         </svg>
+        <div class="wt-chart-tooltip" id="wtChartTooltip" hidden></div>
         <div class="wt-meta" id="wtMeta">0 entries</div>
+        <div class="wt-chart-stats" id="wtChartStats">
+          <div class="wt-stat"><div class="wt-stat-label">Current</div><div class="wt-stat-val" id="wtStatCurrent">—</div></div>
+          <div class="wt-stat"><div class="wt-stat-label">High</div><div class="wt-stat-val" id="wtStatHigh">—</div></div>
+          <div class="wt-stat"><div class="wt-stat-label">Low</div><div class="wt-stat-val" id="wtStatLow">—</div></div>
+          <div class="wt-stat"><div class="wt-stat-label">Entries</div><div class="wt-stat-val" id="wtStatCount">—</div></div>
+        </div>
       </div>
 
       <div class="wt-legend hidden" id="wtLegend">
@@ -3698,6 +3726,7 @@ img, video, canvas, svg { max-width: 100%; }
     }
   }
 
+  let wtHoverPoints = [];
   function wtRenderChart() {
     const recent = wtEntries.slice(-30);
     const weights = recent.map(e => e.weight);
@@ -3732,7 +3761,59 @@ img, video, canvas, svg { max-width: 100%; }
     $('wtYAxisMax').textContent = yMax.toFixed(1);
     $('wtYAxisMin').textContent = yMin.toFixed(1);
     $('wtMeta').textContent = wtEntries.length + ' ' + (wtEntries.length === 1 ? 'entry' : 'entries') + ' · last ' + recent.length + ' days';
+
+    const u = state.units;
+    $('wtStatCurrent').textContent = weights[weights.length - 1].toFixed(1) + ' ' + u;
+    $('wtStatHigh').textContent = max.toFixed(1) + ' ' + u;
+    $('wtStatLow').textContent = min.toFixed(1) + ' ' + u;
+    $('wtStatCount').textContent = String(wtEntries.length);
+
+    // Hover lookup — real weight + date per plotted point.
+    wtHoverPoints = recent.map((e, i) => ({ x: points[i].x, y: points[i].y, w: e.weight, dateKey: e.dateKey }));
   }
+  (function setupWtChartHover() {
+    const svg = document.querySelector('.wt-chart');
+    const wrap = document.getElementById('wtChartWrap');
+    const tooltip = document.getElementById('wtChartTooltip');
+    if (!svg || !wrap || !tooltip) return;
+    function fmtHoverDate(dateKey) {
+      const d = wtParseKey(dateKey);
+      const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return mons[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+    function showAt(clientX) {
+      if (!wtHoverPoints.length) return;
+      const hoverLine = document.getElementById('wtHoverLine');
+      const hoverDot = document.getElementById('wtHoverDot');
+      if (!hoverLine || !hoverDot) return;
+      const rect = svg.getBoundingClientRect();
+      if (!rect.width) return;
+      const relX = ((clientX - rect.left) / rect.width) * 320;
+      let nearest = wtHoverPoints[0], minDist = Infinity;
+      wtHoverPoints.forEach(p => { const d = Math.abs(p.x - relX); if (d < minDist) { minDist = d; nearest = p; } });
+      hoverLine.setAttribute('x1', nearest.x); hoverLine.setAttribute('x2', nearest.x);
+      hoverLine.hidden = false;
+      hoverDot.setAttribute('cx', nearest.x); hoverDot.setAttribute('cy', nearest.y);
+      hoverDot.hidden = false;
+      tooltip.innerHTML = nearest.w.toFixed(1) + ' ' + state.units
+        + '<span class="wt-chart-tooltip-date">' + fmtHoverDate(nearest.dateKey) + '</span>';
+      tooltip.hidden = false;
+      const pctX = Math.min(88, Math.max(12, (nearest.x / 320) * 100));
+      tooltip.style.left = pctX + '%';
+    }
+    function hide() {
+      tooltip.hidden = true;
+      const hoverLine = document.getElementById('wtHoverLine');
+      const hoverDot = document.getElementById('wtHoverDot');
+      if (hoverLine) hoverLine.hidden = true;
+      if (hoverDot) hoverDot.hidden = true;
+    }
+    svg.addEventListener('mousemove', (e) => showAt(e.clientX));
+    svg.addEventListener('mouseleave', hide);
+    svg.addEventListener('touchstart', (e) => { if (e.touches[0]) showAt(e.touches[0].clientX); }, { passive: true });
+    svg.addEventListener('touchmove', (e) => { if (e.touches[0]) showAt(e.touches[0].clientX); }, { passive: true });
+    svg.addEventListener('touchend', hide);
+  })();
 
   function wtRenderDelta() {
     const last = wtEntries[wtEntries.length - 1];
