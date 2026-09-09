@@ -118,6 +118,10 @@ body.has-bottombar {
   .topbar { padding-left: 10px; padding-right: 10px; gap: 6px; }
   .topbar-finance-btn { width: 40px; height: 38px; }
   .topbar-finance-icon { font-size: 18px; }
+  .home-btn { width: 40px; height: 38px; }
+  .theme-btn { width: 48px; height: 28px; }
+  .theme-btn .theme-btn-dot { width: 20px; height: 20px; }
+  .theme-btn.is-light .theme-btn-dot { transform: translateX(20px); }
   .bottombar-tab-icon { font-size: 22px; }
   .bottombar-tab { font-size: 10px; }
 }

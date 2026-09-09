@@ -2389,6 +2389,47 @@ img, video, canvas, svg { max-width: 100%; }
       s.programVersion = 9;
     }
 
+    // Tenth migration: fixes a real bug in migration 8's rename — it
+    // renamed an old "Core Finisher" entry to "Ab Crunch Machine" IN
+    // PLACE, keeping whatever day/slot/optionSet it originally had
+    // (typically no optionSet at all, since Core Finisher was a single
+    // fixed slot, not part of an A/B/C/D group). That orphaned entry's
+    // name+day key then matched migration 9's seed key, so the merge
+    // check saw "already exists" and skipped adding the real, properly-
+    // configured Push-day option — leaving an Ab Crunch Machine that's
+    // in the wrong slot with no optionSet, so it never highlights as
+    // selected in Today's Picks. Repoint any such entry (by id, so its
+    // logged history stays attached) onto the real seed definition
+    // instead of leaving it orphaned or adding a duplicate.
+    if ((s.programVersion || 0) < 10) {
+      const seed = (CONFIG.defaultExercises || []).find(e => e.name === 'Ab Crunch Machine');
+      if (seed) {
+        const isCorrect = e => e.day === seed.day && e.slot === seed.slot && e.optionSet === seed.optionSet;
+        s.exercises.forEach(ex => {
+          if ((ex.name || '').toLowerCase() === 'ab crunch machine' && !isCorrect(ex)) {
+            ex.day = seed.day;
+            ex.slot = seed.slot;
+            ex.optionSet = seed.optionSet;
+            ex.tag = seed.tag;
+            ex.muscle = seed.muscle;
+            ex.repMin = seed.repMin;
+            ex.repMax = seed.repMax;
+            ex.step = seed.step;
+            if (!(ex.startWeight > 0)) ex.startWeight = seed.startWeight;
+          }
+        });
+        // Now safe to run the normal additive merge — any orphan is
+        // already repointed to the seed's identity, so this only adds
+        // one if the user genuinely never had any Ab Crunch Machine.
+        const existingExKeys10 = new Set(s.exercises.map(e => (e.name + '|' + e.day).toLowerCase()));
+        const key = (seed.name + '|' + seed.day).toLowerCase();
+        if (!existingExKeys10.has(key)) {
+          s.exercises.push(Object.assign({ id: 'seed10_' + Date.now() }, seed));
+        }
+      }
+      s.programVersion = 10;
+    }
+
     return s;
   }
   function saveState() {
