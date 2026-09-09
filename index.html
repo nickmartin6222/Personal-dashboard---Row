@@ -7,72 +7,135 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
 <title>Dashboard</title>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="sync.js" defer></script>
 <script src="topbar.js" defer></script>
-
 <style>
-/* ===== Shared design tokens (same as the rest of the dashboard) ===== */
+/* ===== Shared design tokens (same as the rest of the dashboard) =====
+   Goals-first layout: Goals -> Finance overview (with stock holdings)
+   -> Fitness/Golf/Nutrition. Mint (dark) is the default palette; a
+   toggle switches every color to the sage-green/white palette that
+   matches finance-preview-sage.html, via CSS variables + [data-theme]
+   — no reload needed. ===== */
 :root {
+  --bg: #050506;
+  --card: rgba(255,255,255,0.04);
+  --card-soft: rgba(255,255,255,0.06);
+  --card-solid: #0E0E10;
+  --border: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.10);
   --text-primary: #FAFAFA;
   --text-secondary: #B8B6B0;
   --text-tertiary: #76746E;
-  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --sage: #6EE3A4;
+  --sage-deep: #1C3B2C;
+  --sage-pale: rgba(110,227,164,0.14);
+  --positive: #6EE3A4;
+  --negative: #FF8A8A;
+  --gold: #F2C063;
+  --blue: #7DD3FC;
+  --shadow-sm: rgba(0,0,0,0.35);
+  --shadow-md: rgba(0,0,0,0.4);
+  --shadow-lg: rgba(0,0,0,0.5);
+  --blob-warm: rgba(224,118,88,0.16);
+  --blob-cool: rgba(180,180,200,0.06);
+  --dot-texture: rgba(255,255,255,0.014);
+  --on-accent: #06120C;
+  --vty-aurora-1: rgba(110, 231, 183, 0.11);
+  --vty-aurora-2: rgba(255, 226, 181, 0.05);
+  --vty-fade-1: rgba(14, 38, 30, 0.4);
+  --vty-fade-2: rgba(4, 6, 10, 0.9);
+  --vty-particle: rgba(233, 239, 233, 0.6);
+  --vty-particle-glow: rgba(167, 243, 208, 0.45);
+  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+/* ===== Theme toggle — sage-green + white, matching the sage
+   Finance draft's exact palette, so Gym/Golf/Nutrition mini-tiles
+   here read as one consistent system with it when toggled on. ===== */
+:root[data-theme="sage"] {
+  --bg: #EDEEE9;
+  --card: #FFFFFF;
+  --card-soft: #F5F6F1;
+  --card-solid: #FFFFFF;
+  --border: rgba(28,30,27,0.08);
+  --border-strong: rgba(28,30,27,0.14);
+  --text-primary: #1C1E1B;
+  --text-secondary: #63675F;
+  --text-tertiary: #9A9E93;
+  --sage: #5F7A63;
+  --sage-deep: #3F5443;
+  --sage-pale: #E4EBE1;
+  --positive: #4C7A5B;
+  --negative: #C2554B;
+  --gold: #C99A44;
+  --blue: #4F7FBF;
+  --shadow-sm: rgba(28,30,27,0.10);
+  --shadow-md: rgba(28,30,27,0.08);
+  --shadow-lg: rgba(28,30,27,0.14);
+  --blob-warm: rgba(217,139,95,0.14);
+  --blob-cool: rgba(28,30,27,0.05);
+  --dot-texture: rgba(28,30,27,0.05);
+  --on-accent: #FFFFFF;
+  --vty-aurora-1: rgba(201, 154, 68, 0.14);
+  --vty-aurora-2: rgba(201, 154, 68, 0.05);
+  --vty-fade-1: rgba(27, 47, 34, 0.14);
+  --vty-fade-2: rgba(27, 47, 34, 0);
+  --vty-particle: rgba(28,30,27, 0.30);
+  --vty-particle-glow: rgba(185, 214, 107, 0.35);
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 html, body {
   margin: 0; padding: 0;
-  background: #050506;
+  background: var(--bg);
   color: var(--text-secondary);
-  font-family: var(--font);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 body {
-  min-height: 100vh; position: relative; overflow-x: hidden;
-  padding: max(28px, env(safe-area-inset-top)) 20px 60px;
+  min-height: 100vh; padding: max(24px, env(safe-area-inset-top)) 18px 60px;
+  position: relative; overflow-x: hidden;
 }
-/* Soft drifting glow + dot texture (matches the other pages). */
 body::before {
   content: ''; position: fixed; inset: 0;
   background:
-    radial-gradient(circle at 82% 14%, rgba(224,118,88,0.16), transparent 45%),
-    radial-gradient(circle at 18% 90%, rgba(180,180,200,0.06), transparent 50%);
+    radial-gradient(circle at 82% 14%, var(--blob-warm), transparent 45%),
+    radial-gradient(circle at 18% 90%, var(--blob-cool), transparent 50%);
   filter: blur(40px); pointer-events: none; z-index: -2;
-  animation: drift 36s ease-in-out infinite alternate;
 }
 body::after {
   content: ''; position: fixed; inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,0.014) 1px, transparent 1px);
+  background-image: radial-gradient(var(--dot-texture) 1px, transparent 1px);
   background-size: 3px 3px; pointer-events: none; z-index: -1;
 }
-@keyframes drift { 0%{transform:translate3d(0,0,0)} 100%{transform:translate3d(-22px,14px,0)} }
 
-/* ===== Vitality atmospheric backdrop — same aurora/mountains/particles
-   system as the Finance page (ported, toned down), so moving between
-   the hub and Finance doesn't feel like leaving the app. Layers sit
-   at z-index 0/1/2, below .page (z-index 5). ===== */
+/* ===== Vitality atmospheric backdrop (aurora + mountains + particles) —
+   same system as Finance, re-themed per palette via the variables
+   above. Layers sit at z-index 0/1/2, below .page (z-index 5). ===== */
 .vty-atmosphere {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
-    radial-gradient(60% 50% at 50% 30%, rgba(110, 231, 183, 0.11) 0%, rgba(110, 231, 183, 0.04) 32%, rgba(110, 231, 183, 0) 65%),
-    radial-gradient(28% 22% at 50% 38%, rgba(255, 226, 181, 0.05) 0%, rgba(255, 226, 181, 0) 70%),
-    radial-gradient(120% 80% at 50% 100%, rgba(14, 38, 30, 0.4) 0%, rgba(4, 6, 10, 0.9) 75%);
+    radial-gradient(60% 50% at 50% 30%, var(--vty-aurora-1) 0%, color-mix(in srgb, var(--vty-aurora-1) 35%, transparent) 32%, transparent 65%),
+    radial-gradient(28% 22% at 50% 38%, var(--vty-aurora-2) 0%, transparent 70%),
+    radial-gradient(120% 80% at 50% 100%, var(--vty-fade-1) 0%, var(--vty-fade-2) 75%);
   background-repeat: no-repeat; background-size: 100% 100%;
 }
 .vty-mountains {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 1;
   height: 26vh; min-height: 150px; pointer-events: none; opacity: 0.65;
 }
+:root[data-theme="sage"] .vty-mountains { opacity: 0.4; }
 .vty-mountains svg { width: 100%; height: 100%; display: block; }
 .vty-particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .vty-particles span {
   position: absolute; width: 1.5px; height: 1.5px;
-  background: rgba(233, 239, 233, 0.6); border-radius: 50%;
+  background: var(--vty-particle); border-radius: 50%;
   animation: vty-backdrop-drift linear infinite;
-  box-shadow: 0 0 6px rgba(167, 243, 208, 0.45);
+  box-shadow: 0 0 6px var(--vty-particle-glow);
 }
 @keyframes vty-backdrop-drift {
   0%   { transform: translate3d(0, 0, 0); opacity: 0; }
@@ -83,288 +146,153 @@ body::after {
 @media (prefers-reduced-motion: reduce) { .vty-particles span { animation: none; } }
 
 .page { position: relative; z-index: 5; max-width: 1100px; margin: 0 auto; }
-.dash-title {
-  margin: 0 0 18px; font-size: 28px; font-weight: 700; letter-spacing: -0.025em;
-  background: linear-gradient(180deg, #FFFFFF 0%, #C7C4BC 120%);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-}
-@media (max-width: 480px) { .dash-title { font-size: 22px; } }
-
-/* ===== BENTO GRID ===== */
-.bento {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: minmax(168px, auto);
-  grid-auto-flow: dense;
-  gap: 14px;
-}
-.tile {
-  --accent: #6BE3A4;                 /* each tile overrides this */
-  position: relative; overflow: hidden;
-  display: flex; flex-direction: column;
-  padding: 20px;
-  border-radius: 18px;
-  text-decoration: none;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-}
-/* The "its own style" bit — a faint accent glow per tile. */
-.tile::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(circle at 78% 18%,
-              color-mix(in srgb, var(--accent) 22%, transparent), transparent 55%);
-  opacity: 0.7; transition: opacity 0.18s ease;
-}
-.tile:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.55);
-}
-.tile:hover::before { opacity: 1; }
-/* Main is a snapshot panel, not a link — no hover lift, no pointer cursor. */
-.tile-noclick { cursor: default; }
-.tile-noclick:hover { transform: none; box-shadow: 0 12px 40px rgba(0,0,0,0.45); }
-.tile-noclick:hover::before { opacity: 0.7; }
-
-/* Tile sizes */
-.tile.big  { grid-column: span 2; grid-row: span 2; }
-.tile.wide { grid-column: span 2; }
-
-/* Groups Fitness/Finance/Golf so the desktop layout (below) can turn
-   them into a stacked right-hand column. display:contents means at
-   every other width its children behave exactly as if they were
-   direct children of .bento — the existing masonry is unaffected. */
-.bento-right { display: contents; }
-
-/* A ticker/price/24h% row shown inside the Finance tile when the
-   Finance page has fetched at least one live stock price. Empty by
-   default (no snapshot yet) — the JS below only fills it in and
-   removes [hidden] once there's real data. */
-.stock-snapshot { display: flex; flex-direction: column; gap: 4px; margin: 10px 0 2px; }
-.stock-snapshot[hidden] { display: none; }
-.stock-snapshot-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  font-size: 12px; font-family: var(--font-mono);
-}
-.stock-snapshot-ticker { color: var(--text-secondary); font-weight: 600; }
-.stock-snapshot-price { color: var(--text-primary); }
-.stock-snapshot-chg { font-weight: 700; flex-shrink: 0; }
-.stock-snapshot-chg.up   { color: #6BE3A4; }
-.stock-snapshot-chg.down { color: #FF8A8A; }
-
-/* A tile that needs an interactive control floating on top of it
-   (e.g. the creatine check on the Main tile) gets wrapped — the
-   wrapper takes over the grid placement, stretches the tile to fill
-   it via flex (not absolute+inset:0 — that took the tile out of flow
-   entirely, so its real content height never reached the grid track,
-   which silently clipped it on mobile since grid-auto-rows was a
-   fixed length shorter than the actual content), and the button sits
-   absolutely positioned on top of the now-normal-flow tile. */
-.tile-wrap { position: relative; }
-.tile-wrap-big { grid-column: span 2; grid-row: span 2; display: flex; flex-direction: column; }
-.tile-wrap-big .tile.big { flex: 1; grid-column: unset; grid-row: unset; }
-.creatine-btn {
-  position: absolute; z-index: 5; top: 20px; right: 20px;
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 7px 12px 7px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(10,10,11,0.55);
-  backdrop-filter: blur(8px);
-  color: var(--text-secondary);
-  font-family: var(--font); font-size: 11.5px; font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-.creatine-btn:hover { background: rgba(10,10,11,0.7); }
-.creatine-check {
-  width: 16px; height: 16px; flex-shrink: 0;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.28);
-  position: relative;
-  transition: background 0.2s, border-color 0.2s;
-}
-.creatine-btn.done { border-color: rgba(107,227,164,0.5); background: rgba(107,227,164,0.12); color: #6BE3A4; }
-.creatine-btn.done .creatine-check { background: #6BE3A4; border-color: #6BE3A4; }
-.creatine-btn.done .creatine-check::after {
-  content: ''; position: absolute; left: 4px; top: 1px;
-  width: 4px; height: 8px;
-  border: solid #0A0A0B; border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-@media (max-width: 440px) {
-  .creatine-btn { top: 14px; right: 14px; font-size: 10.5px; padding: 6px 10px 6px 7px; }
-}
-
-/* Tile contents */
-.tile-top { display: flex; align-items: flex-start; justify-content: space-between; }
-.tile-num {
-  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
-  letter-spacing: 0.08em; color: var(--text-tertiary);
-}
-.tile-emoji {
-  font-size: 26px; line-height: 1;
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 60%, transparent));
-}
-.tile-spacer { flex: 1; }
-.tile-title {
-  font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
-  color: var(--text-primary); margin: 0 0 4px;
-}
-.tile.big .tile-title { font-size: 28px; }
-/* Hero stat — a real live number (today's split, handicap index)
-   instead of a static one-line description, matching Finance's
-   hero-number treatment for its net worth figure. */
-.tile-hero-label {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
-  color: var(--text-tertiary);
-}
-.tile-hero-val {
-  font-size: 20px; font-weight: 800; color: var(--text-primary);
-  line-height: 1.15; margin: 1px 0 2px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.tile-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.tile-sub {
-  font-size: 13px; color: var(--text-tertiary);
-}
-.tile-arrow {
-  font-size: 18px; color: var(--accent);
-  transition: transform 0.18s ease; flex-shrink: 0;
-}
-.tile:hover .tile-arrow { transform: translateX(4px); }
-
-/* ===== Main snapshot panel widgets ===== */
-.tile-top:has(.tile-title-inline) { justify-content: flex-start; gap: 10px; }
-.tile-title-inline { font-size: 20px; margin: 0; }
-
-.main-stat-row {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-  margin: 16px 0;
-}
-.main-stat {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px;
-  padding: 10px 8px;
-  text-align: center;
-}
-.main-stat-val {
-  font-size: 17px; font-weight: 700; color: var(--text-primary);
-  font-variant-numeric: tabular-nums; line-height: 1.1;
-}
-.main-stat-label {
-  font-size: 9px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
-  color: var(--text-tertiary); margin-top: 5px;
-}
-
-.main-section-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--text-tertiary); margin: 16px 0 8px;
-}
-
-.main-nw-row { display: flex; align-items: center; gap: 14px; }
-.main-nw-pie {
-  width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0;
-  background: rgba(255,255,255,0.06);
-  position: relative;
-}
-.main-nw-pie::after {
-  content: ''; position: absolute; inset: 14px;
-  border-radius: 50%; background: #0b0b0c;
-}
-.main-nw-info { min-width: 0; flex: 1; }
-.main-nw-total {
-  font-size: 20px; font-weight: 700; color: var(--text-primary);
-  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
-}
-.main-nw-legend { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
-.main-nw-legend-row {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11px; color: var(--text-tertiary);
-}
-.main-nw-legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-
-.main-empty {
-  font-size: 11px; font-style: italic; color: var(--text-tertiary);
-  padding: 4px 0 2px;
-}
-.main-empty[hidden] { display: none; }
-
-/* ===== Responsive: collapse the bento on small screens ===== */
-@media (max-width: 720px) {
-  .bento { grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(150px, auto); }
-  .tile.big { grid-column: span 2; grid-row: span 1; }
-  .tile.big .tile-title { font-size: 22px; }
-  .tile-wrap-big { grid-column: span 2; grid-row: span 1; }
-}
-@media (max-width: 440px) {
-  body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; }
-  .bento { grid-template-columns: 1fr; grid-auto-rows: minmax(132px, auto); }
-  .tile { padding: 16px; }
-  .tile.big, .tile.wide { grid-column: span 1; }
-  .tile-wrap-big { grid-column: span 1; }
-}
-
-/* ===== Desktop: 50/50 split — Main (snapshot panel) fills the left
-   half. The right half is Fitness + Golf side by side on top (each
-   a quarter of the page width) with Finance spanning full width
-   underneath. ===== */
-@media (min-width: 900px) {
-  .bento {
-    grid-template-columns: 1fr 1fr;
-    grid-auto-rows: unset;
-    grid-template-rows: 1fr;
-    align-items: stretch;
-    min-height: 640px;
-  }
-  .tile-wrap-big { grid-column: 1; grid-row: 1; }
-  .bento-right {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
-    gap: 14px;
-    grid-column: 2; grid-row: 1;
-    min-height: 0;
-  }
-  .bento-right .tile { min-height: 0; }
-  .bento-right .tile-right-nutrition { grid-column: 1 / -1; grid-row: 2; }
-  .bento-right .tile-right-big { grid-column: 1 / -1; grid-row: 3; }
-}
-
-/* ===== Header row + gear ===== */
-.hub-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-.hub-head .dash-title { margin: 0; }
+@media (max-width: 440px) { body { padding: max(20px, env(safe-area-inset-top)) 14px 50px; } }
+.hub-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+.greeting { font-family: var(--font); font-size: 26px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+.greeting-sub { font-size: 13px; color: var(--text-tertiary); margin-top: 4px; }
 .gear-btn {
-  width: 42px; height: 42px; flex-shrink: 0;
+  width: 44px; height: 44px; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 12px; border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.04); color: var(--text-secondary);
-  cursor: pointer; transition: background 0.15s, color 0.15s, transform 0.1s;
-  -webkit-tap-highlight-color: transparent;
+  border-radius: 13px; border: 1px solid var(--border-strong);
+  background: var(--card); color: var(--text-secondary);
+  cursor: pointer; box-shadow: 0 6px 16px var(--shadow-sm);
 }
-.gear-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
-.gear-btn:active { transform: scale(0.94) rotate(35deg); }
-.gear-btn svg { width: 22px; height: 22px; }
+.gear-btn svg { width: 20px; height: 20px; }
+
+/* Theme toggle — mint (dark) <-> sage (light), same page structure
+   either way. Persists to localStorage so it stays put on reload. */
+.theme-toggle {
+  width: 52px; height: 30px; flex-shrink: 0; padding: 3px;
+  border-radius: 999px; border: 1px solid var(--border-strong);
+  background: var(--card); cursor: pointer;
+  box-shadow: 0 6px 16px var(--shadow-sm);
+  display: flex; align-items: center;
+  transition: background 0.2s ease;
+}
+.theme-toggle-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--sage);
+  transition: transform 0.25s ease, background 0.2s ease;
+}
+:root[data-theme="sage"] .theme-toggle-dot { transform: translateX(22px); }
+
+.section-title {
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 28px 0 12px;
+}
+.section-title:first-of-type { margin-top: 0; }
+
+/* ===== Goals row ===== */
+.goals-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 720px) { .goals-grid { grid-template-columns: repeat(2, 1fr); } }
+.goal-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; padding: 18px;
+  box-shadow: 0 8px 24px var(--shadow-md);
+}
+.goal-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.goal-card-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.goal-card-pct { font-family: var(--font); font-size: 13px; font-weight: 800; color: var(--sage); font-variant-numeric: tabular-nums; }
+.goal-card-vals { font-size: 12px; color: var(--text-tertiary); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
+.goal-bar-track { height: 8px; border-radius: 999px; background: var(--sage-pale); overflow: hidden; }
+.goal-bar-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+.goal-edit-btn {
+  margin-top: 12px; width: 100%; padding: 8px; border-radius: 9px;
+  border: 1px solid var(--border-strong); background: transparent;
+  color: var(--text-tertiary); font-family: inherit; font-size: 11px; font-weight: 700;
+  cursor: pointer; letter-spacing: 0.02em;
+}
+.goal-edit-btn:hover { background: var(--card-soft); color: var(--text-primary); }
+.goal-edit-row { display: flex; gap: 6px; margin-top: 10px; }
+.goal-edit-row input {
+  flex: 1; min-width: 0; padding: 7px 9px; border-radius: 8px;
+  border: 1px solid var(--border-strong); font-family: inherit; font-size: 12px;
+  background: var(--card-soft); color: var(--text-primary); outline: none;
+}
+.goal-edit-row button {
+  padding: 7px 12px; border-radius: 8px; border: 0;
+  background: var(--sage); color: var(--on-accent); font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+
+/* ===== Generic card ===== */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 22px;
+  box-shadow: 0 8px 24px var(--shadow-md);
+}
+
+/* ===== Finance overview ===== */
+.fin-overview { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; }
+@media (max-width: 780px) { .fin-overview { grid-template-columns: 1fr; } }
+.fin-total-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-tertiary); }
+.fin-total-val { font-family: var(--font); font-size: 34px; font-weight: 800; color: var(--text-primary); margin-top: 4px; letter-spacing: -0.02em; }
+.fin-total-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+.fin-chart-wrap { margin-top: 16px; }
+.fin-chart-svg { width: 100%; height: 120px; display: block; overflow: visible; }
+.fin-donut-row { display: flex; align-items: center; gap: 18px; }
+.fin-donut { width: 96px; height: 96px; border-radius: 50%; flex-shrink: 0; position: relative; }
+.fin-donut::after { content: ''; position: absolute; inset: 18px; border-radius: 50%; background: var(--card-solid); }
+.fin-legend { display: flex; flex-direction: column; gap: 7px; min-width: 0; flex: 1; }
+.fin-legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+.fin-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.fin-legend-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-legend-pct { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+/* Stock holdings — folded into the same Finance overview card, not a
+   separate widget, sized to fit all of them on one banner. */
+.fin-stocks-row {
+  grid-column: 1 / -1; margin-top: 4px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.fin-stocks-row:empty { display: none; }
+.fin-stock-item {
+  display: flex; align-items: center; gap: 12px;
+}
+.fin-stock-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.fin-stock-ticker { font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
+.fin-stock-spacer { flex: 1; }
+.fin-stock-val { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; text-align: right; }
+.fin-stock-chg {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 800;
+  padding: 4px 9px; border-radius: 999px; margin-left: 10px;
+  flex-shrink: 0;
+}
+.fin-stock-chg.up { background: color-mix(in srgb, var(--positive) 16%, transparent); color: var(--positive); }
+.fin-stock-chg.down { background: color-mix(in srgb, var(--negative) 14%, transparent); color: var(--negative); }
+
+/* ===== Small tile row (Gym / Golf / Nutrition) ===== */
+.mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 720px) { .mini-grid { grid-template-columns: 1fr; } }
+.mini-tile {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; padding: 20px;
+  text-decoration: none; display: block;
+  box-shadow: 0 8px 24px var(--shadow-md);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.mini-tile:hover { transform: translateY(-2px); box-shadow: 0 12px 30px var(--shadow-lg); }
+.mini-tile-top { display: flex; align-items: center; justify-content: space-between; }
+.mini-tile-emoji { font-size: 22px; }
+.mini-tile-arrow { color: var(--text-tertiary); font-size: 16px; }
+.mini-tile-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 14px; }
+.mini-tile-val { font-family: var(--font); font-size: 24px; font-weight: 800; color: var(--text-primary); margin-top: 3px; letter-spacing: -0.02em; }
+.mini-tile-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 6px; }
 
 /* ===== Settings modal ===== */
 .modal-bg {
   position: fixed; inset: 0; z-index: 120; display: none;
   align-items: center; justify-content: center; padding: 20px;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
+:root[data-theme="sage"] .modal-bg { background: rgba(28,30,27,0.35); }
 .modal-bg.show { display: flex; }
 .modal {
   width: 100%; max-width: 460px; max-height: 88vh; overflow-y: auto;
-  background: #0e0e10; border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px; padding: 22px; box-shadow: 0 24px 70px rgba(0,0,0,0.6);
+  background: var(--card-solid); border: 1px solid var(--border);
+  border-radius: 18px; padding: 22px; box-shadow: 0 24px 70px var(--shadow-lg);
 }
 .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
 .modal-title { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
@@ -375,104 +303,41 @@ body::after {
 .field-row { display: flex; gap: 8px; align-items: center; }
 .set-input {
   flex: 1; min-width: 0; padding: 11px 13px;
-  border: 1px solid rgba(255,255,255,0.08); border-radius: 11px;
-  background: rgba(0,0,0,0.3); color: var(--text-primary);
+  border: 1px solid var(--border-strong); border-radius: 11px;
+  background: var(--card-soft); color: var(--text-primary);
   font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.2s;
 }
-.set-input:focus { border-color: rgba(255,255,255,0.28); }
-.seg { display: inline-flex; border: 1px solid rgba(255,255,255,0.10); border-radius: 11px; overflow: hidden; flex-shrink: 0; }
+.set-input:focus { border-color: var(--sage); }
+.seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 11px; overflow: hidden; flex-shrink: 0; }
 .seg button { border: 0; background: transparent; color: var(--text-tertiary); font-family: inherit; font-size: 13px; font-weight: 600; padding: 11px 14px; cursor: pointer; transition: background 0.15s, color 0.15s; }
-.seg button.on { background: rgba(255,255,255,0.12); color: var(--text-primary); }
+.seg button.on { background: var(--card-soft); color: var(--text-primary); }
 .set-save {
   width: 100%; margin-top: 6px; padding: 13px; border: 0; border-radius: 12px;
-  background: linear-gradient(180deg,#FFFFFF,#E8E5DD); color: #0A0A0B;
+  background: var(--sage); color: var(--on-accent);
   font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 22px rgba(0,0,0,0.25);
   transition: filter 0.15s, transform 0.1s;
 }
-.set-save:hover { filter: brightness(1.05); }
+.set-save:hover { filter: brightness(1.08); }
 .set-save:active { transform: translateY(1px); }
-.set-status { text-align: center; font-size: 12px; color: var(--success); min-height: 16px; margin-top: 8px; }
-.section-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 20px 0 14px; }
-.whoop-box { margin-top: 8px; padding: 16px; border-radius: 14px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.06); }
+.set-status { text-align: center; font-size: 12px; color: var(--positive); min-height: 16px; margin-top: 8px; }
+.section-divider { height: 1px; background: var(--border); margin: 20px 0 14px; }
+.whoop-box { margin-top: 8px; padding: 16px; border-radius: 14px; background: var(--card-soft); border: 1px solid var(--border); }
 .whoop-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .whoop-status { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
-.whoop-status .dot { width: 8px; height: 8px; border-radius: 50%; background: #76746E; }
-.whoop-status.on .dot { background: #6BE3A4; box-shadow: 0 0 8px rgba(107,227,164,0.7); }
+.whoop-status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-tertiary); }
+.whoop-status.on .dot { background: var(--positive); box-shadow: 0 0 8px color-mix(in srgb, var(--positive) 70%, transparent); }
 .whoop-sync { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); text-align: right; }
 .whoop-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 14px; }
 .whoop-stat { text-align: center; }
 .whoop-stat .v { font-size: 20px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1; }
 .whoop-stat .l { font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 5px; }
-.whoop-btn { width: 100%; margin-top: 14px; padding: 11px; border: 1px solid rgba(255,255,255,0.12); border-radius: 11px; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: background 0.15s, color 0.15s; }
-.whoop-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
-
-/* ===== Light theme overrides =====
-   Additive only — the rules above are untouched, so dark mode
-   (the default, no [data-theme] attribute) can't regress. */
-:root[data-theme="light"] {
-  --text-primary: #1C1B17;
-  --text-secondary: #5B584E;
-  --text-tertiary: #8A8676;
-  color-scheme: light;
-}
-[data-theme="light"] body { background: #F5F3EF; }
-[data-theme="light"] body::before {
-  background:
-    radial-gradient(circle at 82% 14%, rgba(224,118,88,0.14), transparent 45%),
-    radial-gradient(circle at 18% 90%, rgba(120,120,140,0.08), transparent 50%);
-}
-[data-theme="light"] body::after {
-  background-image: radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
-}
-[data-theme="light"] .dash-title {
-  background: linear-gradient(180deg, #1C1B17 0%, #5B584E 120%);
-  -webkit-background-clip: text; background-clip: text;
-}
-[data-theme="light"] .tile {
-  background: #FFFFFF;
-  border-color: rgba(20,18,15,0.08);
-  box-shadow: 0 12px 32px rgba(20,18,15,0.10);
-}
-[data-theme="light"] .tile:hover {
-  box-shadow: 0 16px 40px rgba(20,18,15,0.14);
-}
-[data-theme="light"] .gear-btn {
-  background: #FFFFFF;
-  border-color: rgba(20,18,15,0.12);
-}
-[data-theme="light"] .gear-btn:hover { background: #F0EEE9; }
-[data-theme="light"] .modal-bg { background: rgba(20,18,15,0.35); }
-[data-theme="light"] .modal {
-  background: #FFFFFF;
-  border-color: rgba(20,18,15,0.10);
-  box-shadow: 0 24px 60px rgba(20,18,15,0.18);
-}
-[data-theme="light"] .set-input {
-  background: #F5F3EF;
-  border-color: rgba(20,18,15,0.12);
-}
-[data-theme="light"] .set-input:focus { border-color: rgba(20,18,15,0.30); }
-[data-theme="light"] .seg { border-color: rgba(20,18,15,0.12); }
-[data-theme="light"] .seg button.on { background: rgba(20,18,15,0.10); color: var(--text-primary); }
-[data-theme="light"] .set-save {
-  background: linear-gradient(180deg,#1C1B17,#33312A);
-  color: #FAFAF8;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 20px rgba(20,18,15,0.18);
-}
-[data-theme="light"] .whoop-box {
-  background: rgba(20,18,15,0.03);
-  border-color: rgba(20,18,15,0.08);
-}
-[data-theme="light"] .whoop-btn { border-color: rgba(20,18,15,0.14); }
-[data-theme="light"] .whoop-btn:hover { background: rgba(20,18,15,0.05); }
-[data-theme="light"] .section-divider { background: rgba(20,18,15,0.08); }
+.whoop-btn { width: 100%; margin-top: 14px; padding: 11px; border: 1px solid var(--border-strong); border-radius: 11px; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.whoop-btn:hover { background: var(--card-soft); color: var(--text-primary); }
 </style>
 </head>
 <body>
 <!-- ===== Vitality atmospheric backdrop (aurora · mountains · particles) —
-     same system as the Finance page, toned down, so the hub and
-     Finance feel like one app. ===== -->
+     same system as the Finance page, re-themed per palette. ===== -->
 <div id="vty-backdrop" aria-hidden="true">
   <div class="vty-atmosphere"></div>
   <div class="vty-mountains">
@@ -499,125 +364,67 @@ body::after {
 <div class="page">
 
   <div class="hub-head">
-    <h1 class="dash-title">Nicks Dashboard</h1>
-    <button class="gear-btn" id="settingsOpen" type="button" aria-label="Settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
-    </button>
-  </div>
-
-  <div class="bento">
-
-    <!-- Big tile — a snapshot panel, not a link (yet) -->
-    <div class="tile-wrap tile-wrap-big">
-      <div class="tile big tile-noclick" style="--accent:#6BE3A4">
-        <div class="tile-top">
-          <span class="tile-num">·01</span>
-          <span class="tile-emoji">🏠</span>
-          <h2 class="tile-title tile-title-inline">Main</h2>
-        </div>
-
-        <div class="main-stat-row">
-          <div class="main-stat">
-            <div class="main-stat-val" id="mainStatDay">—</div>
-            <div class="main-stat-label">Day</div>
-          </div>
-          <div class="main-stat">
-            <div class="main-stat-val" id="mainStatFitness">—</div>
-            <div class="main-stat-label">Fitness</div>
-          </div>
-          <div class="main-stat">
-            <div class="main-stat-val" id="mainStatGolf">—</div>
-            <div class="main-stat-label">Golf HCP</div>
-          </div>
-        </div>
-
-        <div class="main-section-label">Net worth</div>
-        <div class="main-nw-row">
-          <div class="main-nw-pie" id="mainNwPie"></div>
-          <div class="main-nw-info">
-            <div class="main-nw-total" id="mainNwTotal">—</div>
-            <div class="main-nw-legend" id="mainNwLegend"></div>
-          </div>
-        </div>
-
-        <div class="main-section-label">Stocks</div>
-        <div class="stock-snapshot" id="stockSnapshot" hidden></div>
-        <div class="main-empty" id="mainStockEmpty">No live-priced holdings yet</div>
-      </div>
-      <button type="button" class="creatine-btn" id="creatineBtn" aria-label="Mark today's creatine as taken">
-        <span class="creatine-check" id="creatineCheck"></span>
-        <span>Creatine 5g</span>
+    <div>
+      <div class="greeting">Hello, Nick!</div>
+      <div class="greeting-sub" id="dateSub">—</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="theme-toggle" type="button" id="themeToggle" aria-label="Toggle color theme">
+        <span class="theme-toggle-dot"></span>
+      </button>
+      <button class="gear-btn" id="settingsOpen" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
       </button>
     </div>
-
-    <div class="bento-right">
-
-    <!-- Top-right: Fitness + Golf side by side -->
-    <a class="tile tile-right-small" href="gym.html" style="--accent:#7DD3FC">
-      <div class="tile-top">
-        <span class="tile-num">·02</span>
-        <span class="tile-emoji">💪</span>
-      </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Fitness</h2>
-      <div class="tile-hero-label">Today</div>
-      <div class="tile-hero-val" id="fitnessHeroStat">—</div>
-      <div class="tile-foot">
-        <span class="tile-sub">Workouts &amp; splits</span>
-        <span class="tile-arrow">→</span>
-      </div>
-    </a>
-
-    <a class="tile tile-right-small" href="golf.html" style="--accent:#6EE7B7">
-      <div class="tile-top">
-        <span class="tile-num">·04</span>
-        <span class="tile-emoji">⛳</span>
-      </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Golf</h2>
-      <div class="tile-hero-label">Handicap</div>
-      <div class="tile-hero-val" id="golfHeroStat">—</div>
-      <div class="tile-foot">
-        <span class="tile-sub">Rounds &amp; trend</span>
-        <span class="tile-arrow">→</span>
-      </div>
-    </a>
-
-    <!-- Nutrition, full width of the right column -->
-    <a class="tile wide tile-right-nutrition" href="nutrition.html" style="--accent:#C9B8FF">
-      <div class="tile-top">
-        <span class="tile-num">·05</span>
-        <span class="tile-emoji">🥗</span>
-      </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Nutrition</h2>
-      <div class="tile-hero-label">Today</div>
-      <div class="tile-hero-val" id="nutritionHeroStat">—</div>
-      <div class="tile-foot">
-        <span class="tile-sub">Calorie &amp; macro goals</span>
-        <span class="tile-arrow">→</span>
-      </div>
-    </a>
-
-    <!-- Bottom: Finance, full width of the right column -->
-    <a class="tile wide tile-right-big" href="FROK-finance-standalone.html" style="--accent:#F2C063">
-      <div class="tile-top">
-        <span class="tile-num">·03</span>
-        <span class="tile-emoji">📊</span>
-      </div>
-      <div class="tile-spacer"></div>
-      <h2 class="tile-title">Finance</h2>
-      <div class="tile-foot">
-        <span class="tile-sub" id="tileInsightFinance">Net worth & spending</span>
-        <span class="tile-arrow">→</span>
-      </div>
-    </a>
-
-    </div>
   </div>
+
+  <div class="section-title">Goals</div>
+  <div class="goals-grid" id="goalsGrid"></div>
+
+  <div class="section-title">Finance overview</div>
+  <a class="card" href="FROK-finance-standalone.html" style="text-decoration:none; display:block;">
+    <div class="fin-overview">
+      <div>
+        <div class="fin-total-label">Net worth</div>
+        <div class="fin-total-val" id="finTotal">—</div>
+        <div class="fin-total-sub" id="finBreakdown"></div>
+        <div class="fin-chart-wrap">
+          <svg class="fin-chart-svg" id="finChartSvg" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div class="fin-donut-row">
+        <div class="fin-donut" id="finDonut"></div>
+        <div class="fin-legend" id="finLegend"></div>
+      </div>
+      <div class="fin-stocks-row" id="finStocksRow"></div>
+    </div>
+  </a>
+
+  <div class="section-title">Fitness, golf &amp; nutrition</div>
+  <div class="mini-grid">
+    <a class="mini-tile" href="gym.html">
+      <div class="mini-tile-top"><span class="mini-tile-emoji">💪</span><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Today</div>
+      <div class="mini-tile-val" id="gymVal">—</div>
+      <div class="mini-tile-sub">Fitness split</div>
+    </a>
+    <a class="mini-tile" href="golf.html">
+      <div class="mini-tile-top"><span class="mini-tile-emoji">⛳</span><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Handicap</div>
+      <div class="mini-tile-val" id="golfVal">—</div>
+      <div class="mini-tile-sub">Rounds &amp; trend</div>
+    </a>
+    <a class="mini-tile" href="nutrition.html">
+      <div class="mini-tile-top"><span class="mini-tile-emoji">🥗</span><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Today</div>
+      <div class="mini-tile-val" id="nutVal">—</div>
+      <div class="mini-tile-sub">Goals hit</div>
+    </a>
+  </div>
+
 </div>
 
 <!-- ===== Settings / Your Data ===== -->
@@ -689,6 +496,308 @@ body::after {
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  function readJSON(key, fallback) { try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; } catch (e) { return fallback; } }
+  function writeJSON(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
+
+  // ============================================================
+  // THEME TOGGLE — mint (dark, default) <-> sage (light). Same
+  // markup/structure either way, just swapping which CSS variable
+  // values are in effect via [data-theme]. Persisted so it survives
+  // a reload.
+  // ============================================================
+  const THEME_KEY = 'dash:colorTheme';
+  function applyTheme(theme) {
+    if (theme === 'sage') document.documentElement.setAttribute('data-theme', 'sage');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  const savedTheme = localStorage.getItem(THEME_KEY) || 'mint';
+  applyTheme(savedTheme);
+  $('themeToggle').addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'sage' ? 'mint' : 'sage';
+    applyTheme(next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  });
+
+  const dows = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const now = new Date();
+  $('dateSub').textContent = dows[now.getDay()] + ', ' + mons[now.getMonth()] + ' ' + now.getDate();
+
+  // ============================================================
+  // GOALS — savings/stock read from Finance's own categories;
+  // handicap/weight use a direction-agnostic "distance covered"
+  // formula, auto-capturing a start value the first time a target
+  // is set so lower-is-better (handicap) and either-direction
+  // (weight) goals both just work.
+  // ============================================================
+  const GOALS_KEY = 'goals:targets';
+  // handicapStart/weightStart are real historical baselines (confirmed:
+  // handicap started at 25, weight at 78) — not auto-captured from
+  // wherever you happen to be right now, so the bar actually shows how
+  // far you've already come, not a bar that starts empty forever.
+  const DEFAULT_GOALS = { savings: 15000, stock: 15000, handicap: 15, weight: 83, handicapStart: 25, weightStart: 78 };
+
+  function loadGoals() {
+    const g = readJSON(GOALS_KEY, null);
+    const merged = (g && typeof g === 'object') ? Object.assign({}, DEFAULT_GOALS, g) : Object.assign({}, DEFAULT_GOALS);
+    // Starting baselines are fixed historical facts (handicap started at
+    // 25, weight at 78), not something that should ever come from a
+    // stale stored value — an earlier build auto-captured "wherever you
+    // are right now" as the start, which got saved to localStorage and
+    // would otherwise silently keep overriding the real baseline forever.
+    merged.handicapStart = DEFAULT_GOALS.handicapStart;
+    merged.weightStart = DEFAULT_GOALS.weightStart;
+    return merged;
+  }
+  function saveGoals(g) { writeJSON(GOALS_KEY, g); }
+
+  // Same currency the Finance page displays in — nw:* amounts are
+  // stored in CHF internally, so convert before comparing to a target
+  // you set in your real display currency (AUD).
+  function displayCcy() {
+    const ccy = readJSON('nw_currency', 'AUD');
+    const rates = readJSON('fx:rates', { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 });
+    return { ccy, rate: rates[ccy] || 1 };
+  }
+  function nwCategoryTotal(catKey) {
+    const items = readJSON('nw:' + catKey, []);
+    if (!Array.isArray(items)) return 0;
+    const totalCHF = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+    return totalCHF * displayCcy().rate;
+  }
+  function currentHandicap() {
+    const rounds = readJSON('golf:rounds', []);
+    if (!Array.isArray(rounds) || !rounds.length) return null;
+    const comparable = rounds.slice()
+      .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0))
+      .slice(0, 20)
+      .map(r => typeof r.differential === 'number' ? (r.holes === 9 ? r.differential * 2 : r.differential) : null)
+      .filter(d => typeof d === 'number');
+    if (comparable.length < 3) return null;
+    const best = comparable.slice().sort((a, b) => a - b).slice(0, Math.min(8, comparable.length));
+    return Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
+  }
+  function currentWeight() {
+    const arr = readJSON('po_coach_weights', []);
+    if (!Array.isArray(arr) || !arr.length) return null;
+    const sorted = arr.slice().sort((a, b) => (a.dateKey || '').localeCompare(b.dateKey || ''));
+    return sorted[sorted.length - 1].weight;
+  }
+
+  // Simple current/target ratio, capped 0-100%.
+  function ratioProgress(current, target) {
+    if (!(target > 0)) return 0;
+    return Math.max(0, Math.min(100, (current / target) * 100));
+  }
+  // Distance-covered progress: works whether current needs to go up or
+  // down to reach target, using a captured starting point.
+  function distanceProgress(start, current, target) {
+    if (start == null || current == null || start === target) return 0;
+    const pct = ((start - current) / (start - target)) * 100;
+    return Math.max(0, Math.min(100, pct));
+  }
+
+  const GOAL_DEFS = [
+    {
+      key: 'savings', label: 'Savings', color: '#4C7A5B',
+      current: () => nwCategoryTotal('bank'),
+      target: (g) => g.savings,
+      progress: (g, cur) => ratioProgress(cur, g.savings),
+      fmt: (v) => displayCcy().ccy + ' ' + Math.round(v).toLocaleString()
+    },
+    {
+      key: 'stock', label: 'Stock amount', color: '#4F7FBF',
+      current: () => nwCategoryTotal('stocks'),
+      target: (g) => g.stock,
+      progress: (g, cur) => ratioProgress(cur, g.stock),
+      fmt: (v) => displayCcy().ccy + ' ' + Math.round(v).toLocaleString()
+    },
+    {
+      key: 'handicap', label: 'Golf handicap', color: '#C99A44',
+      current: () => currentHandicap(),
+      target: (g) => g.handicap,
+      progress: (g, cur) => distanceProgress(g.handicapStart, cur == null ? g.handicapStart : cur, g.handicap),
+      fmt: (v) => v == null ? 'no rounds yet' : v.toFixed(1)
+    },
+    {
+      key: 'weight', label: 'Body weight', color: '#8A6BB5',
+      current: () => currentWeight(),
+      target: (g) => g.weight,
+      progress: (g, cur) => distanceProgress(g.weightStart, cur == null ? g.weightStart : cur, g.weight),
+      fmt: (v) => v == null ? 'no weigh-ins yet' : v + ' kg'
+    }
+  ];
+
+  let editingGoal = null;
+
+  function renderGoals() {
+    const goals = loadGoals();
+    $('goalsGrid').innerHTML = GOAL_DEFS.map(def => {
+      const cur = def.current();
+      const pct = Math.round(def.progress(goals, cur));
+      const isEditing = editingGoal === def.key;
+      return '<div class="goal-card" data-key="' + def.key + '">'
+        + '<div class="goal-card-top"><span class="goal-card-label">' + def.label + '</span><span class="goal-card-pct">' + pct + '%</span></div>'
+        + '<div class="goal-card-vals">' + def.fmt(cur) + ' &rarr; ' + def.fmt(def.target(goals)) + '</div>'
+        + '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%;background:' + def.color + '"></div></div>'
+        + (isEditing
+            ? '<div class="goal-edit-row"><input type="number" inputmode="decimal" id="goalInput_' + def.key + '" value="' + def.target(goals) + '"><button type="button" data-save="' + def.key + '">Save</button></div>'
+            : '<button type="button" class="goal-edit-btn" data-edit="' + def.key + '">Edit target</button>')
+        + '</div>';
+    }).join('');
+
+    $('goalsGrid').querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => { editingGoal = btn.dataset.edit; renderGoals(); });
+    });
+    $('goalsGrid').querySelectorAll('[data-save]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.save;
+        const val = parseFloat($('goalInput_' + key).value);
+        const g = loadGoals();
+        if (!isNaN(val) && val > 0) {
+          g[key] = val;
+          saveGoals(g);
+        }
+        editingGoal = null;
+        renderGoals();
+      });
+    });
+  }
+
+  // ============================================================
+  // FINANCE OVERVIEW — same net-worth/pie logic as the real
+  // dashboard, plus a small trend line from nw:history.
+  // ============================================================
+  function renderFinance() {
+    const CAT_KEYS = ['bank', 'stocks', 'crypto', 'other'];
+    const PALETTE = ['#4C7A5B', '#4F7FBF', '#8A6BB5', '#C99A44', '#C2554B', '#5F7A63', '#7A9A4A', '#3F5443'];
+    function defaultColor(catKey, it) {
+      const seed = catKey + ':' + (it.ticker || it.name || '');
+      let hash = 0;
+      for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+      return PALETTE[hash % PALETTE.length];
+    }
+    let total = 0;
+    const slices = [];
+    CAT_KEYS.forEach(catKey => {
+      const items = readJSON('nw:' + catKey, []);
+      if (!Array.isArray(items)) return;
+      items.forEach(it => {
+        const amt = Number(it.amount) || 0;
+        if (amt <= 0) return;
+        total += amt;
+        slices.push({ name: it.name || catKey, color: it.color || defaultColor(catKey, it), amount: amt });
+      });
+    });
+    const ccy = readJSON('nw_currency', 'AUD');
+    const rates = readJSON('fx:rates', { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 });
+    const rate = rates[ccy] || 1;
+    const displayTotal = total * rate;
+    $('finTotal').textContent = total > 0 ? (ccy + ' ' + Math.round(displayTotal).toLocaleString('en-US')) : '—';
+    const bank = nwCategoryTotal('bank'), stocks = nwCategoryTotal('stocks');
+    $('finBreakdown').textContent = total > 0 ? ('bank ' + ccy + ' ' + Math.round(bank).toLocaleString('en-US') + ' · stocks ' + ccy + ' ' + Math.round(stocks).toLocaleString('en-US')) : 'No holdings logged yet';
+
+    slices.sort((a, b) => b.amount - a.amount);
+    const donutEl = $('finDonut');
+    if (slices.length && total > 0) {
+      let acc = 0;
+      const stops = slices.map(s => {
+        const from = (acc / total) * 100; acc += s.amount; const to = (acc / total) * 100;
+        return s.color + ' ' + from.toFixed(2) + '% ' + to.toFixed(2) + '%';
+      });
+      donutEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
+    } else {
+      donutEl.style.background = 'var(--card-soft)';
+    }
+    const shown = slices.slice(0, 5);
+    const rest = slices.length - shown.length;
+    $('finLegend').innerHTML = shown.map(s => {
+      const pct = Math.round((s.amount / total) * 100);
+      return '<div class="fin-legend-row"><span class="fin-legend-dot" style="background:' + s.color + '"></span>'
+        + '<span class="fin-legend-name">' + s.name + '</span><span class="fin-legend-pct">' + pct + '%</span></div>';
+    }).join('') + (rest > 0 ? '<div class="fin-legend-row"><span class="fin-legend-name">+' + rest + ' more</span></div>' : '');
+
+    // Trend line from nw:history (CHF-based snapshots)
+    const hist = readJSON('nw:history', []);
+    const svg = $('finChartSvg');
+    if (!Array.isArray(hist) || hist.length < 2) { svg.innerHTML = ''; return; }
+    const vals = hist.map(h => h.v);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const range = Math.max(1, max - min);
+    const W = 300, H = 100, pad = 4;
+    const x = (i) => pad + (i / (hist.length - 1)) * (W - pad * 2);
+    const y = (v) => H - pad - ((v - min) / range) * (H - pad * 2);
+    const lineD = hist.map((h, i) => (i === 0 ? 'M' : 'L') + x(i).toFixed(1) + ',' + y(h.v).toFixed(1)).join(' ');
+    const areaD = lineD + ' L' + x(hist.length - 1).toFixed(1) + ',' + H + ' L' + x(0).toFixed(1) + ',' + H + ' Z';
+    svg.innerHTML =
+      '<defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1">'
+      + '<stop offset="0%" stop-color="#4C7A5B" stop-opacity="0.28"/><stop offset="100%" stop-color="#4C7A5B" stop-opacity="0"/>'
+      + '</linearGradient></defs>'
+      + '<path d="' + areaD + '" fill="url(#finAreaGrad)"></path>'
+      + '<path d="' + lineD + '" fill="none" stroke="#4C7A5B" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>';
+  }
+
+  // ============================================================
+  // GYM / GOLF / NUTRITION mini tiles
+  // ============================================================
+  function renderMiniTiles() {
+    const s = readJSON('po_coach_v1', null);
+    if (s && Array.isArray(s.weekdaySplit) && s.weekdaySplit.length === 7) {
+      $('gymVal').textContent = s.weekdaySplit[new Date().getDay()] || '—';
+    }
+    const hcp = currentHandicap();
+    $('golfVal').textContent = hcp == null ? '—' : hcp.toFixed(1);
+
+    const MACRO_KEYS = ['calories', 'protein', 'carbs', 'fibre', 'fat'];
+    const d = new Date();
+    const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const log = readJSON('nutrition:log', {});
+    const today = (log && typeof log === 'object') ? (log[dk] || {}) : {};
+    const hit = MACRO_KEYS.filter(k => today[k] === 'hit').length;
+    $('nutVal').textContent = hit + '/' + MACRO_KEYS.length;
+  }
+
+  // ============================================================
+  // STOCK HOLDINGS — the actual tickers you're invested in, folded
+  // into the Finance overview card below the chart/donut (not a
+  // separate widget). Value = your real position size (units x live
+  // price, same as Finance's own math, converted to display
+  // currency); movement = the live day-change% from stocks:snapshot,
+  // the same cache FROK-finance-standalone.html's refresh writes.
+  // ============================================================
+  function renderStockHoldings() {
+    const row = $('finStocksRow');
+    if (!row) return;
+    const items = readJSON('nw:stocks', []);
+    const snap = readJSON('stocks:snapshot', {});
+    const { ccy, rate } = displayCcy();
+    const held = (Array.isArray(items) ? items : []).filter(it => it.ticker && (Number(it.amount) || 0) > 0);
+    if (!held.length) { row.innerHTML = ''; return; }
+    row.innerHTML = held.slice(0, 3).map(it => {
+      const q = snap[it.ticker] || {};
+      const chg = typeof q.changePercent === 'number' ? q.changePercent : null;
+      const up = chg == null || chg >= 0;
+      const valStr = ccy + ' ' + Math.round((Number(it.amount) || 0) * rate).toLocaleString('en-US');
+      const chgStr = chg == null ? '—' : (up ? '+' : '') + chg.toFixed(2) + '%';
+      return '<div class="fin-stock-item">'
+        + '<div><div class="fin-stock-name">' + it.name + '</div><div class="fin-stock-ticker">' + it.ticker + '</div></div>'
+        + '<div class="fin-stock-spacer"></div>'
+        + '<div class="fin-stock-val">' + valStr + '</div>'
+        + '<div class="fin-stock-chg ' + (up ? 'up' : 'down') + '">' + chgStr + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function renderAll() { renderGoals(); renderFinance(); renderStockHoldings(); renderMiniTiles(); }
+  renderAll();
+  window.addEventListener('storage', renderAll);
+})();
+</script>
 
 <script>
 (function () {
@@ -863,206 +972,6 @@ body::after {
     if (!t || !t.access) { window.location.href = 'health.html'; return; }
     $('whAction').textContent = 'Syncing…'; syncWhoop();
   });
-})();
-</script>
-
-<!-- ===== Tile insights — a quick read of each page's live localStorage
-     state, since everything here shares one origin. Best-effort: any
-     page that hasn't been opened yet just falls back to its default
-     copy rather than showing an error. ===== -->
-<script>
-(function () {
-  'use strict';
-  function readJSON(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
-  function todayKey() {
-    const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
-
-  // ---- Creatine checker — tap to mark today's 5g as taken ----
-  (function () {
-    const btn = document.getElementById('creatineBtn');
-    if (!btn) return;
-    const KEY = 'creatine:lastTakenDate';
-    function render() {
-      const done = localStorage.getItem(KEY) === todayKey();
-      btn.classList.toggle('done', done);
-      btn.querySelector('span:last-child').textContent = done ? 'Creatine taken' : 'Creatine 5g';
-    }
-    btn.addEventListener('click', () => {
-      const done = localStorage.getItem(KEY) === todayKey();
-      try {
-        if (done) localStorage.removeItem(KEY);
-        else localStorage.setItem(KEY, todayKey());
-      } catch (e) {}
-      render();
-    });
-    render();
-  })();
-
-  // ---- Day progress (mirrors main.html's day ring) ----
-  (function () {
-    const WAKE_HOUR = 6, SLEEP_HOUR = 21.5; // 6:00 AM – 9:30 PM
-    const now = new Date();
-    const hours = now.getHours() + now.getMinutes() / 60;
-    const el = document.getElementById('mainStatDay');
-    if (!el) return;
-    if (hours < WAKE_HOUR) { el.textContent = '😴'; return; }
-    if (hours >= SLEEP_HOUR) { el.textContent = '🌙'; return; }
-    const percent = (hours - WAKE_HOUR) / (SLEEP_HOUR - WAKE_HOUR) * 100;
-    el.textContent = Math.floor(percent) + '%';
-  })();
-
-  // ---- Fitness: today's split day, from gym.html's rotation state ----
-  (function () {
-    const heroEl = document.getElementById('fitnessHeroStat');
-    const statEl = document.getElementById('mainStatFitness');
-    const s = readJSON('po_coach_v1');
-    if (!s || !Array.isArray(s.splitRotation) || !s.splitRotation.length || !s.splitAnchor) return;
-    try {
-      const rot = s.splitRotation;
-      const a = new Date(s.splitAnchor.date);
-      const t = new Date();
-      a.setHours(0,0,0,0); t.setHours(0,0,0,0);
-      const diffDays = Math.round((t - a) / 86400000);
-      const idx = ((s.splitAnchor.index + diffDays) % rot.length + rot.length) % rot.length;
-      if (heroEl) heroEl.textContent = rot[idx];
-      if (statEl) statEl.textContent = rot[idx];
-    } catch (e) {}
-  })();
-
-  // ---- Nutrition: today's hit count, same keys as nutrition.html ----
-  (function () {
-    const heroEl = document.getElementById('nutritionHeroStat');
-    if (!heroEl) return;
-    const MACRO_KEYS = ['calories', 'protein', 'carbs', 'fibre', 'fat'];
-    const d = new Date();
-    const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    const log = readJSON('nutrition:log');
-    const today = (log && typeof log === 'object') ? (log[dk] || {}) : {};
-    const hit = MACRO_KEYS.filter(k => today[k] === 'hit').length;
-    heroEl.textContent = hit + '/' + MACRO_KEYS.length;
-  })();
-
-  // ---- Golf: rough handicap index, same calc as golf.html ----
-  (function () {
-    const heroEl = document.getElementById('golfHeroStat');
-    const statEl = document.getElementById('mainStatGolf');
-    const rounds = readJSON('golf:rounds');
-    if (!Array.isArray(rounds) || !rounds.length) { if (heroEl) heroEl.textContent = 'No rounds yet'; return; }
-    const comparable = rounds
-      .slice()
-      .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0))
-      .slice(0, 20)
-      .map(r => typeof r.differential === 'number' ? (r.holes === 9 ? r.differential * 2 : r.differential) : null)
-      .filter(d => typeof d === 'number');
-    if (comparable.length < 3) {
-      if (heroEl) heroEl.textContent = comparable.length + '/3 rounds';
-      if (statEl) statEl.textContent = comparable.length + '/3';
-      return;
-    }
-    const best = comparable.slice().sort((a, b) => a - b).slice(0, Math.min(8, comparable.length));
-    const avg = Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
-    if (heroEl) heroEl.textContent = '~' + avg;
-    if (statEl) statEl.textContent = '~' + avg;
-  })();
-
-  // ---- Net worth: total + per-holding breakdown, for both the Finance
-  // tile's one-liner and Main's pie chart. Each individual holding gets
-  // its own pie slice (not just one slice per category) — colour is
-  // whatever was customized on the Finance page (item.color), or a
-  // stable default derived from the same name/ticker hash finance.html
-  // uses, so an uncoloured item's default matches on both pages. ----
-  (function () {
-    const finEl = document.getElementById('tileInsightFinance');
-    const pieEl = document.getElementById('mainNwPie');
-    const totalEl = document.getElementById('mainNwTotal');
-    const legendEl = document.getElementById('mainNwLegend');
-    const CAT_KEYS = ['bank', 'stocks', 'crypto', 'other'];
-    const PALETTE = ['#7DD3FC','#6EE7B7','#C9B8FF','#F2C063','#FF8A8A','#F472B6','#FCD34D','#34D399','#A78BFA','#60A5FA','#FB923C','#4ADE80'];
-    function defaultColor(catKey, it) {
-      const seed = catKey + ':' + (it.ticker || it.name || '');
-      let hash = 0;
-      for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-      return PALETTE[hash % PALETTE.length];
-    }
-
-    let total = 0;
-    const slices = [];
-    CAT_KEYS.forEach(catKey => {
-      const items = readJSON('nw:' + catKey);
-      if (!Array.isArray(items)) return;
-      items.forEach(it => {
-        const amt = Number(it.amount) || 0;
-        if (amt <= 0) return;
-        total += amt;
-        slices.push({ name: it.name || catKey, color: it.color || defaultColor(catKey, it), amount: amt });
-      });
-    });
-    if (total <= 0) return;
-
-    // Display currency: whatever's set on the Finance page (defaults to
-    // AUD), converted from the CHF-base amounts via the same exchange
-    // rates the Finance page fetched (cached to fx:rates for us).
-    const ccy = readJSON('nw_currency') || 'AUD';
-    const rates = readJSON('fx:rates') || { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 };
-    const rate = rates[ccy] || 1;
-    const displayTotal = total * rate;
-    const totalStr = ccy + ' ' + Math.round(displayTotal).toLocaleString('en-US');
-
-    if (finEl) finEl.textContent = 'Net worth: ' + totalStr;
-    if (totalEl) totalEl.textContent = totalStr;
-
-    slices.sort((a, b) => b.amount - a.amount);
-
-    if (pieEl) {
-      let acc = 0;
-      const stops = slices.map(s => {
-        const from = (acc / total) * 100;
-        acc += s.amount;
-        const to = (acc / total) * 100;
-        return s.color + ' ' + from.toFixed(2) + '% ' + to.toFixed(2) + '%';
-      });
-      if (stops.length) pieEl.style.background = 'conic-gradient(' + stops.join(', ') + ')';
-    }
-    if (legendEl) {
-      // Cap the legend so a long holdings list doesn't blow out the tile —
-      // the pie itself still reflects every slice.
-      const shown = slices.slice(0, 6);
-      const rest = slices.length - shown.length;
-      legendEl.innerHTML = shown.map(s => {
-        const pct = Math.round((s.amount / total) * 100);
-        return '<div class="main-nw-legend-row">' +
-          '<span class="main-nw-legend-dot" style="background:' + s.color + '"></span>' +
-          '<span>' + s.name + ' ' + pct + '%</span>' +
-        '</div>';
-      }).join('') + (rest > 0 ? '<div class="main-nw-legend-row"><span>+' + rest + ' more</span></div>' : '');
-    }
-  })();
-
-  // ---- Stocks: snapshot from whatever the Finance page last fetched
-  // (stocks:snapshot, written by FROK-finance-standalone.html whenever
-  // it refreshes live prices). Shows up to 3 tickers, on the Main tile. ----
-  (function () {
-    const wrap = document.getElementById('stockSnapshot');
-    const empty = document.getElementById('mainStockEmpty');
-    if (!wrap) return;
-    const snap = readJSON('stocks:snapshot');
-    const rows = (snap && typeof snap === 'object') ? Object.entries(snap).slice(0, 3) : [];
-    if (!rows.length) { if (empty) empty.hidden = false; return; }
-    wrap.innerHTML = rows.map(([ticker, q]) => {
-      const up = (q.changePercent || 0) >= 0;
-      const price = (typeof q.price === 'number') ? q.price.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '—';
-      const chg = (typeof q.changePercent === 'number') ? (up ? '+' : '') + q.changePercent.toFixed(2) + '%' : '—';
-      return '<div class="stock-snapshot-row">' +
-        '<span class="stock-snapshot-ticker">' + ticker + '</span>' +
-        '<span class="stock-snapshot-price">' + (q.currency || '') + ' ' + price + '</span>' +
-        '<span class="stock-snapshot-chg ' + (up ? 'up' : 'down') + '">' + chg + '</span>' +
-      '</div>';
-    }).join('');
-    wrap.removeAttribute('hidden');
-    if (empty) empty.hidden = true;
-  })();
 })();
 </script>
 

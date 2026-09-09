@@ -249,7 +249,15 @@ body { min-height: 100vh; padding: max(24px, env(safe-area-inset-top)) 18px 60px
 
   function loadGoals() {
     const g = readJSON(GOALS_KEY, null);
-    return (g && typeof g === 'object') ? Object.assign({}, DEFAULT_GOALS, g) : Object.assign({}, DEFAULT_GOALS);
+    const merged = (g && typeof g === 'object') ? Object.assign({}, DEFAULT_GOALS, g) : Object.assign({}, DEFAULT_GOALS);
+    // Starting baselines are fixed historical facts (handicap started at
+    // 25, weight at 78), not something that should ever come from a
+    // stale stored value — an earlier build auto-captured "wherever you
+    // are right now" as the start, which got saved to localStorage and
+    // would otherwise silently keep overriding the real baseline forever.
+    merged.handicapStart = DEFAULT_GOALS.handicapStart;
+    merged.weightStart = DEFAULT_GOALS.weightStart;
+    return merged;
   }
   function saveGoals(g) { writeJSON(GOALS_KEY, g); }
 
