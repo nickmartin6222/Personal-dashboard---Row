@@ -144,6 +144,16 @@ button { font-family: inherit; }
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3);
 }
 
+/* ---------- coach summary (progressive-overload digest) ---------- */
+.coach-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.coach-row { padding: 9px 0; border-bottom: 1px solid var(--border); }
+.coach-row:last-child { border-bottom: none; }
+.coach-name { font-size: 12.5px; font-weight: 700; overflow-wrap: anywhere; }
+.coach-last { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+.coach-rx { font-size: 11.5px; font-weight: 700; margin-top: 3px; color: var(--text-2); }
+.coach-rx[data-type="up"] { color: var(--lime); }
+.coach-rx[data-type="down"] { color: var(--bad); }
+
 /* ---------- weight tile (compact) ---------- */
 .wcard { padding: 14px 16px; }
 .wcard-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
@@ -332,6 +342,11 @@ button { font-family: inherit; }
 .set-edit-save, .set-edit-cancel { border: none; border-radius: 7px; padding: 5px 9px; font-size: 11px; font-weight: 700; cursor: pointer; }
 .set-edit-save { background: var(--lime); color: var(--lime-ink); }
 .set-edit-cancel { background: var(--bg-raised); color: var(--text-3); }
+.delete-session-btn {
+  width: 100%; margin: 2px 0 10px; padding: 9px; border-radius: var(--r-sm);
+  border: 1px solid rgba(255,138,138,0.3); background: rgba(255,138,138,0.08);
+  color: var(--bad); font-size: 12px; font-weight: 700; cursor: pointer;
+}
 
 .view-all-btn {
   width: 100%; margin-top: 10px; padding: 10px; border-radius: var(--r-sm);
@@ -395,6 +410,21 @@ button { font-family: inherit; }
 .eh-stat-label { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); }
 .eh-stat-val { font-size: 15px; font-weight: 800; margin-top: 3px; overflow-wrap: anywhere; }
 .eh-chart { width: 100%; height: auto; display: block; margin-top: 4px; }
+.eh-sample-note {
+  font-size: 11px; color: var(--text-3); background: var(--bg-raised); border-radius: var(--r-sm);
+  padding: 8px 10px; margin-bottom: 12px; line-height: 1.4;
+}
+
+/* ---------- shared interactive-chart tooltip (score / volume / exercise history) ---------- */
+.chart-wrap { position: relative; }
+.chart-tooltip {
+  position: absolute; top: -6px; transform: translate(-50%, -100%);
+  background: var(--bg-card-2); border: 1px solid var(--border-strong);
+  border-radius: 8px; padding: 6px 9px; font-size: 11.5px; white-space: nowrap;
+  pointer-events: none; box-shadow: 0 6px 18px rgba(0,0,0,0.35); z-index: 5; max-width: 90vw;
+}
+.chart-tooltip .tt-val { font-weight: 800; }
+.chart-tooltip .tt-date { color: var(--text-3); font-size: 10.5px; margin-top: 1px; }
 
 /* ---------- muscle anatomy ---------- */
 .anatomy-toggle { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -492,6 +522,13 @@ button { font-family: inherit; }
     <div class="date-strip" id="dateStrip"></div>
   </div>
 
+  <!-- COACH — progressive-overload summary for today's plan, built from
+       what was actually logged last time this exercise came up. -->
+  <section class="card coach-card" id="coachCard" hidden>
+    <div class="card-eyebrow">COACH — BASED ON LAST TIME</div>
+    <ul class="coach-list" id="coachList"></ul>
+  </section>
+
   <!-- 2. WEIGHT (compact tile) -->
   <section class="card wcard">
     <div class="wcard-top">
@@ -531,7 +568,7 @@ button { font-family: inherit; }
         <span class="score-num" id="scoreNum">—</span>
         <span class="score-word" id="scoreWord" data-level="excellent">—</span>
       </div>
-      <div class="score-chart-wrap"><svg id="scoreChart" viewBox="0 0 200 44" preserveAspectRatio="none" width="100%" height="44"></svg></div>
+      <div class="score-chart-wrap chart-wrap"><svg id="scoreChart" viewBox="0 0 200 44" preserveAspectRatio="none" width="100%" height="44"></svg><div class="chart-tooltip" id="scoreTooltip" hidden></div></div>
       <div class="score-delta" id="scoreDelta"></div>
     </section>
 
@@ -552,9 +589,10 @@ button { font-family: inherit; }
           <div class="stat-tile-val" id="sTime">—</div>
         </div>
         <div class="volume-expand" id="volumeExpand" hidden>
-          <div class="volume-expand-inner">
+          <div class="volume-expand-inner chart-wrap">
             <div class="volume-expand-label">Volume — last 8 weeks</div>
             <svg class="volume-chart" id="volumeChart" viewBox="0 0 300 52" preserveAspectRatio="none"></svg>
+            <div class="chart-tooltip" id="volumeTooltip" hidden></div>
           </div>
         </div>
       </div>
@@ -708,6 +746,7 @@ button { font-family: inherit; }
       <span class="ex-modal-title" id="exHistoryTitle">—</span>
       <button class="ex-modal-close" id="exHistoryClose" type="button" aria-label="Close">✕</button>
     </div>
+    <div class="eh-sample-note" id="ehSampleNote" hidden>Sample trend — log this exercise a few times to replace it with your real progress.</div>
     <div class="eh-range-tabs" id="ehRangeTabs"></div>
     <div class="eh-stats">
       <div class="eh-stat"><div class="eh-stat-label">Current</div><div class="eh-stat-val" id="ehCurrent">—</div></div>
@@ -715,7 +754,10 @@ button { font-family: inherit; }
       <div class="eh-stat"><div class="eh-stat-label">Sessions</div><div class="eh-stat-val" id="ehCount">—</div></div>
     </div>
     <div class="eh-metric-tabs" id="ehMetricTabs"></div>
-    <svg class="eh-chart" id="ehChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
+    <div class="chart-wrap">
+      <svg class="eh-chart" id="ehChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
+      <div class="chart-tooltip" id="ehTooltip" hidden></div>
+    </div>
   </div>
 </div>
 
@@ -872,6 +914,21 @@ button { font-family: inherit; }
     if (ex.bw) return { weight: 0, reps: ex.repMax - 1 };
     return { weight: ex.startWeight, reps: ex.repMax };
   }
+  // The real "memory" behind progressive overload: the most recent
+  // actually-logged set for this exercise, newest session first. Only
+  // exercises you've never logged fall back to the mock starting point
+  // — so once you've logged Push day once, next time you land on Push
+  // day the suggestion is built from what you really did, not a guess.
+  function lastLogFor(ex) {
+    var sorted = SESSIONS.slice().sort(function (a, b) { return b.dateKey.localeCompare(a.dateKey); });
+    for (var i = 0; i < sorted.length; i++) {
+      var sess = sorted[i];
+      for (var j = 0; j < sess.sets.length; j++) {
+        if (sess.sets[j].name === ex.name) return { weight: sess.sets[j].weight, reps: sess.sets[j].reps, dateKey: sess.dateKey };
+      }
+    }
+    return mockLastLog(ex);
+  }
   function findAreaForExercise(day, name) {
     return (DAY_META[day].areas || []).find(function (a) { return a.options.some(function (o) { return o.name === name; }); });
   }
@@ -1008,30 +1065,73 @@ button { font-family: inherit; }
   }
 
   // ------------------------------------------------------------------
-  // Small reusable line/area chart renderer for the score + volume charts.
+  // Shared line/area chart renderer — every chart on the page (score,
+  // volume, exercise history) goes through this one function, so drag-
+  // to-scrub works everywhere the same way the weight chart's already
+  // does: a hover line + dot follow the finger/cursor, and a tooltip
+  // shows the exact value. `items` can be plain numbers or objects; a
+  // custom valueFn reads the plotted value out of each. Pass a
+  // tooltipEl to get interaction; omit it to just draw a static chart.
   // ------------------------------------------------------------------
-  function drawLineChart(svgEl, values, opts) {
+  function renderChart(svgEl, tooltipEl, items, opts) {
     opts = opts || {};
+    var valueFn = opts.valueFn || function (v) { return v; };
     var vb = svgEl.getAttribute('viewBox').split(' ').map(Number);
-    var W = vb[2], H = vb[3], pad = 4;
+    var W = vb[2], H = opts.dateFn ? vb[3] - 16 : vb[3], pad = 4;
+    var values = items.map(valueFn);
     var min = opts.min != null ? opts.min : Math.min.apply(null, values);
     var max = opts.max != null ? opts.max : Math.max.apply(null, values);
     if (min === max) { min -= 1; max += 1; }
-    var pts = values.map(function (v, i) {
-      var x = values.length === 1 ? W / 2 : (i / (values.length - 1)) * W;
-      var y = pad + (1 - (v - min) / (max - min)) * (H - pad * 2);
-      return { x: x, y: y };
+    var pts = items.map(function (it, i) {
+      var x = items.length === 1 ? W / 2 : (i / (items.length - 1)) * W;
+      var y = pad + (1 - (valueFn(it) - min) / (max - min)) * (H - pad * 2);
+      return { x: x, y: y, item: it };
     });
     var line = 'M ' + pts.map(function (p) { return p.x.toFixed(1) + ' ' + p.y.toFixed(1); }).join(' L ');
     var area = line + ' L ' + W + ' ' + H + ' L 0 ' + H + ' Z';
     var gradId = 'grad-' + Math.random().toString(36).slice(2, 9);
     var color = opts.color || 'var(--lime)';
+    var totalH = opts.dateFn ? H + 16 : H;
+    var dateLabels = '';
+    if (opts.dateFn) {
+      var idxs = pts.length <= 1 ? [0] : [0, Math.floor((pts.length - 1) / 2), pts.length - 1];
+      dateLabels = idxs.map(function (i) {
+        var p = pts[i]; var anchor = i === 0 ? 'start' : (i === pts.length - 1 ? 'end' : 'middle');
+        return '<text x="' + p.x.toFixed(1) + '" y="' + (H + 12) + '" font-size="7.5" fill="var(--text-3)" text-anchor="' + anchor + '">' + opts.dateFn(p.item) + '</text>';
+      }).join('');
+    }
+    svgEl.setAttribute('viewBox', '0 0 ' + W + ' ' + totalH);
     svgEl.innerHTML =
       '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
       '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.3"/><stop offset="100%" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs>' +
       '<path d="' + area + '" fill="url(#' + gradId + ')" stroke="none"></path>' +
       '<path d="' + line + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-      '<circle cx="' + pts[pts.length - 1].x + '" cy="' + pts[pts.length - 1].y + '" r="3" fill="' + color + '"></circle>';
+      dateLabels +
+      '<line class="chart-hover-line" x1="0" y1="0" x2="0" y2="' + H + '" stroke="var(--border-strong)" stroke-width="1" hidden></line>' +
+      '<circle class="chart-hover-dot" r="3.5" fill="' + color + '" stroke="var(--bg-card)" stroke-width="1.5" hidden></circle>' +
+      '<circle cx="' + pts[pts.length - 1].x + '" cy="' + pts[pts.length - 1].y + '" r="3" fill="' + color + '"></circle>' +
+      '<rect class="chart-hit" x="0" y="0" width="' + W + '" height="' + totalH + '" fill="transparent" style="cursor:pointer;touch-action:none"></rect>';
+
+    if (!tooltipEl) return;
+    var hoverLine = svgEl.querySelector('.chart-hover-line'), hoverDot = svgEl.querySelector('.chart-hover-dot'), hit = svgEl.querySelector('.chart-hit');
+    function nearest(mx) { var best = pts[0], bestD = Infinity; pts.forEach(function (p) { var d = Math.abs(p.x - mx); if (d < bestD) { bestD = d; best = p; } }); return best; }
+    function showAt(clientX) {
+      var rect = hit.getBoundingClientRect();
+      var mx = ((clientX - rect.left) / rect.width) * W;
+      var p = nearest(mx);
+      hoverLine.setAttribute('x1', p.x); hoverLine.setAttribute('x2', p.x); hoverLine.hidden = false;
+      hoverDot.setAttribute('cx', p.x); hoverDot.setAttribute('cy', p.y); hoverDot.hidden = false;
+      tooltipEl.style.left = (p.x / W * 100) + '%';
+      tooltipEl.innerHTML = '<div class="tt-val">' + (opts.formatVal ? opts.formatVal(p.item) : valueFn(p.item)) + '</div>' + (opts.dateFn ? '<div class="tt-date">' + opts.dateFn(p.item) + '</div>' : '');
+      tooltipEl.hidden = false;
+    }
+    function hideTip() { hoverLine.hidden = true; hoverDot.hidden = true; tooltipEl.hidden = true; }
+    hit.onmousemove = function (ev) { showAt(ev.clientX); };
+    hit.onmouseleave = hideTip;
+    var hideTimer = null;
+    function scrub(ev) { ev.preventDefault(); showAt(ev.touches[0].clientX); clearTimeout(hideTimer); }
+    hit.ontouchstart = scrub; hit.ontouchmove = scrub;
+    hit.ontouchend = function () { hideTimer = setTimeout(hideTip, 1500); };
   }
 
   // ------------------------------------------------------------------
@@ -1085,7 +1185,7 @@ button { font-family: inherit; }
     var wordEl = document.getElementById('scoreWord');
     wordEl.textContent = sw.w; wordEl.dataset.level = sw.l;
     document.getElementById('scoreDelta').textContent = (SCORE.deltaPct >= 0 ? '+' : '') + SCORE.deltaPct + '% vs last month';
-    drawLineChart(document.getElementById('scoreChart'), SCORE.trend, { min: 0, max: 100, color: 'var(--lime)' });
+    renderChart(document.getElementById('scoreChart'), document.getElementById('scoreTooltip'), SCORE.trend, { min: 0, max: 100, color: 'var(--lime)' });
 
     document.getElementById('sDone').textContent = STRENGTH.done;
     document.getElementById('sGoal').textContent = '/ ' + STRENGTH.goal;
@@ -1095,13 +1195,13 @@ button { font-family: inherit; }
     var h = Math.floor(STRENGTH.hours), m = Math.round((STRENGTH.hours - h) * 60);
     document.getElementById('sTime').textContent = h + 'h ' + m + 'm';
 
-    if (volumeExpanded) drawLineChart(document.getElementById('volumeChart'), STRENGTH.weeklyHistory, { color: 'var(--lime)' });
+    if (volumeExpanded) renderChart(document.getElementById('volumeChart'), document.getElementById('volumeTooltip'), STRENGTH.weeklyHistory, { color: 'var(--lime)', formatVal: function (v) { return Math.round(v).toLocaleString() + ' ' + UNITS; } });
   }
   document.getElementById('volumeTile').addEventListener('click', function () {
     volumeExpanded = !volumeExpanded;
     document.getElementById('volumeExpand').hidden = !volumeExpanded;
     document.getElementById('volumeChevron').classList.toggle('is-open', volumeExpanded);
-    if (volumeExpanded) drawLineChart(document.getElementById('volumeChart'), STRENGTH.weeklyHistory, { color: 'var(--lime)' });
+    if (volumeExpanded) renderChart(document.getElementById('volumeChart'), document.getElementById('volumeTooltip'), STRENGTH.weeklyHistory, { color: 'var(--lime)', formatVal: function (v) { return Math.round(v).toLocaleString() + ' ' + UNITS; } });
   });
   document.getElementById('volumeTile').addEventListener('keydown', function (ev) {
     if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); document.getElementById('volumeTile').click(); }
@@ -1223,7 +1323,7 @@ button { font-family: inherit; }
           var already = currentSession.sets.some(function (s) { return s.name === name; });
           if (!already) {
             var ex = EX_INDEX[name];
-            var last = mockLastLog(ex);
+            var last = lastLogFor(ex);
             var areaDef = findAreaForExercise(confirmedDay, name);
             currentSession.sets.push({ name: name, setsCount: areaDef ? areaDef.sets : 3, reps: last.reps, weight: ex.bw ? 0 : (last.weight || ex.startWeight || 0) });
           }
@@ -1248,6 +1348,30 @@ button { font-family: inherit; }
     lastCommitted = JSON.parse(JSON.stringify(picks[activeDay]));
     renderChecklist();
     renderAnatomy();
+    renderCoach();
+  }
+  // Coach summary — one line per today's-plan exercise, built from the
+  // real getRx() engine against the real last-logged set for that
+  // exercise (falling back to the mock starting point on day one).
+  // This is the "you did this last time, do this today" digest.
+  function renderCoach() {
+    var list = todaysExerciseList(confirmedDay);
+    var card = document.getElementById('coachCard');
+    if (!list.length) { card.hidden = true; return; }
+    card.hidden = false;
+    document.getElementById('coachList').innerHTML = list.map(function (item) {
+      var ex = EX_INDEX[item.name];
+      var last = lastLogFor(ex);
+      var hasReal = !!last.dateKey;
+      var rx = getRx(ex, [last]);
+      var lastStr = ex.bw ? (last.reps + ' reps') : (last.weight + UNITS + ' × ' + last.reps);
+      var rxStr = rx ? (rx.tag + (rx.weight ? ' → ' + rx.weight + UNITS + ' × ' + rx.reps : ' → ' + rx.reps + ' reps')) : '—';
+      return '<li class="coach-row">' +
+        '<div class="coach-name">' + esc(ex.name) + '</div>' +
+        '<div class="coach-last">' + (hasReal ? 'Last (' + esc(dayLabelForKey(last.dateKey)) + '): ' + lastStr : 'No log yet — starting point: ' + lastStr) + '</div>' +
+        '<div class="coach-rx" data-type="' + (rx ? rx.type : '') + '">' + esc(rxStr) + '</div>' +
+        '</li>';
+    }).join('');
   }
 
   function openPicker() {
@@ -1325,7 +1449,7 @@ button { font-family: inherit; }
     ensureSession();
     if (!hadSession) renderChecklist();
     modalEx = ex;
-    var last = mockLastLog(ex);
+    var last = lastLogFor(ex);
     modalWeight = last.weight || ex.startWeight || 0;
     modalReps = last.reps;
     var areaDef = findAreaForExercise(confirmedDay, name);
@@ -1335,7 +1459,7 @@ button { font-family: inherit; }
     document.getElementById('weightFieldWrap').style.display = ex.bw ? 'none' : '';
     document.getElementById('weightVal').value = modalWeight;
     document.getElementById('lastTimeRow').style.display = '';
-    document.getElementById('lastTimeVal').textContent = ex.bw ? (last.reps + ' reps') : (last.weight + UNITS + ' × ' + last.reps);
+    document.getElementById('lastTimeVal').textContent = (ex.bw ? (last.reps + ' reps') : (last.weight + UNITS + ' × ' + last.reps)) + (last.dateKey ? ' · ' + dayLabelForKey(last.dateKey) : '');
     var repMin = Math.max(1, ex.repMin - 2), repMax = ex.repMax + 5;
     var repsHtml = '';
     for (var r = repMin; r <= repMax; r++) repsHtml += '<button type="button" class="pill-btn' + (r === modalReps ? ' active' : '') + '" data-r="' + r + '">' + r + '</button>';
@@ -1348,7 +1472,7 @@ button { font-family: inherit; }
     openModal('exModalBg');
   }
   function renderRx() {
-    var rx = getRx(modalEx, [mockLastLog(modalEx)]);
+    var rx = getRx(modalEx, [lastLogFor(modalEx)]);
     var box = document.getElementById('rxBox');
     if (!rx) { box.dataset.type = ''; document.getElementById('rxTag').textContent = '—'; document.getElementById('rxReason').textContent = 'Log your first set to get a suggestion.'; return; }
     box.dataset.type = rx.type;
@@ -1452,7 +1576,8 @@ button { font-family: inherit; }
           '<div class="set-main"><div class="set-name">' + esc(st.name) + '</div>' +
           '<div class="set-detail">' + st.setsCount + ' × ' + st.reps + (st.weight ? ' @ ' + st.weight + UNITS : ' · bodyweight') + '</div></div>' +
           '<div class="set-actions"><button type="button" class="icon-btn edit-set-btn" aria-label="Edit">✎</button><button type="button" class="icon-btn danger remove-set-btn" aria-label="Remove">🗑</button></div></li>';
-      }).join('') + '</ul>';
+      }).join('') + '</ul>' +
+        '<button type="button" class="delete-session-btn" data-sess="' + sess.id + '">🗑 Delete this workout</button>';
     }
     return '<li class="session-row">' + head + body + '</li>';
   }
@@ -1496,6 +1621,16 @@ button { font-family: inherit; }
     });
     container.querySelectorAll('.set-edit-cancel').forEach(function (btn) {
       btn.addEventListener('click', function (ev) { ev.stopPropagation(); editingSetId = null; refreshAllSessionViews(); });
+    });
+    container.querySelectorAll('.delete-session-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var sessId = +btn.dataset.sess;
+        SESSIONS = SESSIONS.filter(function (s) { return s.id !== sessId; });
+        if (expandedSessionId === sessId) expandedSessionId = null;
+        saveSessions();
+        refreshAllSessionViews();
+      });
     });
   }
   function renderActivity() {
@@ -1575,6 +1710,7 @@ button { font-family: inherit; }
     renderActivity();
     renderWorkoutSummary();
     renderDateStrip();
+    renderCoach();
     if (wsPastOpen) renderPastWorkouts();
     if (document.getElementById('allSessionsModalBg').style.display === 'flex') renderAllSessionsModal();
   }
@@ -1676,13 +1812,31 @@ button { font-family: inherit; }
   // Exercise history — tap any exercise in the Library to see its
   // progression: current/all-time-best/session-count stat tiles, a
   // time-range filter, and a chart across Top Weight / Est. 1RM /
-  // Volume (or just Reps for bodyweight moves). The history itself is
-  // generated (seeded by exercise name, so it's stable across opens,
-  // not random each time) until this is wired to real logged sets.
+  // Volume (or just Reps for bodyweight moves).
+  //
+  // This reads your REAL logged sets first: every session in SESSIONS
+  // that includes this exercise becomes one point, oldest to newest —
+  // so as you keep logging Push day (or whatever) over the coming
+  // weeks and months, this trend line is that real progression, not a
+  // simulation, and it's exactly as durable as SESSIONS itself (saved
+  // to this browser's localStorage — see the "does this persist" note
+  // in the app). Only exercises with zero real logs fall back to a
+  // seeded sample trend, clearly labeled as such, so there's always
+  // something to look at before you've built up real history.
   // ------------------------------------------------------------------
+  function getRealExerciseHistory(name) {
+    var pts = [];
+    SESSIONS.forEach(function (sess) {
+      sess.sets.forEach(function (st) {
+        if (st.name === name) pts.push({ dateKey: sess.dateKey, weight: st.weight, reps: st.reps, setsCount: st.setsCount });
+      });
+    });
+    pts.sort(function (a, b) { return a.dateKey.localeCompare(b.dateKey); });
+    return pts;
+  }
   function seedFromString(str) { var h = 0; for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return Math.abs(h); }
   function seededRandom(seed) { var s = seed || 1; return function () { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
-  function generateExerciseHistory(ex) {
+  function generateSampleExerciseHistory(ex) {
     var rnd = seededRandom(seedFromString(ex.name));
     var weeks = 52;
     var points = [];
@@ -1700,39 +1854,18 @@ button { font-family: inherit; }
     return points;
   }
   var EH_RANGE_DAYS = { '1M': 31, '3M': 92, '6M': 183, '1Y': 366, 'ALL': 99999 };
-  var ehExercise = null, ehPoints = [], ehRange = '3M', ehMetric = 'weight';
+  var ehExercise = null, ehPoints = [], ehIsSample = false, ehRange = '3M', ehMetric = 'weight';
   function ehValueFn(p) {
     if (ehMetric === 'reps') return p.reps;
     if (ehMetric === '1rm') return epley1rm(p.weight, p.reps);
     if (ehMetric === 'volume') return p.weight * p.reps * p.setsCount;
     return p.weight;
   }
-  function drawHistoryChart(svgEl, points, valueFn, color) {
-    var W = 300, H = 52;
-    var values = points.map(valueFn);
-    var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
-    if (min === max) { min -= 1; max += 1; }
-    var pts = points.map(function (p, i) {
-      var x = points.length === 1 ? W / 2 : (i / (points.length - 1)) * W;
-      var y = 4 + (1 - (valueFn(p) - min) / (max - min)) * (H - 8);
-      return { x: x, y: y, p: p };
-    });
-    var line = 'M ' + pts.map(function (pt) { return pt.x.toFixed(1) + ' ' + pt.y.toFixed(1); }).join(' L ');
-    var area = line + ' L ' + W + ' ' + H + ' L 0 ' + H + ' Z';
-    var gradId = 'hgrad-' + Math.random().toString(36).slice(2, 9);
-    var labelIdxs = points.length <= 1 ? [0] : [0, Math.floor((points.length - 1) / 2), points.length - 1];
-    var labels = labelIdxs.map(function (i) {
-      var pt = pts[i];
-      var anchor = i === 0 ? 'start' : (i === points.length - 1 ? 'end' : 'middle');
-      return '<text x="' + pt.x.toFixed(1) + '" y="' + (H + 12) + '" font-size="7.5" fill="var(--text-3)" text-anchor="' + anchor + '">' + wtFmtDate(pt.p.dateKey) + '</text>';
-    }).join('');
-    svgEl.setAttribute('viewBox', '0 0 ' + W + ' ' + (H + 16));
-    svgEl.innerHTML =
-      '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + color + '" stop-opacity="0.3"/><stop offset="100%" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs>' +
-      '<path d="' + area + '" fill="url(#' + gradId + ')" stroke="none"></path>' +
-      '<path d="' + line + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-      '<circle cx="' + pts[pts.length - 1].x + '" cy="' + pts[pts.length - 1].y + '" r="3" fill="' + color + '"></circle>' +
-      labels;
+  function ehFormatVal(p) {
+    var v = ehValueFn(p);
+    if (ehMetric === 'reps') return Math.round(v) + ' reps';
+    if (ehMetric === 'volume') return Math.round(v).toLocaleString() + ' ' + UNITS;
+    return (Math.round(v * 10) / 10) + ' ' + UNITS;
   }
   function renderEhRangeTabs() {
     document.getElementById('ehRangeTabs').innerHTML = Object.keys(EH_RANGE_DAYS).map(function (r) {
@@ -1762,13 +1895,20 @@ button { font-family: inherit; }
       ? (Math.max.apply(null, ehPoints.map(function (p) { return p.reps; })) + ' reps')
       : (Math.max.apply(null, ehPoints.map(function (p) { return p.weight; })) + UNITS);
     document.getElementById('ehCount').textContent = ehPoints.length;
-    drawHistoryChart(document.getElementById('ehChart'), filtered, ehValueFn, 'var(--lime)');
+    document.getElementById('ehSampleNote').hidden = !ehIsSample;
+    renderChart(document.getElementById('ehChart'), document.getElementById('ehTooltip'), filtered, {
+      valueFn: ehValueFn, color: 'var(--lime)',
+      dateFn: function (p) { return wtFmtDate(p.dateKey); },
+      formatVal: ehFormatVal
+    });
   }
   function openExerciseHistory(name) {
     var ex = EX_INDEX[name];
     if (!ex) return;
     ehExercise = ex;
-    ehPoints = generateExerciseHistory(ex);
+    var real = getRealExerciseHistory(name);
+    ehIsSample = real.length === 0;
+    ehPoints = ehIsSample ? generateSampleExerciseHistory(ex) : real;
     ehRange = '3M'; ehMetric = ex.bw ? 'reps' : 'weight';
     document.getElementById('exHistoryTitle').textContent = ex.name;
     renderEhRangeTabs(); renderEhMetricTabs(); renderExerciseHistory();
@@ -1921,6 +2061,7 @@ button { font-family: inherit; }
   // ------------------------------------------------------------------
   renderHeader(confirmedDay);
   renderDateStrip();
+  renderCoach();
   renderWeight();
   renderStrength();
   renderChecklist();
