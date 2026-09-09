@@ -2849,7 +2849,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const input = document.createElement('input');
     input.type = 'text';
     input.inputMode = 'decimal';
-    input.value = String(curDisplay.toFixed(curDisplay % 1 === 0 ? 0 : 2));
+    const prefilled = String(curDisplay.toFixed(curDisplay % 1 === 0 ? 0 : 2));
+    input.value = prefilled;
     input.style.cssText = 'width:110px;padding:4px 8px;font-family:var(--font-mono);font-size:12px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
     amtEl.textContent = '';
     amtEl.appendChild(input);
@@ -2859,6 +2860,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       if (saved) return; saved = true;
       const v = input.value.trim();
       if (v === '') { renderAllNetWorth(); return; }
+      // Untouched (blurred/closed without actually typing a change) — do
+      // NOT round-trip through CHF at all. A manually-entered amount like
+      // a bank balance isn't live-priced; converting curCHF -> display ->
+      // CHF using *today's* exchange rate silently drifted the stored
+      // value on every edit whenever the rate had moved since it was last
+      // touched, even when nothing was actually changed. Bail out here
+      // before any conversion happens.
+      if (v === prefilled) { renderAllNetWorth(); return; }
       // Input is in the DISPLAY currency. Convert back to CHF before storing.
       let nextDisplay = curDisplay;
       if (/^[+\-]\s*\d/.test(v)) {
@@ -2871,11 +2880,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       if (nextDisplay < 0) nextDisplay = 0;
       const nextCHF = nextDisplay / rate;
       const deltaCHF = nextCHF - curCHF;
+      // Also bail if the edit rounds to a negligible (<0.01 CHF) change —
+      // avoids baking in float/rounding noise as a "real" edit.
+      if (Math.abs(deltaCHF) < 0.01) { renderAllNetWorth(); return; }
       items[idx].amount = nextCHF;
       storeSet('nw:' + catKey, items);
-      if (Math.abs(deltaCHF) > 0.005) {
-        logActivity(catKey, items[idx].name, deltaCHF, 'edit');
-      }
+      logActivity(catKey, items[idx].name, deltaCHF, 'edit');
       renderAllNetWorth();
     }
     input.addEventListener('keydown', (e) => {

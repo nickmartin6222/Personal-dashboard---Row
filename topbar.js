@@ -210,7 +210,7 @@ body.topbar-modal-open {
   // bottom nav and self-contained back button.
   function isFinancePage() {
     const p = (window.location.pathname || '').toLowerCase();
-    return p.endsWith('finance.html') || p.endsWith('frok-finance-standalone.html');
+    return p.endsWith('finance.html') || p.endsWith('frok-finance-standalone.html') || p.includes('finance-preview');
   }
   // Pages embedded in an iframe shouldn't render their own chrome again.
   function isEmbedded() {

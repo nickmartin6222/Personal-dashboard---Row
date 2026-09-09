@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="sync.js" defer></script>
+<script src="topbar.js" defer></script>
 <style>
 /* ===== DESIGN PREVIEW #2 — sage green + off-white, "Hello Carlic"
    reference. Replaces the earlier cream/forest-green draft as the
@@ -240,7 +241,11 @@ body { min-height: 100vh; padding: max(24px, env(safe-area-inset-top)) 18px 60px
   // (weight) goals both just work.
   // ============================================================
   const GOALS_KEY = 'goals:targets';
-  const DEFAULT_GOALS = { savings: 15000, stock: 15000, handicap: 15, weight: 83, handicapStart: null, weightStart: null };
+  // handicapStart/weightStart are real historical baselines (confirmed:
+  // handicap started at 25, weight at 78) — not auto-captured from
+  // wherever you happen to be right now, so the bar actually shows how
+  // far you've already come, not a bar that starts empty forever.
+  const DEFAULT_GOALS = { savings: 15000, stock: 15000, handicap: 15, weight: 83, handicapStart: 25, weightStart: 78 };
 
   function loadGoals() {
     const g = readJSON(GOALS_KEY, null);
@@ -248,10 +253,19 @@ body { min-height: 100vh; padding: max(24px, env(safe-area-inset-top)) 18px 60px
   }
   function saveGoals(g) { writeJSON(GOALS_KEY, g); }
 
+  // Same currency the Finance page displays in — nw:* amounts are
+  // stored in CHF internally, so convert before comparing to a target
+  // you set in your real display currency (AUD).
+  function displayCcy() {
+    const ccy = readJSON('nw_currency', 'AUD');
+    const rates = readJSON('fx:rates', { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 });
+    return { ccy, rate: rates[ccy] || 1 };
+  }
   function nwCategoryTotal(catKey) {
     const items = readJSON('nw:' + catKey, []);
     if (!Array.isArray(items)) return 0;
-    return items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+    const totalCHF = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+    return totalCHF * displayCcy().rate;
   }
   function currentHandicap() {
     const rounds = readJSON('golf:rounds', []);
@@ -291,35 +305,27 @@ body { min-height: 100vh; padding: max(24px, env(safe-area-inset-top)) 18px 60px
       current: () => nwCategoryTotal('bank'),
       target: (g) => g.savings,
       progress: (g, cur) => ratioProgress(cur, g.savings),
-      fmt: (v) => 'CHF ' + Math.round(v).toLocaleString()
+      fmt: (v) => displayCcy().ccy + ' ' + Math.round(v).toLocaleString()
     },
     {
       key: 'stock', label: 'Stock amount', color: '#4F7FBF',
       current: () => nwCategoryTotal('stocks'),
       target: (g) => g.stock,
       progress: (g, cur) => ratioProgress(cur, g.stock),
-      fmt: (v) => 'CHF ' + Math.round(v).toLocaleString()
+      fmt: (v) => displayCcy().ccy + ' ' + Math.round(v).toLocaleString()
     },
     {
       key: 'handicap', label: 'Golf handicap', color: '#C99A44',
       current: () => currentHandicap(),
       target: (g) => g.handicap,
-      progress: (g, cur) => {
-        if (cur == null) return 0;
-        if (g.handicapStart == null) { g.handicapStart = cur; saveGoals(g); }
-        return distanceProgress(g.handicapStart, cur, g.handicap);
-      },
+      progress: (g, cur) => distanceProgress(g.handicapStart, cur == null ? g.handicapStart : cur, g.handicap),
       fmt: (v) => v == null ? 'no rounds yet' : v.toFixed(1)
     },
     {
       key: 'weight', label: 'Body weight', color: '#8A6BB5',
       current: () => currentWeight(),
       target: (g) => g.weight,
-      progress: (g, cur) => {
-        if (cur == null) return 0;
-        if (g.weightStart == null) { g.weightStart = cur; saveGoals(g); }
-        return distanceProgress(g.weightStart, cur, g.weight);
-      },
+      progress: (g, cur) => distanceProgress(g.weightStart, cur == null ? g.weightStart : cur, g.weight),
       fmt: (v) => v == null ? 'no weigh-ins yet' : v + ' kg'
     }
   ];
@@ -352,10 +358,6 @@ body { min-height: 100vh; padding: max(24px, env(safe-area-inset-top)) 18px 60px
         const g = loadGoals();
         if (!isNaN(val) && val > 0) {
           g[key] = val;
-          // Re-anchor the start point when a direction-based target changes,
-          // so progress reflects distance to the NEW target going forward.
-          if (key === 'handicap') g.handicapStart = null;
-          if (key === 'weight') g.weightStart = null;
           saveGoals(g);
         }
         editingGoal = null;
@@ -394,7 +396,7 @@ body { min-height: 100vh; padding: max(24px, env(safe-area-inset-top)) 18px 60px
     const rate = rates[ccy] || 1;
     const displayTotal = total * rate;
     $('finTotal').textContent = total > 0 ? (ccy + ' ' + Math.round(displayTotal).toLocaleString('en-US')) : '—';
-    const bank = nwCategoryTotal('bank') * rate, stocks = nwCategoryTotal('stocks') * rate;
+    const bank = nwCategoryTotal('bank'), stocks = nwCategoryTotal('stocks');
     $('finBreakdown').textContent = total > 0 ? ('bank ' + ccy + ' ' + Math.round(bank).toLocaleString('en-US') + ' · stocks ' + ccy + ' ' + Math.round(stocks).toLocaleString('en-US')) : 'No holdings logged yet';
 
     slices.sort((a, b) => b.amount - a.amount);
