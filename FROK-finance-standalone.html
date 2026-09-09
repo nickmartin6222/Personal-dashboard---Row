@@ -758,6 +758,10 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   border-radius: 12px;
   position: relative;
   overflow: hidden;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 .nw-chart-head {
   display: flex;
@@ -794,6 +798,8 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   display: block;
   width: 100%;
   height: 200px;
+  flex: 1 1 auto;
+  min-height: 200px;
   color: var(--text-tertiary);
   overflow: visible;
   transition: color 0.4s ease;
@@ -3340,10 +3346,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const count  = document.getElementById('nwDonutCount');
     if (!svg || !total || !legend) return;
 
-    // Build one slice per individual NW account, colored by parent category.
-    // So "star one" (bank) and "Revolute" (bank) become two blue slices,
-    // "vanguard" (stocks) a green slice, etc. — instead of one aggregate
-    // "Bank" / "Stocks" slice each.
+    // Build one slice per individual NW account. Dark mode colors by
+    // parent category (unchanged) — "star one" (bank) and "Revolute"
+    // (bank) become two blue slices, "vanguard" (stocks) a green slice,
+    // etc. Light mode instead gives each item its own distinct color via
+    // itemColor() (the same hash-based default index.html's own pie
+    // uses), matching the dashboard's pie instead of a 2-3 color block.
+    const isLightDonut = document.documentElement.getAttribute('data-theme') === 'light';
     const slices = [];
     NW_CATS.forEach(cat => {
       const meta = NW_SLICE_META[cat.key] || { color: '#FFFFFF' };
@@ -3354,7 +3363,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           slices.push({
             key: cat.key + '::' + i,
             name: String(it.name || '(unnamed)'),
-            color: meta.color,
+            color: isLightDonut ? itemColor(cat.key, it) : meta.color,
             value: v
           });
         }
@@ -3371,8 +3380,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const sliceTotal = slices.reduce((s, x) => s + x.value, 0);
 
     if (!slices.length || sliceTotal <= 0) {
-      svg.innerHTML = '<circle cx="70" cy="70" r="60" fill="rgba(255,255,255,0.025)"/>'
-                    + '<circle cx="70" cy="70" r="44" fill="#0A0A0B"/>';
+      svg.innerHTML = '<circle cx="70" cy="70" r="60" fill="var(--card-soft)"/>'
+                    + '<circle cx="70" cy="70" r="44" fill="var(--bg-deep)"/>';
       total.textContent = '—';
       empty.classList.remove('hidden');
       legend.innerHTML = '';
