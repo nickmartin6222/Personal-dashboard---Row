@@ -25,6 +25,11 @@
   --bg-card: rgba(255, 255, 255, 0.04);
   --bg-secondary: rgba(255, 255, 255, 0.035);
   --glass-bg: rgba(255, 255, 255, 0.04);
+  /* Solid "inner tile" surface for things nested inside an already-solid
+     card (activity rows, stat boxes) — needs to read as visibly distinct
+     from its parent, which a translucent overlay can't do once the
+     parent itself is opaque. Matches the dashboard's --card-soft. */
+  --card-soft: rgba(255, 255, 255, 0.05);
   /* Inline edit-field styling (rename/amount/ticker/units inputs, row
      action buttons) — these are set via JS style.cssText, not static
      CSS, so they need their own theme-aware tokens rather than the
@@ -821,7 +826,9 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 }
 .nw-stat {
   display: flex; flex-direction: column; gap: 2px;
-  padding: 4px 6px;
+  padding: 8px 10px;
+  background: var(--card-soft);
+  border-radius: 10px;
 }
 .nw-stat-label {
   font-size: 9px; letter-spacing: 0.16em; font-weight: 800;
@@ -1942,6 +1949,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   --bg-deep: #EDEEE9;
   --bg-card: rgba(28, 30, 27, 0.035);
   --bg-secondary: rgba(28, 30, 27, 0.03);
+  --card-soft: #F5F6F1;
   --glass-bg: rgba(28, 30, 27, 0.035);
   --glass-border: rgba(28, 30, 27, 0.08);
   --glass-border-strong: rgba(28, 30, 27, 0.14);
@@ -2108,6 +2116,35 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 [data-theme="light"] .sub-auto-track { position: relative; display: inline-block; width: 30px; height: 16px; border-radius: 999px; background: rgba(28,30,27,0.10); transition: background 0.2s; flex-shrink: 0; }
 [data-theme="light"] .sub-row-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(28,30,27,0.04); border: 1px solid rgba(28,30,27,0.08); border-radius: 999px; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); font-weight: 700; }
 [data-theme="light"] .sub-row-toggle .sub-row-toggle-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(28,30,27,0.25); }
+
+/* ============================================================
+   Hand-tuned on top of the auto-generated pass above: these are
+   top-level card surfaces (chart, donut, bank/stock subcards, activity
+   feed) that need to read as solid white — like the dashboard's white
+   cards — rather than the ~3% translucent tint the auto-generated rule
+   gives them, which barely hides the backdrop behind it and reads as
+   a muddy, not-quite-white card. Rows nested INSIDE those cards
+   (activity line items) get the solid --card-soft tile tone instead,
+   so they're visibly distinct from the white card around them —
+   matching how the dashboard's stock tiles sit inside its white
+   Finance Overview card.
+   ============================================================ */
+[data-theme="light"] .nw-chart-wrap,
+[data-theme="light"] .nw-donut-wrap,
+[data-theme="light"] .nw-activity {
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+}
+/* !important to match (and beat) the base rule's own !important —
+   otherwise the base dark-mode declaration would win regardless of
+   this being more specific/later in the cascade. */
+[data-theme="light"] .nw-subcard {
+  background: #FFFFFF !important;
+  border: 1px solid var(--border);
+}
+[data-theme="light"] .nw-activity-row {
+  background: var(--card-soft);
+}
 </style>
 </head>
 <body>
