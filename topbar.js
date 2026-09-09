@@ -47,6 +47,18 @@
   transition: background 0.15s;
 }
 .home-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.theme-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  font-size: 18px; line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+.theme-btn:hover { background: rgba(255, 255, 255, 0.08); }
 /* Fixed top-right chrome for pages that suppress the normal topbar
    (currently just finance) — a persistent way home without relying on
    scroll position or a browser back gesture. */
@@ -112,12 +124,14 @@ body.has-bottombar {
   border-bottom-color: rgba(20,18,15,0.08);
 }
 [data-theme="light"] .topbar-finance-btn,
-[data-theme="light"] .home-btn {
+[data-theme="light"] .home-btn,
+[data-theme="light"] .theme-btn {
   background: #FFFFFF;
   border-color: rgba(20,18,15,0.12);
 }
 [data-theme="light"] .topbar-finance-btn:hover,
-[data-theme="light"] .home-btn:hover {
+[data-theme="light"] .home-btn:hover,
+[data-theme="light"] .theme-btn:hover {
   background: rgba(20,18,15,0.06);
 }
 [data-theme="light"] .topbar-finance-icon {
@@ -285,6 +299,47 @@ body.topbar-modal-open {
     getFloatingChrome().appendChild(btn);
   }
 
+  // -------- Shared light/dark theme toggle --------
+  // The dashboard's own mint/sage toggle and this button both read/write
+  // the same key — gym/golf/finance/health/nutrition already ship full
+  // [data-theme="light"] CSS, they just never had a control to reach it.
+  const THEME_KEY = 'dash:colorTheme';
+  function applyStoredTheme() {
+    const v = localStorage.getItem(THEME_KEY);
+    if (v === 'sage') document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  function injectThemeToggle() {
+    if (isEmbedded()) return;
+    // index.html has its own themed pill switch already wired to the
+    // same key — don't add a second, redundant control there.
+    if (document.getElementById('themeToggle')) return;
+    if (document.getElementById('themeBtn')) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'themeBtn';
+    btn.className = 'theme-btn';
+    btn.setAttribute('aria-label', 'Toggle light / dark theme');
+    function paintIcon() {
+      btn.textContent = document.documentElement.getAttribute('data-theme') === 'light' ? '🌙' : '☀️';
+    }
+    paintIcon();
+    btn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'mint' : 'sage';
+      try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+      applyStoredTheme();
+      paintIcon();
+    });
+
+    const topbar = document.getElementById('topbar');
+    if (topbar) topbar.appendChild(btn);
+    else getFloatingChrome().appendChild(btn);
+  }
+  window.addEventListener('storage', (e) => {
+    if (e.key === THEME_KEY) applyStoredTheme();
+  });
+
   // -------- Mobile lockdown helpers --------
   // Belt-and-suspenders zoom prevention — iOS Safari sometimes ignores
   // user-scalable=no, so we also kill the gesture events directly.
@@ -333,9 +388,15 @@ body.topbar-modal-open {
   }
 
   // -------- Boot --------
+  // Apply the stored theme immediately (not deferred with the rest of
+  // boot()) so pages without their own inline theme script don't flash
+  // dark before flipping to light.
+  applyStoredTheme();
+
   function boot() {
     injectStyleAndHTML();
     injectHomeButton();
+    injectThemeToggle();
     lockGestures();
     startModalLock();
   }

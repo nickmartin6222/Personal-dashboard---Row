@@ -55,7 +55,7 @@
 /* ===== Theme toggle — sage-green + white, matching the sage
    Finance draft's exact palette, so Gym/Golf/Nutrition mini-tiles
    here read as one consistent system with it when toggled on. ===== */
-:root[data-theme="sage"] {
+:root[data-theme="light"] {
   --bg: #EDEEE9;
   --card: #FFFFFF;
   --card-soft: #F5F6F1;
@@ -128,7 +128,7 @@ body::after {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 1;
   height: 26vh; min-height: 150px; pointer-events: none; opacity: 0.65;
 }
-:root[data-theme="sage"] .vty-mountains { opacity: 0.4; }
+:root[data-theme="light"] .vty-mountains { opacity: 0.4; }
 .vty-mountains svg { width: 100%; height: 100%; display: block; }
 .vty-particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .vty-particles span {
@@ -174,7 +174,7 @@ body::after {
   background: var(--sage);
   transition: transform 0.25s ease, background 0.2s ease;
 }
-:root[data-theme="sage"] .theme-toggle-dot { transform: translateX(22px); }
+:root[data-theme="light"] .theme-toggle-dot { transform: translateX(22px); }
 
 .section-title {
   font-family: var(--font); font-size: 12px; font-weight: 700;
@@ -295,7 +295,7 @@ body::after {
   align-items: center; justify-content: center; padding: 20px;
   background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
-:root[data-theme="sage"] .modal-bg { background: rgba(28,30,27,0.35); }
+:root[data-theme="light"] .modal-bg { background: rgba(28,30,27,0.35); }
 .modal-bg.show { display: flex; }
 .modal {
   width: 100%; max-width: 460px; max-height: 88vh; overflow-y: auto;
@@ -518,17 +518,28 @@ body::after {
   // values are in effect via [data-theme]. Persisted so it survives
   // a reload.
   // ============================================================
+  // Shared across every page (gym/golf/finance/health/nutrition all
+  // already had their own [data-theme="light"] CSS built in from
+  // earlier — they just had no toggle wired up). "sage"/"mint" is this
+  // key's stored vocabulary; the actual DOM/CSS attribute value is
+  // always "light" (or absent for dark), matching what those other
+  // pages' CSS — and topbar.js's shared toggle button — expect.
   const THEME_KEY = 'dash:colorTheme';
   function applyTheme(theme) {
-    if (theme === 'sage') document.documentElement.setAttribute('data-theme', 'sage');
+    if (theme === 'sage') document.documentElement.setAttribute('data-theme', 'light');
     else document.documentElement.removeAttribute('data-theme');
   }
   const savedTheme = localStorage.getItem(THEME_KEY) || 'mint';
   applyTheme(savedTheme);
   $('themeToggle').addEventListener('click', () => {
-    const next = document.documentElement.getAttribute('data-theme') === 'sage' ? 'mint' : 'sage';
+    const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'mint' : 'sage';
     applyTheme(next);
     try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  });
+  // Stay in sync if the shared toggle button (topbar.js, present on
+  // every page) changes the theme instead of this page's own pill.
+  window.addEventListener('storage', (e) => {
+    if (e.key === THEME_KEY) applyTheme(e.newValue || 'mint');
   });
 
   const dows = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
