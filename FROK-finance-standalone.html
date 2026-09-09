@@ -25,6 +25,12 @@
   --bg-card: rgba(255, 255, 255, 0.04);
   --bg-secondary: rgba(255, 255, 255, 0.035);
   --glass-bg: rgba(255, 255, 255, 0.04);
+  /* Inline edit-field styling (rename/amount/ticker/units inputs, row
+     action buttons) — these are set via JS style.cssText, not static
+     CSS, so they need their own theme-aware tokens rather than the
+     literals a static [data-theme="light"] override could reach. */
+  --input-bg: rgba(0,0,0,0.30);
+  --input-border: rgba(255,255,255,0.10);
   --glass-border: transparent;
   --glass-border-strong: transparent;
   --glass-shadow:
@@ -1953,6 +1959,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   --success: #157A5A;
   --warning: #B4790A;
   --danger: #D23F3F;
+  --input-bg: rgba(20,18,15,0.04);
+  --input-border: rgba(20,18,15,0.14);
   color-scheme: light;
   /* Same values as index.html's light theme, so the atmospheric
      backdrop matches exactly on both pages. */
@@ -2015,6 +2023,91 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: rgba(20,18,15,0.08);
   border-color: rgba(20,18,15,0.10);
 }
+
+
+/* ============================================================
+   AUTO-GENERATED light-theme overrides (scripted pass, same approach
+   used for gym.html) — mirrors every rule above using a hardcoded
+   dark-mode literal with a light equivalent: rgba(255,255,255,X) ->
+   rgba(20,18,15,X) neutral-tint inversion, rgba(0,0,0,X)/#0A0A0B/
+   #050506 dark backgrounds -> cream/light-ink-tint, white text -> dark
+   ink. Colored/brand accents (mint success green, purple Nova
+   gradient, warning/danger) are left untouched — they already read
+   fine on both backgrounds. box-shadow/filter are left untouched too
+   (a soft dark shadow still works on a light card). Regenerate via
+   script rather than hand-editing if the rules above change.
+   ============================================================ */
+[data-theme="light"] .nova-msg-nova { align-self: flex-start; background: rgba(20,18,15,0.03); color: var(--text-secondary); border: 1px solid rgba(20,18,15,0.06); border-bottom-left-radius: 4px; }
+[data-theme="light"] .nova-chip { background: rgba(20,18,15,0.04); border: 1px solid rgba(20,18,15,0.10); color: var(--text-secondary); border-radius: 999px; padding: 7px 13px; font-size: 12px; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+[data-theme="light"] .nova-chip:hover { background: rgba(20,18,15,0.07); color: var(--text-primary); }
+[data-theme="light"] .nova-input { flex: 1; resize: none; min-height: 44px; max-height: 130px; background: rgba(20,18,15,0.04); border: 1px solid rgba(20,18,15,0.12); color: var(--text-primary); border-radius: 12px; padding: 11px 13px; font-family: inherit; font-size: 14px; line-height: 1.4; outline: none; }
+[data-theme="light"] .nova-input:focus { border-color: rgba(20,18,15,0.22); }
+[data-theme="light"] .rcpt-drop { margin-top: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; min-height: 104px; padding: 18px 16px; border: 1.5px dashed rgba(20,18,15,0.14); border-radius: var(--radius-md); background: rgba(20,18,15,0.02); color: var(--text-tertiary); cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; }
+[data-theme="light"] .rcpt-thumb { width: 56px; height: 56px; flex: none; border-radius: 10px; object-fit: cover; border: 1px solid rgba(20,18,15,0.10); background: rgba(20,18,15,0.04); }
+[data-theme="light"] .rcpt-field input,
+[data-theme="light"] .rcpt-field select { background: rgba(20,18,15,0.04); border: 1px solid rgba(20,18,15,0.10); color: var(--text-primary); border-radius: 8px; padding: 7px 9px; font-family: inherit; font-size: 13px; outline: none; width: 100%; }
+[data-theme="light"] .rcpt-btn { border: 1px solid rgba(20,18,15,0.10); background: rgba(20,18,15,0.04); color: var(--text-secondary); border-radius: 10px; padding: 8px 14px; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+[data-theme="light"] .rcpt-btn:hover { background: rgba(20,18,15,0.08); color: var(--text-primary); }
+[data-theme="light"] .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(20,18,15,0.08), transparent); }
+[data-theme="light"] .card::before { content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 1px; background: linear-gradient(90deg, transparent, rgba(20,18,15,0.16), transparent); pointer-events: none; }
+[data-theme="light"] .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; padding: 3px 9px 3px 8px; border-radius: 999px; margin: 2px; font-weight: 700; letter-spacing: 0.04em; border: none; background: rgba(20,18,15,0.05); color: var(--text-secondary); font-family: var(--font-mono); text-transform: uppercase; }
+[data-theme="light"] .tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; background: rgba(20,18,15,0.30); }
+[data-theme="light"] .quick-add { display: flex; gap: 6px; align-items: stretch; margin-top: 10px; padding: 4px; background: rgba(20,18,15,0.04); border-radius: 12px; border: none; }
+[data-theme="light"] .quick-add-btn { padding: 0 14px; background: rgba(20,18,15,0.06); border: none; color: var(--text-secondary); border-radius: 9px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+[data-theme="light"] .quick-add-btn:hover { background: rgba(20,18,15,0.12); color: var(--text-primary); }
+[data-theme="light"] .custom-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: rgba(20,18,15,0.025); border: none; border-radius: 10px; margin-bottom: 5px; font-size: 13px; color: var(--text-primary); }
+[data-theme="light"] .custom-item:hover { background: rgba(20,18,15,0.05); }
+[data-theme="light"] .custom-item .item-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(20,18,15,0.30); flex-shrink: 0; }
+[data-theme="light"] .nw-color-swatch { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; flex-shrink: 0; border: 1px solid rgba(20,18,15,0.18); border-radius: 50%; padding: 0; background: none; cursor: pointer; }
+[data-theme="light"] .nw-ticker-tag { flex-shrink: 0; font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; color: var(--text-tertiary); background: rgba(20,18,15,0.06); padding: 2px 6px; border-radius: 5px; cursor: pointer; }
+[data-theme="light"] .nw-ticker-tag:hover { background: rgba(20,18,15,0.10); color: var(--text-primary); }
+[data-theme="light"] .nw-name-edit:hover,
+[data-theme="light"] .nw-amt-edit:hover { background: rgba(20,18,15,0.06); }
+[data-theme="light"] .nw-subcard { background: rgba(20,18,15,0.025) !important; border: none; margin-bottom: 0; min-width: 0; display: flex; flex-direction: column; }
+[data-theme="light"] .nw-chart-wrap { margin: 14px 0 18px; padding: 14px 16px 12px; background: rgba(20,18,15,0.025); border: none; border-radius: 12px; position: relative; overflow: hidden; }
+[data-theme="light"] .nw-chart-range button { border: 0; background: rgba(20,18,15,0.04); color: var(--text-tertiary); font-family: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; padding: 4px 9px; border-radius: 7px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+[data-theme="light"] .nw-chart-range button:hover { background: rgba(20,18,15,0.08); }
+[data-theme="light"] .nw-chart-range button.on { background: rgba(20,18,15,0.14); color: var(--text-primary); }
+[data-theme="light"] .nw-chart-grid { stroke: rgba(20,18,15,0.05); stroke-width: 1; stroke-dasharray: 2 4; vector-effect: non-scaling-stroke; }
+[data-theme="light"] .nw-chart-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(20,18,15,0.05); }
+[data-theme="light"] .nw-donut-wrap { position: relative; padding: 14px 16px 12px; background: rgba(20,18,15,0.025); border-radius: 12px; display: flex; flex-direction: column; }
+[data-theme="light"] .nw-activity { margin-top: 14px; padding: 14px 16px 12px; background: rgba(20,18,15,0.025); border-radius: 12px; }
+[data-theme="light"] .nw-activity-list::-webkit-scrollbar-thumb { background: rgba(20,18,15,0.10); border-radius: 2px; }
+[data-theme="light"] .nw-activity-row { display: grid; grid-template-columns: 4px 1fr auto auto auto; gap: 10px; align-items: center; padding: 8px 12px; background: rgba(20,18,15,0.025); border-radius: 8px; font-size: 12.5px; transition: background 0.15s; }
+[data-theme="light"] .nw-activity-row:hover { background: rgba(20,18,15,0.05); }
+[data-theme="light"] .ord-add-card { background: rgba(20,18,15,0.025) !important; border: 1px solid rgba(20,18,15,0.05) !important; }
+[data-theme="light"] .ord-add-grid { display: grid; grid-template-columns: 1.6fr 1fr 0.8fr 1.1fr 1.1fr auto; gap: 6px; align-items: stretch; padding: 4px; background: rgba(20,18,15,0.04); border-radius: 12px; }
+[data-theme="light"] .ord-input-ccy,
+[data-theme="light"] .ord-input-from { background: rgba(20,18,15,0.04); border-radius: 8px; cursor: pointer; font-weight: 600; appearance: none; -webkit-appearance: none; text-align: center; }
+[data-theme="light"] .ord-card { background: rgba(20,18,15,0.025); border-radius: 14px; padding: 14px 16px; margin-bottom: 8px; border-left: 3px solid var(--text-tertiary); transition: background 0.15s; }
+[data-theme="light"] .ord-card:hover { background: rgba(20,18,15,0.045); }
+[data-theme="light"] .ord-card-x { background: transparent; border: 1px solid rgba(20,18,15,0.08); color: var(--text-tertiary); cursor: pointer; font-size: 14px; padding: 4px 9px; border-radius: 6px; font-family: inherit; line-height: 1; }
+[data-theme="light"] .ord-meta-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: rgba(20,18,15,0.04); font-weight: 700; letter-spacing: 0.04em; }
+[data-theme="light"] .ord-empty-card { text-align: center; padding: 32px 20px; background: rgba(20,18,15,0.025); border-radius: 14px; border: 1px dashed rgba(20,18,15,0.08); }
+[data-theme="light"] .wish-hero-bar { height: 6px; border-radius: 3px; background: rgba(20,18,15,0.06); overflow: hidden; position: relative; }
+[data-theme="light"] .wish-add-card { background: rgba(20,18,15,0.025) !important; border: 1px solid rgba(20,18,15,0.05) !important; }
+[data-theme="light"] .wish-add-row { display: flex; gap: 6px; align-items: stretch; flex-wrap: wrap; padding: 4px; background: rgba(20,18,15,0.04); border-radius: 12px; }
+[data-theme="light"] .wish-input-ccy { flex: 0 1 80px; background: rgba(20,18,15,0.04); border-radius: 9px; color: var(--text-primary); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; appearance: none; -webkit-appearance: none; text-align: center; }
+[data-theme="light"] .wish-add-btn { padding: 0 18px; background: linear-gradient(180deg, #B794F4, #9F7DD4); color: #1C1B17; border: none; border-radius: 9px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 4px 14px rgba(183,148,244,0.30); transition: transform 0.12s, box-shadow 0.18s; }
+[data-theme="light"] .wish-empty-card { text-align: center; padding: 32px 20px; background: rgba(20,18,15,0.025); border-radius: 14px; border: 1px dashed rgba(20,18,15,0.08); }
+[data-theme="light"] .wish-row { background: rgba(20,18,15,0.025); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+[data-theme="light"] .wish-row-x { background: transparent; border: 1px solid rgba(20,18,15,0.10); color: var(--text-tertiary); cursor: pointer; font-size: 14px; padding: 4px 8px; border-radius: 6px; font-family: inherit; line-height: 1; }
+[data-theme="light"] .wish-row-bar { height: 5px; border-radius: 3px; background: rgba(20,18,15,0.04); margin-top: 10px; overflow: hidden; }
+[data-theme="light"] .wish-row-bar-fill.flat { background: rgba(20,18,15,0.20); }
+[data-theme="light"] .ticker-tag { font-size: 9.5px; letter-spacing: 0.18em; font-weight: 800; text-transform: uppercase; color: var(--text-tertiary); padding: 3px 8px; background: rgba(20,18,15,0.04); border-radius: 999px; flex-shrink: 0; }
+[data-theme="light"] .ticker-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(20,18,15,0.18); transition: background 0.2s; }
+[data-theme="light"] .ord-card-foot { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(20,18,15,0.06); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+[data-theme="light"] .ord-deduct-undo { background: transparent; border: 1px solid rgba(20,18,15,0.10); color: var(--text-tertiary); font-family: inherit; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px; border-radius: 6px; cursor: pointer; }
+[data-theme="light"] .ord-deduct-undo:hover { color: var(--text-primary); border-color: rgba(20,18,15,0.20); }
+[data-theme="light"] .ord-deduct-chooser { margin-top: 10px; padding: 12px; background: rgba(20,18,15,0.04); border: 1px solid rgba(125,211,252,0.18); border-radius: 10px; }
+[data-theme="light"] .ord-deduct-opt { background: rgba(20,18,15,0.04); border: 1px solid rgba(20,18,15,0.06); color: var(--text-primary); font-family: inherit; font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 8px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+[data-theme="light"] .ord-deduct-opt.insufficient:hover { background: rgba(20,18,15,0.04); border-color: rgba(20,18,15,0.06); }
+[data-theme="light"] .ord-card.is-deducted .ord-card-name { text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: rgba(20,18,15,0.20); }
+[data-theme="light"] .date-field { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; background: var(--bg-card); border: 0.5px solid rgba(20,18,15,0.10); border-radius: var(--radius-md); font-family: inherit; color: var(--text-primary); min-width: 0; cursor: pointer; }
+[data-theme="light"] .sub-auto-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--bg-card); border: 0.5px solid rgba(20,18,15,0.10); border-radius: var(--radius-md); cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; font-family: inherit; font-size: 12px; color: var(--text-secondary); }
+[data-theme="light"] .sub-auto-track { position: relative; display: inline-block; width: 30px; height: 16px; border-radius: 999px; background: rgba(20,18,15,0.10); transition: background 0.2s; flex-shrink: 0; }
+[data-theme="light"] .sub-row-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(20,18,15,0.04); border: 1px solid rgba(20,18,15,0.08); border-radius: 999px; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); font-weight: 700; }
+[data-theme="light"] .sub-row-toggle .sub-row-toggle-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(20,18,15,0.25); }
 </style>
 </head>
 <body>
@@ -2887,7 +2980,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     input.inputMode = 'decimal';
     const prefilled = String(curDisplay.toFixed(curDisplay % 1 === 0 ? 0 : 2));
     input.value = prefilled;
-    input.style.cssText = 'width:110px;padding:4px 8px;font-family:var(--font-mono);font-size:12px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    input.style.cssText = 'width:110px;padding:4px 8px;font-family:var(--font-mono);font-size:12px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
     amtEl.textContent = '';
     amtEl.appendChild(input);
     setTimeout(() => { input.focus(); input.select(); }, 0);
@@ -2943,12 +3036,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const input = document.createElement('input');
     input.type = 'text';
     input.value = curName;
-    input.style.cssText = 'flex:1;min-width:0;padding:4px 8px;font-family:inherit;font-size:13px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;outline:none;';
+    input.style.cssText = 'flex:1;min-width:0;padding:4px 8px;font-family:inherit;font-size:13px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-primary);border-radius:6px;outline:none;';
     const dateInput = document.createElement('input');
     dateInput.type = 'date';
     dateInput.value = curDate;
     dateInput.title = 'Date added';
-    dateInput.style.cssText = 'flex-shrink:0;padding:4px 6px;font-family:inherit;font-size:11px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;outline:none;color-scheme:dark;';
+    dateInput.style.cssText = 'flex-shrink:0;padding:4px 6px;font-family:inherit;font-size:11px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-primary);border-radius:6px;outline:none;color-scheme:dark;';
     wrap.appendChild(input);
     wrap.appendChild(dateInput);
     nameEl.textContent = '';
@@ -2982,7 +3075,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const input = document.createElement('input');
     input.type = 'text';
     input.value = cur;
-    input.style.cssText = 'width:100px;padding:4px 8px;font-family:var(--font-mono);font-size:12px;text-transform:uppercase;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;outline:none;';
+    input.style.cssText = 'width:100px;padding:4px 8px;font-family:var(--font-mono);font-size:12px;text-transform:uppercase;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-primary);border-radius:6px;outline:none;';
     tickerEl.textContent = '';
     tickerEl.appendChild(input);
     setTimeout(() => { input.focus(); input.select(); }, 0);
@@ -3023,12 +3116,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     unitsInput.type = 'text'; unitsInput.inputMode = 'decimal';
     unitsInput.value = String(curUnits);
     unitsInput.title = 'Units held';
-    unitsInput.style.cssText = 'width:56px;min-width:0;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    unitsInput.style.cssText = 'width:56px;min-width:0;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
     const valueInput = document.createElement('input');
     valueInput.type = 'text'; valueInput.inputMode = 'decimal';
     valueInput.value = String(curValueDisplay.toFixed(curValueDisplay % 1 === 0 ? 0 : 2));
     valueInput.title = 'Value (' + symbol + ') — manual override, replaced by the next successful live price';
-    valueInput.style.cssText = 'width:72px;min-width:0;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:rgba(0,0,0,0.30);border:1px solid rgba(255,255,255,0.10);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    valueInput.style.cssText = 'width:72px;min-width:0;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
     wrap.appendChild(unitsInput);
     wrap.appendChild(valueInput);
     amtEl.textContent = '';
@@ -3646,12 +3739,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       actions.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:center';
       const editBtn = document.createElement('button');
       editBtn.title = 'Edit';
-      editBtn.style.cssText = 'background:transparent;border:1px solid rgba(255,255,255,0.10);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:5px;font-family:inherit;line-height:1';
+      editBtn.style.cssText = 'background:transparent;border:1px solid var(--input-border);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:5px;font-family:inherit;line-height:1';
       editBtn.textContent = '✏';
       editBtn.addEventListener('click', () => editSubInline(idx));
       const del = document.createElement('button');
       del.title = 'Delete';
-      del.style.cssText = 'background:transparent;border:1px solid rgba(255,255,255,0.10);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:5px;font-family:inherit;line-height:1';
+      del.style.cssText = 'background:transparent;border:1px solid var(--input-border);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:5px;font-family:inherit;line-height:1';
       del.textContent = '×';
       del.addEventListener('click', () => {
         if (!confirm('Delete "' + it.name + '"?')) return;
@@ -3792,7 +3885,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       '<select class="se-from" style="padding:6px 10px;border:0.5px solid rgba(255,255,255,0.10);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary);min-width:130px">' + fromOpts + '</select>' +
       '<label class="sub-auto-toggle" style="padding:6px 10px"><input type="checkbox" class="se-auto"' + (it.autoDeduct ? ' checked' : '') + ' /><span class="sub-auto-track"><span class="sub-auto-thumb"></span></span><span class="sub-auto-label">Auto-deduct</span></label>' +
       '<button class="se-save quick-add-btn">Save</button>' +
-      '<button class="se-cancel" style="background:transparent;border:1px solid rgba(255,255,255,0.10);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:6px 10px;border-radius:var(--radius-md);font-family:inherit">Cancel</button>';
+      '<button class="se-cancel" style="background:transparent;border:1px solid var(--input-border);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:6px 10px;border-radius:var(--radius-md);font-family:inherit">Cancel</button>';
     row.appendChild(form);
     const save = () => {
       const newName = row.querySelector('.se-name').value.trim();
