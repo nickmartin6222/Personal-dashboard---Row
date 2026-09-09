@@ -273,53 +273,66 @@ body::after {
 /* ===== Light theme overrides =====
    Additive only, same pattern as the rest of the dashboard. */
 :root[data-theme="light"] {
-  --bg: #F5F3EF;
+  --bg: #EDEEE9;
   --bg-card: #FFFFFF;
-  --bg-secondary: rgba(20, 18, 15, 0.03);
-  --bg-input: rgba(20, 18, 15, 0.04);
-  --bg-input-focus: rgba(20, 18, 15, 0.06);
-  --border: rgba(20, 18, 15, 0.08);
-  --border-strong: rgba(20, 18, 15, 0.14);
-  --text-primary: #1C1B17;
-  --text-secondary: #5B584E;
-  --text-tertiary: #8A8676;
-  --text-quaternary: #B7B3A4;
-  --accent: #12805A;
-  --warning: #B4790A;
-  --danger: #D23F3F;
+  --bg-secondary: rgba(28, 30, 27, 0.03);
+  --bg-input: rgba(28, 30, 27, 0.04);
+  --bg-input-focus: rgba(28, 30, 27, 0.06);
+  --border: rgba(28, 30, 27, 0.08);
+  --border-strong: rgba(28, 30, 27, 0.14);
+  --text-primary: #1C1E1B;
+  --text-secondary: #63675F;
+  --text-tertiary: #9A9E93;
+  --text-quaternary: #C3C6BD;
+  --accent: #4C7A5B;
+  --warning: #C99A44;
+  --danger: #C2554B;
   color-scheme: light;
 }
 [data-theme="light"] body::before {
   background:
-    radial-gradient(circle at 82% 14%, rgba(18, 128, 90, 0.10), transparent 45%),
+    radial-gradient(circle at 82% 14%, rgba(76, 122, 91, 0.10), transparent 45%),
     radial-gradient(circle at 18% 90%, rgba(120, 120, 140, 0.08), transparent 50%);
 }
 [data-theme="light"] body::after {
   background-image: radial-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
 }
 [data-theme="light"] .dash-title {
-  background: linear-gradient(180deg, #1C1B17 0%, #5B584E 120%);
+  background: linear-gradient(180deg, #1C1E1B 0%, #63675F 120%);
   -webkit-background-clip: text; background-clip: text;
 }
 [data-theme="light"] .section-title::after {
-  background: linear-gradient(90deg, rgba(20,18,15,0.10), transparent);
+  background: linear-gradient(90deg, rgba(28,30,27,0.10), transparent);
 }
 [data-theme="light"] .hcp-card,
 [data-theme="light"] .golf-card,
 [data-theme="light"] .golf-chart-card,
-[data-theme="light"] .stat-tile { box-shadow: 0 12px 32px rgba(20,18,15,0.10); }
-[data-theme="light"] .hcp-tier { background: rgba(18,128,90,0.10); }
-[data-theme="light"] .seg button.on { background: rgba(20,18,15,0.10); color: var(--text-primary); }
+[data-theme="light"] .stat-tile { box-shadow: 0 12px 32px rgba(28,30,27,0.10); }
+[data-theme="light"] .hcp-tier { background: rgba(76,122,91,0.10); }
+[data-theme="light"] .seg button.on { background: rgba(28,30,27,0.10); color: var(--text-primary); }
 [data-theme="light"] .golf-round-row {
-  background: rgba(20,18,15,0.03);
-  border-color: rgba(20,18,15,0.08);
+  background: rgba(28,30,27,0.03);
+  border-color: rgba(28,30,27,0.08);
 }
-[data-theme="light"] .golf-round-score { background: rgba(20,18,15,0.06); }
+[data-theme="light"] .golf-round-score { background: rgba(28,30,27,0.06); }
 [data-theme="light"] .golf-save-btn {
-  background: linear-gradient(180deg,#1C1B17,#33312A);
+  background: linear-gradient(180deg,#1C1E1B,#33352F);
   color: #FAFAF8;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 20px rgba(20,18,15,0.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 20px rgba(28,30,27,0.18);
 }
+
+
+/* ============================================================
+   AUTO-GENERATED light-theme overrides (scripted pass, same approach
+   used for gym.html / finance) — mirrors every rule above using a
+   hardcoded dark-mode literal with a light equivalent: white-overlay
+   tints -> dark-ink tints, dark backgrounds -> light, white text ->
+   ink. Colored/brand accents are left untouched. box-shadow/filter
+   untouched too.
+   ============================================================ */
+[data-theme="light"] .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(28,30,27,0.08), transparent); }
+[data-theme="light"] .seg button.on { background: rgba(28,30,27,0.12); color: var(--text-primary); }
+[data-theme="light"] .golf-input:focus { border-color: rgba(28,30,27,0.28); background: var(--bg-input-focus); }
 </style>
 </head>
 <body>
