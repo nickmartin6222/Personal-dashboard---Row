@@ -583,11 +583,21 @@ body::after {
     const rates = readJSON('fx:rates', { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 });
     return { ccy, rate: rates[ccy] || 1 };
   }
+  // Bank/crypto/other holdings freeze their own conversion rate at
+  // add/edit time on the Finance page (fmtMoneyFrozen there) so a typed-
+  // in balance doesn't silently drift as the exchange rate moves day to
+  // day — only stocks (live ticker price) should move on their own.
+  // Mirror that same per-item frozen rate here rather than converting
+  // the whole category through today's live rate.
   function nwCategoryTotal(catKey) {
     const items = readJSON('nw:' + catKey, []);
     if (!Array.isArray(items)) return 0;
-    const totalCHF = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
-    return totalCHF * displayCcy().rate;
+    const { ccy, rate } = displayCcy();
+    return items.reduce((sum, it) => {
+      const chf = Number(it.amount) || 0;
+      const itRate = (!it.ticker && it.rateAtAdd > 0 && it.rateCcy === ccy) ? it.rateAtAdd : rate;
+      return sum + chf * itRate;
+    }, 0);
   }
   function currentHandicap() {
     const rounds = readJSON('golf:rounds', []);
@@ -716,9 +726,13 @@ body::after {
     const ccy = readJSON('nw_currency', 'AUD');
     const rates = readJSON('fx:rates', { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 });
     const rate = rates[ccy] || 1;
-    const displayTotal = total * rate;
+    // Bank/crypto/other items freeze their own rate at add/edit time
+    // (matches Finance's fmtMoneyFrozen) so this headline doesn't drift
+    // day to day the same way the individual category totals don't.
+    const bank = nwCategoryTotal('bank'), stocks = nwCategoryTotal('stocks'),
+          crypto = nwCategoryTotal('crypto'), other = nwCategoryTotal('other');
+    const displayTotal = bank + stocks + crypto + other;
     $('finTotal').textContent = total > 0 ? (ccy + ' ' + Math.round(displayTotal).toLocaleString('en-US')) : '—';
-    const bank = nwCategoryTotal('bank'), stocks = nwCategoryTotal('stocks');
     $('finBreakdown').textContent = total > 0 ? ('bank ' + ccy + ' ' + Math.round(bank).toLocaleString('en-US') + ' · stocks ' + ccy + ' ' + Math.round(stocks).toLocaleString('en-US')) : 'No holdings logged yet';
 
     slices.sort((a, b) => b.amount - a.amount);

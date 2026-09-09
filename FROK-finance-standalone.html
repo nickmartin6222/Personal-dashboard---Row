@@ -2799,6 +2799,31 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   const netWorthTotal = document.getElementById('netWorthTotal');
   const netWorthBreakdown = document.getElementById('netWorthBreakdown');
 
+  // One-time migration: anchor a real rate onto every bank/crypto/other
+  // item that predates the rate-freezing fix above, so it stops
+  // drifting from here on. Freezes at today's (already possibly
+  // slightly drifted) value rather than the original entry — there's no
+  // way to recover the historical rate — so re-entering the exact
+  // number once is the only way back to a round figure, but it will
+  // hold steady forever after that.
+  function freezeUnanchoredRates() {
+    const symbol = currencyEl ? currencyEl.value : 'CHF';
+    const rate = exchangeRates[symbol] || 1;
+    NW_CATS.forEach(cat => {
+      if (cat.key === 'stocks') return;
+      const items = storeGet('nw:' + cat.key) || [];
+      let changed = false;
+      items.forEach(it => {
+        if (!it.ticker && !(it.rateAtAdd > 0)) {
+          it.rateAtAdd = rate;
+          it.rateCcy = symbol;
+          changed = true;
+        }
+      });
+      if (changed) storeSet('nw:' + cat.key, items);
+    });
+  }
+
   let exchangeRates = { CHF: 1, USD: 1, EUR: 1, GBP: 1, AUD: 1 };
   async function loadExchangeRates() {
     try {
@@ -2815,6 +2840,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         // Cache for the dashboard tile (index.html), which shows a net
         // worth figure but has no reason to fetch exchange rates itself.
         try { localStorage.setItem('fx:rates', JSON.stringify(exchangeRates)); } catch (e) {}
+        freezeUnanchoredRates();
         renderAllNetWorth();
         if (typeof renderSubs === 'function') renderSubs();
       }
@@ -2918,6 +2944,28 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const num = (Number(amountCHF) || 0) * rate;
     return symbol + ' ' + num.toLocaleString('en-US', { minimumFractionDigits: num % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
   }
+  // Format a number that's ALREADY in the display currency — no rate
+  // multiplication, just the symbol + thousands formatting fmtMoney also
+  // does. Used for bank/crypto/other amounts, which freeze their
+  // conversion rate at add/edit time (see fmtMoneyFrozen) instead of
+  // reconverting through today's live rate on every render.
+  function fmtMoneyRaw(num) {
+    const symbol = currencyEl ? currencyEl.value : 'CHF';
+    return symbol + ' ' + num.toLocaleString('en-US', { minimumFractionDigits: num % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+  }
+  // Bank/crypto/other holdings are a number you typed in, not a live
+  // market value — re-deriving them through TODAY's exchange rate made
+  // them silently drift day to day even though nothing was edited. Only
+  // stocks should move on their own (their live price genuinely
+  // changes). Uses the rate frozen at add/edit time (rateAtAdd/rateCcy)
+  // as long as the display currency hasn't changed since; falls back to
+  // the live rate only if it has (a deliberate, rare action) or if the
+  // item predates this fix and has no frozen rate yet.
+  function fmtMoneyFrozen(amountCHF, it) {
+    const symbol = currencyEl ? currencyEl.value : 'CHF';
+    const rate = (it && it.rateAtAdd > 0 && it.rateCcy === symbol) ? it.rateAtAdd : (exchangeRates[symbol] || 1);
+    return fmtMoneyRaw((Number(amountCHF) || 0) * rate);
+  }
 
   function renderNetWorthCategory(cat) {
     const items = storeGet('nw:' + cat.key) || [];
@@ -2925,8 +2973,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     if (!list) return 0;
     list.innerHTML = '';
     let total = 0;
+    // Category total shown on screen — ticker'd items convert via the
+    // live rate as always; everything else uses its own frozen rate, so
+    // this line always matches the sum of what each row actually shows.
+    let displayTotal = 0;
+    const symbolNow = currencyEl ? currencyEl.value : 'CHF';
     items.forEach((it, idx) => {
       total += Number(it.amount) || 0;
+      const itRate = (!it.ticker && it.rateAtAdd > 0 && it.rateCcy === symbolNow) ? it.rateAtAdd : (exchangeRates[symbolNow] || 1);
+      displayTotal += (Number(it.amount) || 0) * itRate;
       const row = document.createElement('div');
       row.className = 'nw-row';
 
@@ -2966,7 +3021,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       const amt = document.createElement('span');
       amt.className = 'nw-amt nw-amt-edit';
       const neverPriced = it.ticker && !it.amount && !it.lastPrice;
-      amt.textContent = neverPriced ? 'Pending price…' : fmtMoney(it.amount);
+      amt.textContent = neverPriced ? 'Pending price…' : (it.ticker ? fmtMoney(it.amount) : fmtMoneyFrozen(it.amount, it));
       if (neverPriced) amt.style.opacity = '0.55';
       if (it.ticker) {
         amt.title = neverPriced
@@ -3022,7 +3077,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         list.appendChild(errRow);
       }
     });
-    document.getElementById(cat.totalId).textContent = fmtMoney(total);
+    document.getElementById(cat.totalId).textContent = fmtMoneyRaw(displayTotal);
     return total;
   }
 
@@ -3031,7 +3086,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const symbol = currencyEl ? currencyEl.value : 'CHF';
     const rate = exchangeRates[symbol] || 1;
     const curCHF = Number(items[idx].amount) || 0;
-    const curDisplay = curCHF * rate;
+    // Start from whatever's actually on screen (the frozen rate, if this
+    // item has one) rather than the live rate — otherwise the prefilled
+    // value wouldn't match the row's own displayed number.
+    const it0 = items[idx];
+    const displayRate = (it0.rateAtAdd > 0 && it0.rateCcy === symbol) ? it0.rateAtAdd : rate;
+    const curDisplay = curCHF * displayRate;
     const input = document.createElement('input');
     input.type = 'text';
     input.inputMode = 'decimal';
@@ -3070,6 +3130,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       // avoids baking in float/rounding noise as a "real" edit.
       if (Math.abs(deltaCHF) < 0.01) { renderAllNetWorth(); return; }
       items[idx].amount = nextCHF;
+      // Re-freeze at today's rate — this is a fresh, deliberate value the
+      // user just typed, so it should hold steady from here exactly like
+      // a new entry would, not drift again before the next edit.
+      items[idx].rateAtAdd = rate;
+      items[idx].rateCcy = symbol;
       storeSet('nw:' + catKey, items);
       logActivity(catKey, items[idx].name, deltaCHF, 'edit');
       renderAllNetWorth();
@@ -3659,6 +3724,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       const items = storeGet('nw:' + cat.key) || [];
       const item = { name: n, amount: amountCHF, dateAdded: new Date().toISOString().slice(0, 10) };
       if (hasTicker) { item.ticker = ticker; if (hasUnits) item.units = units; }
+      // Freeze the conversion rate for anything that isn't a live-priced
+      // ticker, so this number reads back exactly what was typed instead
+      // of drifting with tomorrow's exchange rate (see fmtMoneyFrozen).
+      if (!hasTicker) { item.rateAtAdd = rate; item.rateCcy = symbol; }
       items.push(item);
       storeSet('nw:' + cat.key, items);
       logActivity(cat.key, n, amountCHF, 'add');
