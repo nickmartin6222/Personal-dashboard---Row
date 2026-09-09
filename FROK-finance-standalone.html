@@ -52,6 +52,12 @@
   --success: #6BE3A4;
   --warning: #F2C063;
   --danger: #FF6B6B;
+  /* Distinct from --danger (used for destructive actions) — this is
+     specifically the "trend down / negative value" red used across
+     chart deltas, activity amounts, and day-change % (kept a separate
+     token so retuning one doesn't affect the other). */
+  --trend-down: #FF8A8A;
+  --cat-stocks: #6EE7B7;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -782,8 +788,8 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 }
 .nw-chart-range button:hover { background: rgba(255,255,255,0.08); }
 .nw-chart-range button.on { background: rgba(255,255,255,0.14); color: var(--text-primary); }
-.nw-chart-delta.up   { color: #6BE3A4; }
-.nw-chart-delta.down { color: #FF8A8A; }
+.nw-chart-delta.up   { color: var(--success); }
+.nw-chart-delta.down { color: var(--trend-down); }
 .nw-chart-svg {
   display: block;
   width: 100%;
@@ -1016,8 +1022,8 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   font-family: var(--font-mono);
   white-space: nowrap;
 }
-.nw-activity-amt.up   { color: #6BE3A4; }
-.nw-activity-amt.down { color: #FF8A8A; }
+.nw-activity-amt.up   { color: var(--success); }
+.nw-activity-amt.down { color: var(--trend-down); }
 .nw-activity-date {
   font-size: 10.5px; color: var(--text-tertiary);
   font-family: var(--font-mono);
@@ -1967,6 +1973,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   --success: #4C7A5B;
   --warning: #C99A44;
   --danger: #C2554B;
+  --trend-down: #C2554B;
+  --cat-stocks: #4F7FBF;
   --input-bg: rgba(28,30,27,0.04);
   --input-border: rgba(28,30,27,0.14);
   color-scheme: light;
@@ -2763,13 +2771,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   // stable default derived from the holding's name/ticker so colours
   // don't jump around as other items are added/removed. Shared palette
   // + hash so the dashboard's net worth pie (index.html) computes the
-  // exact same default for any item that hasn't been recoloured.
+  // exact same default for any item that hasn't been recoloured — for
+  // dark mode, which index.html itself doesn't currently theme-switch.
+  // Light mode instead uses index.html's own muted secondary palette
+  // (dark mode is left exactly as-is, this is scoped to light only).
   const NW_COLOR_PALETTE = ['#7DD3FC','#6EE7B7','#C9B8FF','#F2C063','#FF8A8A','#F472B6','#FCD34D','#34D399','#A78BFA','#60A5FA','#FB923C','#4ADE80'];
+  const NW_COLOR_PALETTE_LIGHT = ['#4C7A5B', '#4F7FBF', '#8A6BB5', '#C99A44', '#C2554B', '#5F7A63', '#7A9A4A', '#3F5443'];
   function defaultItemColor(catKey, it) {
     const seed = catKey + ':' + (it.ticker || it.name || '');
     let hash = 0;
     for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-    return NW_COLOR_PALETTE[hash % NW_COLOR_PALETTE.length];
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const palette = isLight ? NW_COLOR_PALETTE_LIGHT : NW_COLOR_PALETTE;
+    return palette[hash % palette.length];
   }
   function itemColor(catKey, it) {
     return it.color || defaultItemColor(catKey, it);
@@ -2941,7 +2955,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         const up = it.lastChangePercent >= 0;
         chg.textContent = (up ? '+' : '') + it.lastChangePercent.toFixed(2) + '%';
         chg.style.cssText = 'flex-shrink:0;font-size:11px;font-weight:700;font-family:var(--font-mono);' +
-          'color:' + (up ? '#6BE3A4' : '#FF8A8A') + ';';
+          'color:' + (up ? 'var(--success)' : 'var(--trend-down)') + ';';
       }
       const amt = document.createElement('span');
       amt.className = 'nw-amt nw-amt-edit';
@@ -2997,7 +3011,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       // diagnosable from the phone that's stuck, not just desktop hover.
       if (neverPriced && it.lastPriceError) {
         const errRow = document.createElement('div');
-        errRow.style.cssText = 'padding:0 0 6px 30px;margin-top:-4px;font-size:10.5px;color:#FF8A8A;opacity:0.85;';
+        errRow.style.cssText = 'padding:0 0 6px 30px;margin-top:-4px;font-size:10.5px;color:var(--trend-down);opacity:0.85;';
         errRow.textContent = it.ticker + ': ' + it.lastPriceError;
         list.appendChild(errRow);
       }
@@ -3496,7 +3510,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const last = hist[hist.length - 1].v;
     const change = last - first;
     const direction = Math.abs(change) < 0.005 ? 'flat' : (change > 0 ? 'up' : 'down');
-    const color = direction === 'up' ? '#6BE3A4' : direction === 'down' ? '#FF8A8A' : 'var(--text-tertiary)';
+    const color = direction === 'up' ? 'var(--success)' : direction === 'down' ? 'var(--trend-down)' : 'var(--text-tertiary)';
     svg.style.color = color;
     if (deltaEl) {
       deltaEl.classList.remove('up', 'down');
@@ -3662,6 +3676,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     });
   }
   renderAllNetWorth();
+
+  // Re-paint whenever the shared light/dark toggle (topbar.js, or the
+  // dashboard's own switch) flips data-theme — defaultItemColor() picks
+  // a different default palette per theme, so an item with no manually-
+  // chosen color needs a live re-render, not just on next data change.
+  new MutationObserver(() => renderAllNetWorth())
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
   // ============================================================
   // SUBSCRIPTIONS
