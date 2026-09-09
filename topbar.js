@@ -233,7 +233,7 @@ body.topbar-modal-open {
     <span class="bottombar-tab-icon">🏠</span>
     <span>Main</span>
   </a>
-  <a href="gym.html" class="bottombar-tab" data-page="fitness">
+  <a href="gym-preview.html" class="bottombar-tab" data-page="fitness">
     <span class="bottombar-tab-icon">💪</span>
     <span>Fitness</span>
   </a>
@@ -263,7 +263,7 @@ body.topbar-modal-open {
   }
   function currentPageKey() {
     const p = (window.location.pathname || '').toLowerCase();
-    if (p.endsWith('gym.html')) return 'fitness';
+    if (p.endsWith('gym.html') || p.endsWith('gym-preview.html')) return 'fitness';
     if (p.endsWith('golf.html')) return 'golf';
     // Finance suppresses this bottombar entirely (its own internal tabs
     // take over instead), so this branch never actually lights up

@@ -6,23 +6,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
-<title>Gym — Preview v5</title>
+<title>Fitness</title>
 <script src="topbar.js" defer></script>
 
 <style>
 /* ==========================================================================
-   GYM PREVIEW v5 — restyled to match the real dashboard's own design
-   system (tokens read straight from index.html / golf.html) instead of
-   the standalone lime-accent look earlier rounds used: near-black flat
-   background, translucent glass cards, mint (#6EE7B7) as the one true
-   accent, gold/blue/lavender borrowed from the dashboard's existing
-   palette for Push/Pull/Lower B so each split reads at a glance (Lower
-   A keeps the mint accent). Variable NAMES are unchanged from earlier
-   rounds (--lime etc.) — only their values moved to match the real
-   site — so nothing downstream needed touching.
+   FITNESS — the live gym tracker. Design matches the rest of the
+   dashboard (tokens read from index.html / golf.html): near-black flat
+   background, translucent glass cards, mint (#6EE7B7) as the accent,
+   gold/blue/lavender for Push/Pull/Lower B so each split reads at a
+   glance (Lower A keeps the mint accent).
 
-   Mobile stays the primary target: the shell caps at phone width,
-   every button row wraps, modals are bottom sheets under 560px.
+   Real data: exercise names/weights/reps come from the same catalog as
+   gym.html, and Finish Workout / Mark Done write into the same
+   cloud-synced po_coach_v1 store (via writeRealLog(), see the bottom of
+   the script) — this page and gym.html read and write one shared log,
+   not two separate ones. gym.html itself is left untouched as a
+   fallback; only the bottom-nav Fitness tab was repointed here.
+
+   Mobile is the primary target: the shell caps at phone width, every
+   button row wraps, modals are bottom sheets under 560px.
    ========================================================================== */
 
 :root {
@@ -299,6 +302,11 @@ button { font-family: inherit; }
   border: 1px solid var(--border-strong); background: var(--bg-raised); color: var(--text-2);
   font-weight: 700; font-size: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
+.pause-workout-btn {
+  flex: none; width: 48px; padding: 13px 0; border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong); background: var(--bg-raised); color: var(--text-1);
+  font-weight: 700; font-size: 15px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
 .cancel-workout-btn:hover, .cancel-workout-btn:active { color: var(--bad); border-color: var(--bad); }
 .tw-hint { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 8px; }
 
@@ -550,11 +558,6 @@ button { font-family: inherit; }
 
 <div class="shell">
 
-  <div class="preview-banner" id="previewBanner">
-    <span><b>Design preview.</b> Real exercise catalog, matching the live dashboard's colors. Weight and your logged workout history are read from your real data so you can pick up where you left off — anything you log or edit here is saved separately and never writes back to your real log.</span>
-    <button class="pb-close" id="pbClose" aria-label="Dismiss">✕</button>
-  </div>
-
   <!-- 1. HEADER -->
   <div class="gp-header">
     <div class="gp-date" id="gpDate">—</div>
@@ -666,6 +669,7 @@ button { font-family: inherit; }
         <ul class="exercise-list" id="exerciseList"></ul>
         <div class="start-row">
           <button class="start-btn" id="startBtn" type="button"><span id="startBtnLabel">▶ Start Workout</span></button>
+          <button class="pause-workout-btn" id="pauseWorkoutBtn" type="button" hidden title="Pause"><span id="pauseWorkoutBtnIcon">⏸</span></button>
           <button class="cancel-workout-btn" id="cancelWorkoutBtn" type="button" hidden title="Discard this session — a false start">Cancel</button>
         </div>
         <div class="tw-hint" id="twHint" style="display:none">Tap Start Workout, then tap an exercise to log a set.</div>
@@ -845,13 +849,10 @@ button { font-family: inherit; }
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function () {
   'use strict';
-
-  document.getElementById('pbClose').addEventListener('click', function () {
-    document.getElementById('previewBanner').style.display = 'none';
-  });
 
   var UNITS = 'kg';
   function unit() { return UNITS; }
@@ -1569,18 +1570,48 @@ button { font-family: inherit; }
   // Lazily create (and start timing) today's live session the first
   // time anything is logged — via the checkbox, the detailed modal, or
   // the explicit Start Workout button. Whichever happens first is when
-  // the clock actually starts.
+  // the clock actually starts. Time is tracked as elapsedMs (banked
+  // from finished run segments) + segmentStart (when the current
+  // running segment began, null while paused) so Pause genuinely stops
+  // the clock rather than just freezing the display.
   function ensureSession() {
     if (currentSession) return;
-    currentSession = { day: confirmedDay, startTime: Date.now(), sets: [], _timer: null };
-    var btn = document.getElementById('startBtn'), label = document.getElementById('startBtnLabel');
-    btn.classList.add('is-active');
+    currentSession = { day: confirmedDay, elapsedMs: 0, segmentStart: Date.now(), sets: [], _timer: null };
+    document.getElementById('startBtn').classList.add('is-active');
     document.getElementById('cancelWorkoutBtn').hidden = false;
-    currentSession._timer = setInterval(function () {
-      var secs = Math.floor((Date.now() - currentSession.startTime) / 1000);
-      var mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
-      label.textContent = '■ ' + mm + ':' + ss + ' — Finish Workout';
-    }, 1000);
+    document.getElementById('pauseWorkoutBtn').hidden = false;
+    startTicking();
+  }
+  function sessionElapsedMs() {
+    return currentSession.elapsedMs + (currentSession.segmentStart ? Date.now() - currentSession.segmentStart : 0);
+  }
+  function tickLabel() {
+    var secs = Math.floor(sessionElapsedMs() / 1000);
+    var mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
+    document.getElementById('startBtnLabel').textContent = '■ ' + mm + ':' + ss + ' — Finish Workout';
+  }
+  function startTicking() {
+    clearInterval(currentSession._timer);
+    tickLabel(); // update immediately — don't wait up to 1s for the first interval tick
+    currentSession._timer = setInterval(tickLabel, 1000);
+  }
+  function pauseSession() {
+    if (!currentSession || !currentSession.segmentStart) return;
+    currentSession.elapsedMs += Date.now() - currentSession.segmentStart;
+    currentSession.segmentStart = null;
+    clearInterval(currentSession._timer);
+    var secs = Math.floor(currentSession.elapsedMs / 1000);
+    var mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
+    document.getElementById('startBtnLabel').textContent = '⏸ ' + mm + ':' + ss + ' (paused) — Finish Workout';
+    document.getElementById('pauseWorkoutBtnIcon').textContent = '▶';
+    document.getElementById('pauseWorkoutBtn').title = 'Resume';
+  }
+  function resumeSession() {
+    if (!currentSession || currentSession.segmentStart) return;
+    currentSession.segmentStart = Date.now();
+    startTicking();
+    document.getElementById('pauseWorkoutBtnIcon').textContent = '⏸';
+    document.getElementById('pauseWorkoutBtn').title = 'Pause';
   }
   // Commits today's live session into history: pushes a Recent
   // Activity entry with the real elapsed time and logged volume, and
@@ -1590,10 +1621,11 @@ button { font-family: inherit; }
   function commitSession() {
     if (!currentSession || !currentSession.sets.length) { currentSession = null; return; }
     clearInterval(currentSession._timer);
-    var durationMin = Math.max(1, Math.round((Date.now() - currentSession.startTime) / 60000));
+    var durationMin = Math.max(1, Math.round(sessionElapsedMs() / 60000));
     var volume = currentSession.sets.reduce(function (sum, s) { return sum + s.setsCount * s.reps * s.weight; }, 0);
     SESSIONS.unshift({ id: Date.now(), day: currentSession.day, dateKey: wtDateKey(new Date()), durationMin: durationMin, volume: volume, sets: currentSession.sets.map(function (s, i) { return Object.assign({ id: Date.now() + i }, s); }) });
     saveSessions();
+    writeRealLog(currentSession.day, currentSession.sets);
     STRENGTH.hours += durationMin / 60;
     STRENGTH.done = Math.min(STRENGTH.goal, STRENGTH.done + 1);
     STRENGTH.volume += Math.round(volume);
@@ -1619,15 +1651,21 @@ button { font-family: inherit; }
     document.getElementById('startBtn').classList.remove('is-active');
     document.getElementById('startBtnLabel').textContent = '▶ Start Workout';
     document.getElementById('cancelWorkoutBtn').hidden = true;
+    document.getElementById('pauseWorkoutBtn').hidden = true;
+    document.getElementById('pauseWorkoutBtnIcon').textContent = '⏸';
   }
   // Start / Finish Workout — finishing adds real elapsed time to the
   // weekly total, counts a workout toward the weekly goal, and pushes
   // a new session (with real duration + logged volume) into Recent
-  // Activity / Workout Summary. Cancel discards it instead — see
-  // cancelSession() above.
+  // Activity / Workout Summary. Pause genuinely stops the clock (e.g.
+  // for a rest break away from the app); Cancel discards it entirely.
   document.getElementById('startBtn').addEventListener('click', function () {
     if (!currentSession) { ensureSession(); renderChecklist(); }
-    else { commitSession(); refreshAllSessionViews(); renderChecklist(); }
+    else { commitSession(); refreshAllSessionViews(); renderChecklist(); } // finishes whether running or paused
+  });
+  document.getElementById('pauseWorkoutBtn').addEventListener('click', function () {
+    if (!currentSession) return;
+    if (currentSession.segmentStart) pauseSession(); else resumeSession();
   });
   document.getElementById('cancelWorkoutBtn').addEventListener('click', cancelSession);
 
@@ -1734,9 +1772,58 @@ button { font-family: inherit; }
   // genuinely unknown for these, shown as "—" rather than guessed.
   var LIVE_STATE_KEY = 'po_coach_v1';
   var REAL_DAY_ID_TO_NAME = { lowerA: 'Lower A', push: 'Push', lowerB: 'Lower B', pull: 'Pull' };
+  var REAL_NAME_TO_DAY_ID = { 'Lower A': 'lowerA', 'Push': 'push', 'Lower B': 'lowerB', 'Pull': 'pull' };
   function loadLiveState() {
     try { var raw = localStorage.getItem(LIVE_STATE_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
     return null;
+  }
+  function localTimestampFor(d) {
+    var p = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  // Finds the matching exercise in your REAL program by name; if it
+  // genuinely doesn't exist there yet (a custom exercise added only in
+  // this preview), creates it in the same shape gym.html's own "add
+  // exercise" would, so the write below always has somewhere real to go.
+  function findOrCreateRealExercise(live, name, dayName) {
+    var ex = live.exercises.find(function (e) { return e.name === name; });
+    if (ex) return ex;
+    var meta = EX_INDEX[name] || {};
+    var newEx = {
+      id: 'gympreview_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+      name: name, gym: 'comm', day: REAL_NAME_TO_DAY_ID[dayName] || 'push', tag: 'accessory',
+      muscle: meta.muscle || '', repMin: meta.repMin || 8, repMax: meta.repMax || 12,
+      step: meta.step || 2.5, startWeight: meta.startWeight || 20, bw: !!meta.bw, holdSeconds: !!meta.holdSeconds
+    };
+    live.exercises.push(newEx);
+    return newEx;
+  }
+  // Writes a finished session's sets into your REAL, cloud-synced log
+  // (po_coach_v1) — the exact same store and format gym.html itself
+  // writes to (one array entry per individual set), so logging here is
+  // as durable and cross-device as logging there. Called once, at
+  // commit time (Finish Workout / Mark Done) — never for a cancelled
+  // or still-in-progress session, so Cancel genuinely discards
+  // everything with nothing ever having touched real data. Wrapped in
+  // try/catch throughout: a failure here can never break the local
+  // preview UI, matching gym.html's own defensive sync pattern.
+  function writeRealLog(day, sets) {
+    try {
+      var raw = localStorage.getItem(LIVE_STATE_KEY);
+      var live = raw ? JSON.parse(raw) : { exercises: [], logs: {} };
+      if (!Array.isArray(live.exercises)) live.exercises = [];
+      if (!live.logs || typeof live.logs !== 'object') live.logs = {};
+      var now = Date.now();
+      sets.forEach(function (s, gi) {
+        var ex = findOrCreateRealExercise(live, s.name, day);
+        var arr = live.logs[ex.id] || [];
+        for (var i = 0; i < s.setsCount; i++) {
+          arr.push({ weight: s.weight, reps: s.reps, date: localTimestampFor(new Date(now + gi * 1000 + i)) });
+        }
+        live.logs[ex.id] = arr;
+      });
+      localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
+    } catch (e) {}
   }
   function buildSessionsFromLiveState() {
     var live = loadLiveState();
@@ -1825,13 +1912,16 @@ button { font-family: inherit; }
     }
     return weeks;
   }
-  (function recomputeStrengthFromSessions() {
+  // Named (not IIFE) so cloud sync can re-run these after a remote
+  // update lands — see pcRerender() near the bottom of this file.
+  function recomputeStrengthFromSessions() {
     var wk = computeWeeklyFromSessions();
     STRENGTH.done = wk.done;
     STRENGTH.volume = Math.round(wk.volume);
     STRENGTH.hours = wk.hours;
     STRENGTH.weeklyHistory = computeWeeklyHistoryFromSessions();
-  })();
+  }
+  recomputeStrengthFromSessions();
   // Strength Score: swap the placeholder PRIMARY_LOG for real data now
   // that SESSIONS is loaded — current = your actual last logged set,
   // recentBest = the highest Epley total ever logged for it. An
@@ -1848,7 +1938,7 @@ button { font-family: inherit; }
     });
     return best;
   }
-  (function recomputeScoreFromSessions() {
+  function recomputeScoreFromSessions() {
     PRIMARY_LIFTS.forEach(function (name) {
       var ex = EX_INDEX[name];
       if (!ex) return;
@@ -1860,7 +1950,8 @@ button { font-family: inherit; }
     SCORE.value = v;
     SCORE.trend = [Math.round(v * 0.65), Math.round(v * 0.72), Math.round(v * 0.68), Math.round(v * 0.79), Math.round(v * 0.83), Math.round(v * 0.80), Math.round(v * 0.88), v];
     SCORE.deltaPct = SCORE.trend[0] ? Math.round(((SCORE.value - SCORE.trend[0]) / SCORE.trend[0]) * 100) : 0;
-  })();
+  }
+  recomputeScoreFromSessions();
 
   var expandedSessionId = null, editingSetId = null;
 
@@ -1994,17 +2085,53 @@ button { font-family: inherit; }
     if (wsLoggedOpen) renderWsLoggedList();
   }
   // Expand to see exactly what's logged today before confirming/Mark
-  // Done — same checkbox as Today's Workout, wired through the same
-  // toggleExerciseDone(), so crossing one off here removes it from
-  // this tally too, and vice versa. Only lists exercises actually
-  // logged so far (a subset of the full Today's Workout checklist).
+  // Done. This has to cover BOTH the live in-progress session AND any
+  // already-committed session(s) dated today (e.g. real history
+  // imported from your actual log, or an earlier Finish/Mark Done
+  // today) — the top "sets · kg" tally already counts both, so this
+  // list has to match it or it reads as a bug (as it did: totals
+  // showed real numbers while the list said "nothing logged").
+  function todayLoggedNames() {
+    var tk = wtDateKey(new Date());
+    var names = new Set();
+    SESSIONS.filter(function (s) { return s.dateKey === tk; }).forEach(function (s) { s.sets.forEach(function (st) { names.add(st.name); }); });
+    if (currentSession) currentSession.sets.forEach(function (st) { names.add(st.name); });
+    return Array.from(names);
+  }
+  function todaySetsForName(name) {
+    var tk = wtDateKey(new Date());
+    var entries = [];
+    SESSIONS.filter(function (s) { return s.dateKey === tk; }).forEach(function (s) { s.sets.forEach(function (st) { if (st.name === name) entries.push(st); }); });
+    if (currentSession) currentSession.sets.forEach(function (st) { if (st.name === name) entries.push(st); });
+    return entries;
+  }
+  // Crossing an exercise off here removes it from today entirely —
+  // from the live session if it's there, and from any already-
+  // committed today session too (recomputing that session's volume,
+  // or dropping the session altogether if that empties it).
+  function removeExerciseFromToday(name) {
+    var tk = wtDateKey(new Date());
+    var changed = false;
+    SESSIONS = SESSIONS.filter(function (s) {
+      if (s.dateKey !== tk) return true;
+      var before = s.sets.length;
+      s.sets = s.sets.filter(function (st) { return st.name !== name; });
+      if (s.sets.length !== before) { changed = true; s.volume = s.sets.reduce(function (sum, st) { return sum + st.setsCount * st.reps * st.weight; }, 0); }
+      return s.sets.length > 0;
+    });
+    if (changed) saveSessions();
+    if (currentSession) currentSession.sets = currentSession.sets.filter(function (st) { return st.name !== name; });
+    doneState[name] = false;
+    renderChecklist();
+    refreshAllSessionViews();
+  }
   function renderWsLoggedList() {
-    var names = currentSession ? Array.from(new Set(currentSession.sets.map(function (s) { return s.name; }))) : [];
+    var names = todayLoggedNames();
     var el = document.getElementById('wsLoggedList');
     if (!names.length) { el.innerHTML = '<div class="act-empty">Nothing logged yet today.</div>'; return; }
     el.innerHTML = names.map(function (name) {
       var ex = EX_INDEX[name];
-      var entries = currentSession.sets.filter(function (s) { return s.name === name; });
+      var entries = todaySetsForName(name);
       var summary = entries.map(function (s) { return s.setsCount + '×' + s.reps + (ex && ex.bw ? '' : ' @ ' + s.weight + UNITS); }).join(', ');
       return '<li class="ex-row is-done" data-name="' + esc(name) + '">' +
         '<button type="button" class="ex-check is-done">✓</button>' +
@@ -2012,7 +2139,7 @@ button { font-family: inherit; }
         '</li>';
     }).join('');
     el.querySelectorAll('.ex-check').forEach(function (btn) {
-      btn.addEventListener('click', function (ev) { ev.stopPropagation(); toggleExerciseDone(btn.closest('.ex-row').dataset.name); });
+      btn.addEventListener('click', function (ev) { ev.stopPropagation(); removeExerciseFromToday(btn.closest('.ex-row').dataset.name); });
     });
     el.querySelectorAll('.ex-tap').forEach(function (tap) {
       tap.addEventListener('click', function () { openExerciseModal(tap.closest('.ex-row').dataset.name); });
@@ -2398,6 +2525,178 @@ button { font-family: inherit; }
   renderWorkoutSummary();
   renderLibrary();
   renderAnatomy();
+
+  // ------------------------------------------------------------------
+  // CLOUD SYNC via Supabase — ported verbatim from gym.html's own
+  // working sync (same APP_KEY 'po-coach', same synced keys), so this
+  // page and gym.html read and write the exact same cloud-backed row
+  // and can never silently diverge or clobber each other's writes.
+  // Only pcRerender() below is different: it refreshes THIS page's
+  // views instead of gym.html's, since the two have separate render
+  // pipelines even though they now share the same underlying data.
+  // ------------------------------------------------------------------
+  const SUPABASE_URL = (window.DASH_SUPABASE_URL) || 'https://srajryooffirbroltjmg.supabase.co';
+  const SUPABASE_KEY = (window.DASH_SUPABASE_KEY) || 'sb_publishable_5142ZwTLF_DkSVRzciNuRA_bHwRAu4c';
+  const APP_KEY = 'po-coach';
+  const PC_SYNCED_KEYS = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'];
+
+  let pcSupa = null;
+  let pcPushTimer = null;
+  let pcSuppressSync = false;
+  let pcPendingRemote = null;
+  let pcLastSyncedJson = null;
+  let pcLocalChangedSinceBoot = false;
+
+  const _pcOrigSet = localStorage.setItem.bind(localStorage);
+  const _pcOrigRemove = localStorage.removeItem.bind(localStorage);
+  localStorage.setItem = function (k, v) {
+    _pcOrigSet(k, v);
+    try {
+      if (!pcSuppressSync && PC_SYNCED_KEYS.indexOf(k) !== -1) { pcLocalChangedSinceBoot = true; pcSchedulePush(); }
+    } catch (e) {}
+  };
+  localStorage.removeItem = function (k) {
+    _pcOrigRemove(k);
+    try {
+      if (!pcSuppressSync && PC_SYNCED_KEYS.indexOf(k) !== -1) { pcLocalChangedSinceBoot = true; pcSchedulePush(); }
+    } catch (e) {}
+  };
+
+  function pcCollectState() {
+    const out = {};
+    for (const k of PC_SYNCED_KEYS) {
+      const v = localStorage.getItem(k);
+      if (v == null) continue;
+      try {
+        let val = JSON.parse(v);
+        if (k === 'po_coach_photos' && Array.isArray(val)) {
+          val = val.filter((p) => p && p.url).map((p) => ({ id: p.id, url: p.url, dateKey: p.dateKey, weight: p.weight }));
+        }
+        out[k] = val;
+      } catch {}
+    }
+    return out;
+  }
+  function pcIsUserEditing() {
+    const ae = document.activeElement;
+    if (!ae) return false;
+    const tag = ae.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (ae.getAttribute && ae.getAttribute('contenteditable') === 'true') return true;
+    return false;
+  }
+  // Refresh THIS page after a remote update lands. Only the real,
+  // synced keys changed underneath us — weight and your logged
+  // history — so that's all that needs re-deriving; picks/program/UI
+  // state stay local-only and untouched.
+  function pcRerender() {
+    try { renderWeight(); } catch (e) {}
+    try { var fresh = buildSessionsFromLiveState(); if (fresh) SESSIONS = fresh; } catch (e) {}
+    try { recomputeStrengthFromSessions(); recomputeScoreFromSessions(); renderStrength(); } catch (e) {}
+    try { refreshAllSessionViews(); } catch (e) {}
+  }
+  function pcApplyRemoteState(remote) {
+    if (!remote || typeof remote !== 'object') return false;
+    pcSuppressSync = true;
+    let changed = false;
+    try {
+      for (const k of PC_SYNCED_KEYS) {
+        if (k === 'po_coach_photos') {
+          let localPhotos = [];
+          try { localPhotos = JSON.parse(localStorage.getItem(k) || '[]'); } catch {}
+          const remotePhotos = Array.isArray(remote[k]) ? remote[k] : [];
+          const remoteIds = new Set(remotePhotos.map((p) => p && p.id));
+          const localOnly = localPhotos.filter((p) => p && !p.url && !remoteIds.has(p.id));
+          const merged = [...remotePhotos, ...localOnly];
+          const incoming = JSON.stringify(merged);
+          if (localStorage.getItem(k) !== incoming) { try { _pcOrigSet(k, incoming); changed = true; } catch {} }
+          continue;
+        }
+        if (k in remote) {
+          const incoming = JSON.stringify(remote[k]);
+          const local = localStorage.getItem(k);
+          if (local !== incoming) { try { _pcOrigSet(k, incoming); changed = true; } catch {} }
+        } else if (localStorage.getItem(k) != null) {
+          try { _pcOrigRemove(k); changed = true; } catch {}
+        }
+      }
+    } finally {
+      pcSuppressSync = false;
+    }
+    if (changed) { try { pcRerender(); } catch (e) {} }
+    return changed;
+  }
+  function pcMaybeApplyRemote(remote) {
+    if (pcIsUserEditing()) { pcPendingRemote = remote; return; }
+    pcApplyRemoteState(remote);
+  }
+  function pcApplyPendingIfReady() {
+    if (pcPendingRemote && !pcIsUserEditing()) {
+      const r = pcPendingRemote;
+      pcPendingRemote = null;
+      pcApplyRemoteState(r);
+    }
+  }
+  async function pcPushNow() {
+    if (!pcSupa) return;
+    const state = pcCollectState();
+    const json = JSON.stringify(state);
+    if (json === pcLastSyncedJson) return;
+    try {
+      const { error } = await pcSupa.from('app_state').upsert(
+        { key: APP_KEY, data: state, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
+      if (!error) pcLastSyncedJson = json;
+    } catch (_) {}
+  }
+  function pcSchedulePush() {
+    if (pcSuppressSync) return;
+    clearTimeout(pcPushTimer);
+    pcPushTimer = setTimeout(pcPushNow, 250);
+  }
+  function pcFlushPushOnUnload() {
+    if (!pcSupa) return;
+    const state = pcCollectState();
+    const json = JSON.stringify(state);
+    if (json === pcLastSyncedJson) return;
+    try {
+      fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ key: APP_KEY, data: state, updated_at: new Date().toISOString() }),
+        keepalive: true,
+      }).catch(() => {});
+      pcLastSyncedJson = json;
+    } catch (_) {}
+  }
+  (async function pcInitCloudSync() {
+    if (!window.supabase || !SUPABASE_URL || !SUPABASE_KEY) return;
+    if (SUPABASE_URL.indexOf('PASTE-') === 0 || SUPABASE_KEY.indexOf('PASTE-') === 0) return;
+    pcSupa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    try {
+      const { data, error } = await pcSupa.from('app_state').select('data').eq('key', APP_KEY).maybeSingle();
+      if (!error && data && data.data && Object.keys(data.data).length > 0) {
+        if (pcLocalChangedSinceBoot) { pcSchedulePush(); }
+        else { pcLastSyncedJson = JSON.stringify(data.data); pcMaybeApplyRemote(data.data); }
+      } else if (Object.keys(pcCollectState()).length > 0) {
+        pcSchedulePush();
+      }
+    } catch (_) {}
+    pcSupa.channel('app_state_' + APP_KEY)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'key=eq.' + APP_KEY }, (payload) => {
+        if (!payload.new || !payload.new.data) return;
+        const incoming = JSON.stringify(payload.new.data);
+        if (incoming === pcLastSyncedJson) return;
+        pcLastSyncedJson = incoming;
+        pcMaybeApplyRemote(payload.new.data);
+      })
+      .subscribe();
+  })();
+  document.addEventListener('focusout', () => { setTimeout(pcApplyPendingIfReady, 0); }, true);
+  window.addEventListener('pagehide', pcFlushPushOnUnload);
+  window.addEventListener('beforeunload', pcFlushPushOnUnload);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pcFlushPushOnUnload(); });
 })();
 </script>
 
