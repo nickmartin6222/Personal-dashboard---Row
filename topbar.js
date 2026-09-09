@@ -343,9 +343,16 @@ body.topbar-modal-open {
     return el;
   }
 
+  function isFitnessPage() {
+    return (window.location.pathname || '').toLowerCase().endsWith('gym-preview.html');
+  }
   function injectHomeButton() {
     if (isEmbedded()) return;
-    if (document.getElementById('topbar')) return; // topbar already has a way home via the bottombar
+    // Every page with the normal topbar already has a way home via the
+    // bottombar's Main tab — except Fitness, which wants a top-right
+    // home icon too (matching Finance, the other page that shows one).
+    const topbarInner = document.getElementById('topbarInner');
+    if (topbarInner && !isFitnessPage()) return;
     if (document.getElementById('homeBtn')) return;
 
     const btn = document.createElement('a');
@@ -354,7 +361,13 @@ body.topbar-modal-open {
     btn.className = 'home-btn';
     btn.setAttribute('aria-label', 'Back to dashboard');
     btn.textContent = '🏠';
-    getFloatingChrome().appendChild(btn);
+    // On Fitness, the normal topbar already exists — add the home
+    // button into its own right-aligned row (same place the theme
+    // toggle lands) instead of the fixed floating-chrome layer, which
+    // is only meant for topbar-less pages and would otherwise overlap
+    // the topbar's finance shortcut sitting in that same corner.
+    if (topbarInner) topbarInner.insertBefore(btn, topbarInner.firstChild);
+    else getFloatingChrome().appendChild(btn);
   }
 
   // -------- Shared light/dark theme toggle --------
