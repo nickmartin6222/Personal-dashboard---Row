@@ -286,13 +286,20 @@ button { font-family: inherit; }
 .ex-row.is-done .ex-name { color: var(--text-3); text-decoration: line-through; }
 .ex-target { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-3); white-space: nowrap; }
 
+.start-row { display: flex; gap: 8px; margin-top: 14px; }
 .start-btn {
-  width: 100%; margin-top: 14px; padding: 13px; border-radius: var(--r-sm);
+  flex: 1; padding: 13px; border-radius: var(--r-sm);
   border: none; background: var(--lime); color: var(--lime-ink);
   font-weight: 800; font-size: 14px; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 7px;
 }
 .start-btn.is-active { background: var(--bad); color: #2a0a0a; }
+.cancel-workout-btn {
+  flex: none; padding: 13px 16px; border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong); background: var(--bg-raised); color: var(--text-2);
+  font-weight: 700; font-size: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.cancel-workout-btn:hover, .cancel-workout-btn:active { color: var(--bad); border-color: var(--bad); }
 .tw-hint { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 8px; }
 
 /* ---------- workout summary strip (full width) ---------- */
@@ -302,9 +309,18 @@ button { font-family: inherit; }
 .ws-num-label { font-size: 12.5px; color: var(--text-3); }
 .ws-dot { color: var(--text-4); }
 .ws-vol { font-size: 14px; color: var(--text-2); font-weight: 600; }
+.ws-actions { display: flex; align-items: center; gap: 8px; flex: none; }
 .ws-done-pill { font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; padding: 9px 15px; border-radius: 999px; border: none; cursor: pointer; white-space: nowrap; }
 .ws-done-pill.is-pending { background: var(--bg-raised); color: var(--text-2); border: 1px solid var(--border); }
 .ws-done-pill.is-done { background: rgba(110,231,183,0.14); color: var(--mint); }
+.ws-expand-btn {
+  width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border); flex: none;
+  background: var(--bg-raised); color: var(--text-3); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+}
+.ws-expand-btn #wsExpandChevron { display: inline-block; transition: transform 0.2s ease; }
+.ws-expand-btn.is-open #wsExpandChevron { transform: rotate(180deg); }
+.ws-logged-body { margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
 .ws-past-toggle {
   width: 100%; display: flex; align-items: center; justify-content: space-between;
   margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
@@ -420,9 +436,9 @@ button { font-family: inherit; }
 .eh-stat-label { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); }
 .eh-stat-val { font-size: 15px; font-weight: 800; margin-top: 3px; overflow-wrap: anywhere; }
 .eh-chart { width: 100%; height: auto; display: block; margin-top: 4px; }
-.eh-sample-note {
-  font-size: 11px; color: var(--text-3); background: var(--bg-raised); border-radius: var(--r-sm);
-  padding: 8px 10px; margin-bottom: 12px; line-height: 1.4;
+.eh-empty-state {
+  font-size: 13px; color: var(--text-2); background: var(--bg-raised); border-radius: var(--r-md);
+  padding: 18px 14px; line-height: 1.5; text-align: center;
 }
 
 /* ---------- shared interactive-chart tooltip (score / volume / exercise history) ---------- */
@@ -648,7 +664,10 @@ button { font-family: inherit; }
 
       <div class="tw-checklist" id="twChecklist">
         <ul class="exercise-list" id="exerciseList"></ul>
-        <button class="start-btn" id="startBtn" type="button"><span id="startBtnLabel">▶ Start Workout</span></button>
+        <div class="start-row">
+          <button class="start-btn" id="startBtn" type="button"><span id="startBtnLabel">▶ Start Workout</span></button>
+          <button class="cancel-workout-btn" id="cancelWorkoutBtn" type="button" hidden title="Discard this session — a false start">Cancel</button>
+        </div>
         <div class="tw-hint" id="twHint" style="display:none">Tap Start Workout, then tap an exercise to log a set.</div>
       </div>
     </section>
@@ -672,7 +691,15 @@ button { font-family: inherit; }
           <span class="ws-vol" id="wsVol">0 kg lifted</span>
         </div>
       </div>
-      <button class="ws-done-pill is-pending" id="wsDoneBtn" type="button">Mark workout done</button>
+      <div class="ws-actions">
+        <button class="ws-done-pill is-pending" id="wsDoneBtn" type="button">Mark workout done</button>
+        <button class="ws-expand-btn" id="wsExpandBtn" type="button" aria-label="Show what's logged today" aria-expanded="false">
+          <span id="wsExpandChevron">⌄</span>
+        </button>
+      </div>
+    </div>
+    <div class="ws-logged-body" id="wsLoggedBody" hidden>
+      <ul class="exercise-list" id="wsLoggedList"></ul>
     </div>
     <button class="ws-past-toggle" id="wsPastToggle" type="button" aria-expanded="false">
       <span>Past workouts <span class="ws-past-count" id="wsPastCount">0</span></span>
@@ -773,17 +800,19 @@ button { font-family: inherit; }
       <span class="ex-modal-title" id="exHistoryTitle">—</span>
       <button class="ex-modal-close" id="exHistoryClose" type="button" aria-label="Close">✕</button>
     </div>
-    <div class="eh-sample-note" id="ehSampleNote" hidden>Sample trend — log this exercise a few times to replace it with your real progress.</div>
-    <div class="eh-range-tabs" id="ehRangeTabs"></div>
     <div class="eh-stats">
       <div class="eh-stat"><div class="eh-stat-label">Current</div><div class="eh-stat-val" id="ehCurrent">—</div></div>
       <div class="eh-stat"><div class="eh-stat-label">All-time best</div><div class="eh-stat-val" id="ehBest">—</div></div>
       <div class="eh-stat"><div class="eh-stat-label">Sessions</div><div class="eh-stat-val" id="ehCount">—</div></div>
     </div>
-    <div class="eh-metric-tabs" id="ehMetricTabs"></div>
-    <div class="chart-wrap">
-      <svg class="eh-chart" id="ehChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
-      <div class="chart-tooltip" id="ehTooltip" hidden></div>
+    <div class="eh-empty-state" id="ehEmptyState" hidden>No sets logged for this exercise yet. Log it from Today's Workout and its real trend will build here — nothing shown is invented.</div>
+    <div id="ehStatsAndChart">
+      <div class="eh-range-tabs" id="ehRangeTabs"></div>
+      <div class="eh-metric-tabs" id="ehMetricTabs"></div>
+      <div class="chart-wrap">
+        <svg class="eh-chart" id="ehChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
+        <div class="chart-tooltip" id="ehTooltip" hidden></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1336,7 +1365,7 @@ button { font-family: inherit; }
   })();
   SCORE.deltaPct = SCORE.trend[0] ? Math.round(((SCORE.value - SCORE.trend[0]) / SCORE.trend[0]) * 100) : 0;
 
-  var STRENGTH = { done: 4, goal: 6, volume: 12450, hours: 6.42, weeklyHistory: [8200, 9600, 7400, 11800, 10200, 13100, 9800, 12450] };
+  var STRENGTH = { done: 4, goal: 4, volume: 12450, hours: 6.42, weeklyHistory: [8200, 9600, 7400, 11800, 10200, 13100, 9800, 12450] };
   var volumeExpanded = false;
 
   function scoreWordFor(v) { return v >= 85 ? { w: 'Excellent', l: 'excellent' } : v >= 70 ? { w: 'Good', l: 'good' } : { w: 'Fair', l: 'fair' }; }
@@ -1475,37 +1504,40 @@ button { font-family: inherit; }
     }).join('');
     document.getElementById('exerciseList').innerHTML = html || '<div class="act-empty">Nothing selected for ' + esc(confirmedDay) + ' yet — expand Today\'s Workout to pick exercises.</div>';
     document.querySelectorAll('.ex-check').forEach(function (btn) {
-      btn.addEventListener('click', function (ev) {
-        ev.stopPropagation();
-        var name = btn.closest('.ex-row').dataset.name;
-        var nowDone = !doneState[name];
-        doneState[name] = nowDone;
-        if (nowDone) {
-          // Checking a box quick-logs it: sets = the area's target sets,
-          // weight/reps = last known (same defaults the modal opens
-          // with), so ticking things off is enough on its own — opening
-          // the modal is only needed to log something different.
-          ensureSession();
-          var already = currentSession.sets.some(function (s) { return s.name === name; });
-          if (!already) {
-            var ex = EX_INDEX[name];
-            var last = lastLogFor(ex);
-            var areaDef = findAreaForExercise(confirmedDay, name);
-            currentSession.sets.push({ name: name, setsCount: areaDef ? areaDef.sets : 3, reps: last.reps, weight: ex.bw ? 0 : (last.weight || ex.startWeight || 0) });
-          }
-        } else if (currentSession) {
-          // Unchecking removes whatever was logged for it today (from
-          // either the quick-log above or the detailed modal).
-          currentSession.sets = currentSession.sets.filter(function (s) { return s.name !== name; });
-        }
-        renderChecklist();
-        renderWorkoutSummary();
-      });
+      btn.addEventListener('click', function (ev) { ev.stopPropagation(); toggleExerciseDone(btn.closest('.ex-row').dataset.name); });
     });
     document.querySelectorAll('.ex-tap').forEach(function (tap) {
       tap.addEventListener('click', function () { openExerciseModal(tap.closest('.ex-row').dataset.name); });
     });
     document.getElementById('twHint').style.display = currentSession ? 'none' : '';
+  }
+  // Single source of truth for "cross an exercise off today" — used by
+  // both the Today's Workout checklist and the Workout Summary's
+  // expanded logged-list, so checking/unchecking in either place stays
+  // in sync with the other automatically.
+  function toggleExerciseDone(name) {
+    var nowDone = !doneState[name];
+    doneState[name] = nowDone;
+    if (nowDone) {
+      // Checking a box quick-logs it: sets = the area's target sets,
+      // weight/reps = last known (same defaults the modal opens with),
+      // so ticking things off is enough on its own — opening the modal
+      // is only needed to log something different.
+      ensureSession();
+      var already = currentSession.sets.some(function (s) { return s.name === name; });
+      if (!already) {
+        var ex = EX_INDEX[name];
+        var last = lastLogFor(ex);
+        var areaDef = findAreaForExercise(confirmedDay, name);
+        currentSession.sets.push({ name: name, setsCount: areaDef ? areaDef.sets : 3, reps: last.reps, weight: ex.bw ? 0 : (last.weight || ex.startWeight || 0) });
+      }
+    } else if (currentSession) {
+      // Unchecking removes whatever was logged for it today (from
+      // either the quick-log above or the detailed modal).
+      currentSession.sets = currentSession.sets.filter(function (s) { return s.name !== name; });
+    }
+    renderChecklist();
+    renderWorkoutSummary();
   }
 
   function commitDay() {
@@ -1543,6 +1575,7 @@ button { font-family: inherit; }
     currentSession = { day: confirmedDay, startTime: Date.now(), sets: [], _timer: null };
     var btn = document.getElementById('startBtn'), label = document.getElementById('startBtnLabel');
     btn.classList.add('is-active');
+    document.getElementById('cancelWorkoutBtn').hidden = false;
     currentSession._timer = setInterval(function () {
       var secs = Math.floor((Date.now() - currentSession.startTime) / 1000);
       var mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
@@ -1567,17 +1600,36 @@ button { font-family: inherit; }
     STRENGTH.weeklyHistory[STRENGTH.weeklyHistory.length - 1] += Math.round(volume);
     renderStrength();
     currentSession = null;
+    stopSessionUI();
+  }
+  // Discards the live session entirely — a false start, or logged the
+  // wrong day by mistake. Un-checks everything it had quick-logged and
+  // never touches SESSIONS/STRENGTH, so it's as if it never happened.
+  function cancelSession() {
+    if (!currentSession) return;
+    clearInterval(currentSession._timer);
+    var names = Array.from(new Set(currentSession.sets.map(function (s) { return s.name; })));
+    names.forEach(function (name) { doneState[name] = false; });
+    currentSession = null;
+    stopSessionUI();
+    renderChecklist();
+    renderWorkoutSummary();
+  }
+  function stopSessionUI() {
     document.getElementById('startBtn').classList.remove('is-active');
     document.getElementById('startBtnLabel').textContent = '▶ Start Workout';
+    document.getElementById('cancelWorkoutBtn').hidden = true;
   }
   // Start / Finish Workout — finishing adds real elapsed time to the
   // weekly total, counts a workout toward the weekly goal, and pushes
   // a new session (with real duration + logged volume) into Recent
-  // Activity / Workout Summary.
+  // Activity / Workout Summary. Cancel discards it instead — see
+  // cancelSession() above.
   document.getElementById('startBtn').addEventListener('click', function () {
     if (!currentSession) { ensureSession(); renderChecklist(); }
     else { commitSession(); refreshAllSessionViews(); renderChecklist(); }
   });
+  document.getElementById('cancelWorkoutBtn').addEventListener('click', cancelSession);
 
   // ------------------------------------------------------------------
   // Exercise logging modal — real weight/reps/sets input + the real
@@ -1916,6 +1968,7 @@ button { font-family: inherit; }
   // Workout Summary strip — today's totals + Mark Done + Past Workouts.
   // ------------------------------------------------------------------
   var todayMarkedDone = false;
+  var wsLoggedOpen = false;
   function computeTodayTotals() {
     var sets = 0, vol = 0;
     var tk = wtDateKey(new Date());
@@ -1938,7 +1991,40 @@ button { font-family: inherit; }
     var tk = wtDateKey(new Date());
     var past = SESSIONS.filter(function (s) { return s.dateKey !== tk; });
     document.getElementById('wsPastCount').textContent = past.length;
+    if (wsLoggedOpen) renderWsLoggedList();
   }
+  // Expand to see exactly what's logged today before confirming/Mark
+  // Done — same checkbox as Today's Workout, wired through the same
+  // toggleExerciseDone(), so crossing one off here removes it from
+  // this tally too, and vice versa. Only lists exercises actually
+  // logged so far (a subset of the full Today's Workout checklist).
+  function renderWsLoggedList() {
+    var names = currentSession ? Array.from(new Set(currentSession.sets.map(function (s) { return s.name; }))) : [];
+    var el = document.getElementById('wsLoggedList');
+    if (!names.length) { el.innerHTML = '<div class="act-empty">Nothing logged yet today.</div>'; return; }
+    el.innerHTML = names.map(function (name) {
+      var ex = EX_INDEX[name];
+      var entries = currentSession.sets.filter(function (s) { return s.name === name; });
+      var summary = entries.map(function (s) { return s.setsCount + '×' + s.reps + (ex && ex.bw ? '' : ' @ ' + s.weight + UNITS); }).join(', ');
+      return '<li class="ex-row is-done" data-name="' + esc(name) + '">' +
+        '<button type="button" class="ex-check is-done">✓</button>' +
+        '<div class="ex-tap"><span class="ex-name">' + esc(name) + '</span><span class="ex-target">' + esc(summary) + '</span></div>' +
+        '</li>';
+    }).join('');
+    el.querySelectorAll('.ex-check').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) { ev.stopPropagation(); toggleExerciseDone(btn.closest('.ex-row').dataset.name); });
+    });
+    el.querySelectorAll('.ex-tap').forEach(function (tap) {
+      tap.addEventListener('click', function () { openExerciseModal(tap.closest('.ex-row').dataset.name); });
+    });
+  }
+  document.getElementById('wsExpandBtn').addEventListener('click', function () {
+    wsLoggedOpen = !wsLoggedOpen;
+    document.getElementById('wsLoggedBody').hidden = !wsLoggedOpen;
+    document.getElementById('wsExpandBtn').classList.toggle('is-open', wsLoggedOpen);
+    document.getElementById('wsExpandBtn').setAttribute('aria-expanded', String(wsLoggedOpen));
+    if (wsLoggedOpen) renderWsLoggedList();
+  });
   // First tap commits whatever's checked off today into history (same
   // effect as Finish Workout, so either path works and neither
   // double-commits); the pill itself stays a free toggle after that —
@@ -2074,15 +2160,12 @@ button { font-family: inherit; }
   // time-range filter, and a chart across Top Weight / Est. 1RM /
   // Volume (or just Reps for bodyweight moves).
   //
-  // This reads your REAL logged sets first: every session in SESSIONS
+  // This reads your REAL logged sets only: every session in SESSIONS
   // that includes this exercise becomes one point, oldest to newest —
   // so as you keep logging Push day (or whatever) over the coming
   // weeks and months, this trend line is that real progression, not a
-  // simulation, and it's exactly as durable as SESSIONS itself (saved
-  // to this browser's localStorage — see the "does this persist" note
-  // in the app). Only exercises with zero real logs fall back to a
-  // seeded sample trend, clearly labeled as such, so there's always
-  // something to look at before you've built up real history.
+  // simulation. An exercise with zero real logs shows a genuine empty
+  // state, not a fabricated trend — no invented weights, ever.
   // ------------------------------------------------------------------
   function getRealExerciseHistory(name) {
     var pts = [];
@@ -2094,27 +2177,8 @@ button { font-family: inherit; }
     pts.sort(function (a, b) { return a.dateKey.localeCompare(b.dateKey); });
     return pts;
   }
-  function seedFromString(str) { var h = 0; for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return Math.abs(h); }
-  function seededRandom(seed) { var s = seed || 1; return function () { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
-  function generateSampleExerciseHistory(ex) {
-    var rnd = seededRandom(seedFromString(ex.name));
-    var weeks = 52;
-    var points = [];
-    var current = ex.bw ? Math.max(4, ex.repMin - 2) : Math.max(ex.step || 2.5, (ex.startWeight || 20) * 0.72);
-    for (var i = weeks - 1; i >= 0; i--) {
-      var d = new Date(); d.setDate(d.getDate() - i * 7);
-      if (ex.bw) {
-        current = Math.max(ex.repMin - 2, Math.round(current + (rnd() - 0.35) * 2));
-      } else {
-        current = Math.max(ex.step || 2.5, roundToStep(current + (rnd() - 0.35) * (ex.step || 2.5) * 1.6, ex.step || 2.5));
-      }
-      var reps = Math.round(ex.repMin + rnd() * (ex.repMax - ex.repMin));
-      points.push({ dateKey: wtDateKey(d), weight: ex.bw ? 0 : current, reps: ex.bw ? current : reps, setsCount: 3 });
-    }
-    return points;
-  }
   var EH_RANGE_DAYS = { '1M': 31, '3M': 92, '6M': 183, '1Y': 366, 'ALL': 99999 };
-  var ehExercise = null, ehPoints = [], ehIsSample = false, ehRange = '3M', ehMetric = 'weight';
+  var ehExercise = null, ehPoints = [], ehRange = '3M', ehMetric = 'weight';
   function ehValueFn(p) {
     if (ehMetric === 'reps') return p.reps;
     if (ehMetric === '1rm') return epley1rm(p.weight, p.reps);
@@ -2145,6 +2209,15 @@ button { font-family: inherit; }
     });
   }
   function renderExerciseHistory() {
+    var empty = !ehPoints.length;
+    document.getElementById('ehEmptyState').hidden = !empty;
+    document.getElementById('ehStatsAndChart').hidden = empty;
+    if (empty) {
+      document.getElementById('ehCurrent').textContent = '—';
+      document.getElementById('ehBest').textContent = '—';
+      document.getElementById('ehCount').textContent = '0';
+      return;
+    }
     var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - EH_RANGE_DAYS[ehRange]);
     var cutoffKey = wtDateKey(cutoff);
     var filtered = ehPoints.filter(function (p) { return p.dateKey >= cutoffKey; });
@@ -2155,7 +2228,6 @@ button { font-family: inherit; }
       ? (Math.max.apply(null, ehPoints.map(function (p) { return p.reps; })) + ' reps')
       : (Math.max.apply(null, ehPoints.map(function (p) { return p.weight; })) + UNITS);
     document.getElementById('ehCount').textContent = ehPoints.length;
-    document.getElementById('ehSampleNote').hidden = !ehIsSample;
     renderChart(document.getElementById('ehChart'), document.getElementById('ehTooltip'), filtered, {
       valueFn: ehValueFn, color: 'var(--lime)',
       dateFn: function (p) { return wtFmtDate(p.dateKey); },
@@ -2166,9 +2238,7 @@ button { font-family: inherit; }
     var ex = EX_INDEX[name];
     if (!ex) return;
     ehExercise = ex;
-    var real = getRealExerciseHistory(name);
-    ehIsSample = real.length === 0;
-    ehPoints = ehIsSample ? generateSampleExerciseHistory(ex) : real;
+    ehPoints = getRealExerciseHistory(name);
     ehRange = '3M'; ehMetric = ex.bw ? 'reps' : 'weight';
     document.getElementById('exHistoryTitle').textContent = ex.name;
     renderEhRangeTabs(); renderEhMetricTabs(); renderExerciseHistory();
