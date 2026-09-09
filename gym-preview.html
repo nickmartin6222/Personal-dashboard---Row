@@ -350,7 +350,41 @@ button { font-family: inherit; }
 .lib-chevron { color: var(--text-3); font-size: 13px; transition: transform 0.2s ease; }
 .lib-chevron.is-open { transform: rotate(180deg); }
 .lib-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 12px; }
-.lib-chip { font-size: 11.5px; padding: 6px 10px; border-radius: 999px; background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-2); }
+.lib-chip {
+  font-family: inherit; font-size: 11.5px; padding: 6px 10px; border-radius: 999px;
+  background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-2);
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.lib-chip:hover, .lib-chip:active { border-color: var(--border-strong); color: var(--text-1); }
+
+/* ---------- date strip (calendar review) ---------- */
+.date-strip { display: flex; gap: 6px; margin-top: 12px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+.date-strip::-webkit-scrollbar { display: none; }
+.date-cell {
+  flex: 1 0 40px; min-width: 40px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-raised);
+  color: var(--text-2); cursor: pointer; -webkit-tap-highlight-color: transparent; position: relative; font-family: inherit;
+}
+.date-cell-dow { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.7; }
+.date-cell-num { font-size: 14px; font-weight: 800; }
+.date-cell.is-today { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+.date-cell.is-selected:not(.is-today) { border-color: var(--lime); color: var(--text-1); }
+.date-cell-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--lime); position: absolute; bottom: 4px; }
+.date-cell.is-today .date-cell-dot { background: var(--lime-ink); opacity: 0.85; }
+.date-cell.is-future { opacity: 0.35; cursor: default; }
+
+/* ---------- exercise history modal ---------- */
+.eh-range-tabs, .eh-metric-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.eh-range-tabs button, .eh-metric-tabs button {
+  font-family: inherit; font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer;
+}
+.eh-range-tabs button.active, .eh-metric-tabs button.active { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+.eh-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.eh-stat { background: var(--bg-raised); border-radius: var(--r-md); padding: 10px 6px; text-align: center; min-width: 0; }
+.eh-stat-label { font-family: var(--font-mono); font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-3); }
+.eh-stat-val { font-size: 15px; font-weight: 800; margin-top: 3px; overflow-wrap: anywhere; }
+.eh-chart { width: 100%; height: auto; display: block; margin-top: 4px; }
 
 /* ---------- muscle anatomy ---------- */
 .anatomy-toggle { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -440,6 +474,7 @@ button { font-family: inherit; }
       <span class="gp-badge" id="gpBadge">—</span>
     </div>
     <div class="gp-sub" id="gpSub">—</div>
+    <div class="date-strip" id="dateStrip"></div>
   </div>
 
   <!-- 2. WEIGHT (compact tile) -->
@@ -640,6 +675,35 @@ button { font-family: inherit; }
   </div>
 </div>
 
+<!-- Day detail modal (opened from the calendar date strip) -->
+<div class="modal-bg" id="dayDetailModalBg" style="display:none">
+  <div class="ex-modal">
+    <div class="ex-modal-head">
+      <span class="ex-modal-title" id="dayDetailTitle">—</span>
+      <button class="ex-modal-close" id="dayDetailClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <div id="dayDetailBody"></div>
+  </div>
+</div>
+
+<!-- Exercise history modal (opened from the Exercise Library) -->
+<div class="modal-bg" id="exHistoryModalBg" style="display:none">
+  <div class="ex-modal">
+    <div class="ex-modal-head">
+      <span class="ex-modal-title" id="exHistoryTitle">—</span>
+      <button class="ex-modal-close" id="exHistoryClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="eh-range-tabs" id="ehRangeTabs"></div>
+    <div class="eh-stats">
+      <div class="eh-stat"><div class="eh-stat-label">Current</div><div class="eh-stat-val" id="ehCurrent">—</div></div>
+      <div class="eh-stat"><div class="eh-stat-label">All-time best</div><div class="eh-stat-val" id="ehBest">—</div></div>
+      <div class="eh-stat"><div class="eh-stat-label">Sessions</div><div class="eh-stat-val" id="ehCount">—</div></div>
+    </div>
+    <div class="eh-metric-tabs" id="ehMetricTabs"></div>
+    <svg class="eh-chart" id="ehChart" viewBox="0 0 300 68" preserveAspectRatio="none"></svg>
+  </div>
+</div>
+
 <!-- Add day / add exercise modal -->
 <div class="modal-bg" id="addModalBg" style="display:none">
   <div class="ex-modal">
@@ -669,7 +733,7 @@ button { font-family: inherit; }
   // open (mobile: without this, the page underneath can scroll while a
   // modal is up, which feels broken) and keep the lock on as long as
   // any modal is still open.
-  var MODAL_IDS = ['exModalBg', 'allSessionsModalBg', 'addModalBg'];
+  var MODAL_IDS = ['exModalBg', 'allSessionsModalBg', 'addModalBg', 'dayDetailModalBg', 'exHistoryModalBg'];
   function anyModalOpen() { return MODAL_IDS.some(function (id) { return document.getElementById(id).style.display === 'flex'; }); }
   function openModal(id) { document.getElementById(id).style.display = 'flex'; document.documentElement.classList.add('modal-open'); }
   function closeModal(id) { document.getElementById(id).style.display = 'none'; if (!anyModalOpen()) document.documentElement.classList.remove('modal-open'); }
@@ -1133,8 +1197,28 @@ button { font-family: inherit; }
       btn.addEventListener('click', function (ev) {
         ev.stopPropagation();
         var name = btn.closest('.ex-row').dataset.name;
-        doneState[name] = !doneState[name];
+        var nowDone = !doneState[name];
+        doneState[name] = nowDone;
+        if (nowDone) {
+          // Checking a box quick-logs it: sets = the area's target sets,
+          // weight/reps = last known (same defaults the modal opens
+          // with), so ticking things off is enough on its own — opening
+          // the modal is only needed to log something different.
+          ensureSession();
+          var already = currentSession.sets.some(function (s) { return s.name === name; });
+          if (!already) {
+            var ex = EX_INDEX[name];
+            var last = mockLastLog(ex);
+            var areaDef = findAreaForExercise(confirmedDay, name);
+            currentSession.sets.push({ name: name, setsCount: areaDef ? areaDef.sets : 3, reps: last.reps, weight: ex.bw ? 0 : (last.weight || ex.startWeight || 0) });
+          }
+        } else if (currentSession) {
+          // Unchecking removes whatever was logged for it today (from
+          // either the quick-log above or the detailed modal).
+          currentSession.sets = currentSession.sets.filter(function (s) { return s.name !== name; });
+        }
         renderChecklist();
+        renderWorkoutSummary();
       });
     });
     document.querySelectorAll('.ex-tap').forEach(function (tap) {
@@ -1169,41 +1253,49 @@ button { font-family: inherit; }
   document.getElementById('twHead').addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); document.getElementById('twHead').click(); } });
   document.getElementById('confirmBtn').addEventListener('click', function () { savePicks(); commitDay(); closePicker(); });
 
+  // Lazily create (and start timing) today's live session the first
+  // time anything is logged — via the checkbox, the detailed modal, or
+  // the explicit Start Workout button. Whichever happens first is when
+  // the clock actually starts.
+  function ensureSession() {
+    if (currentSession) return;
+    currentSession = { day: confirmedDay, startTime: Date.now(), sets: [], _timer: null };
+    var btn = document.getElementById('startBtn'), label = document.getElementById('startBtnLabel');
+    btn.classList.add('is-active');
+    currentSession._timer = setInterval(function () {
+      var secs = Math.floor((Date.now() - currentSession.startTime) / 1000);
+      var mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
+      label.textContent = '■ ' + mm + ':' + ss + ' — Finish Workout';
+    }, 1000);
+  }
+  // Commits today's live session into history: pushes a Recent
+  // Activity entry with the real elapsed time and logged volume, and
+  // rolls those into the weekly Strength totals. Used by both the
+  // Finish Workout button and Mark Workout Done, so either path works
+  // and neither double-commits (currentSession is null once committed).
+  function commitSession() {
+    if (!currentSession || !currentSession.sets.length) { currentSession = null; return; }
+    clearInterval(currentSession._timer);
+    var durationMin = Math.max(1, Math.round((Date.now() - currentSession.startTime) / 60000));
+    var volume = currentSession.sets.reduce(function (sum, s) { return sum + s.setsCount * s.reps * s.weight; }, 0);
+    SESSIONS.unshift({ id: Date.now(), day: currentSession.day, dateKey: wtDateKey(new Date()), durationMin: durationMin, volume: volume, sets: currentSession.sets.map(function (s, i) { return Object.assign({ id: Date.now() + i }, s); }) });
+    STRENGTH.hours += durationMin / 60;
+    STRENGTH.done = Math.min(STRENGTH.goal, STRENGTH.done + 1);
+    STRENGTH.volume += Math.round(volume);
+    STRENGTH.weeklyHistory[STRENGTH.weeklyHistory.length - 1] += Math.round(volume);
+    renderStrength();
+    currentSession = null;
+    document.getElementById('startBtn').classList.remove('is-active');
+    document.getElementById('startBtnLabel').textContent = '▶ Start Workout';
+  }
   // Start / Finish Workout — finishing adds real elapsed time to the
   // weekly total, counts a workout toward the weekly goal, and pushes
   // a new session (with real duration + logged volume) into Recent
   // Activity / Workout Summary.
-  document.getElementById('startBtn').addEventListener('click', function () { toggleSession(); });
-  function toggleSession() {
-    var btn = document.getElementById('startBtn'), label = document.getElementById('startBtnLabel');
-    if (!currentSession) {
-      currentSession = { day: confirmedDay, startTime: Date.now(), sets: [], _timer: null };
-      btn.classList.add('is-active');
-      currentSession._timer = setInterval(function () {
-        var secs = Math.floor((Date.now() - currentSession.startTime) / 1000);
-        var mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
-        label.textContent = '■ ' + mm + ':' + ss + ' — Finish Workout';
-      }, 1000);
-      renderChecklist();
-    } else {
-      clearInterval(currentSession._timer);
-      var durationMin = Math.max(1, Math.round((Date.now() - currentSession.startTime) / 60000));
-      var volume = currentSession.sets.reduce(function (sum, s) { return sum + s.setsCount * s.reps * s.weight; }, 0);
-      if (currentSession.sets.length) {
-        SESSIONS.unshift({ id: Date.now(), day: currentSession.day, dateLabel: 'Today', durationMin: durationMin, volume: volume, sets: currentSession.sets.map(function (s, i) { return Object.assign({ id: Date.now() + i }, s); }) });
-        refreshAllSessionViews();
-      }
-      STRENGTH.hours += durationMin / 60;
-      STRENGTH.done = Math.min(STRENGTH.goal, STRENGTH.done + 1);
-      STRENGTH.volume += Math.round(volume);
-      STRENGTH.weeklyHistory[STRENGTH.weeklyHistory.length - 1] += Math.round(volume);
-      renderStrength();
-      currentSession = null;
-      btn.classList.remove('is-active');
-      label.textContent = '▶ Start Workout';
-      renderChecklist();
-    }
-  }
+  document.getElementById('startBtn').addEventListener('click', function () {
+    if (!currentSession) { ensureSession(); renderChecklist(); }
+    else { commitSession(); refreshAllSessionViews(); renderChecklist(); }
+  });
 
   // ------------------------------------------------------------------
   // Exercise logging modal — real weight/reps/sets input + the real
@@ -1213,16 +1305,9 @@ button { font-family: inherit; }
   function openExerciseModal(name) {
     var ex = EX_INDEX[name];
     if (!ex) return;
-    if (!currentSession) {
-      currentSession = { day: confirmedDay, startTime: Date.now(), sets: [], _timer: null };
-      document.getElementById('startBtn').classList.add('is-active');
-      currentSession._timer = setInterval(function () {
-        var secs = Math.floor((Date.now() - currentSession.startTime) / 1000);
-        var mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
-        document.getElementById('startBtnLabel').textContent = '■ ' + mm + ':' + ss + ' — Finish Workout';
-      }, 1000);
-      renderChecklist();
-    }
+    var hadSession = !!currentSession;
+    ensureSession();
+    if (!hadSession) renderChecklist();
     modalEx = ex;
     var last = mockLastLog(ex);
     modalWeight = last.weight || ex.startWeight || 0;
@@ -1282,23 +1367,32 @@ button { font-family: inherit; }
   // Past Workouts accordion, and the "View all" modal, so edits stay
   // in sync everywhere.
   // ------------------------------------------------------------------
+  // Real relative dates (computed from today), not hardcoded strings —
+  // so the mock history and the calendar strip below always agree with
+  // each other and with whatever "today" actually is.
+  function daysAgoKey(n) { var d = new Date(); d.setDate(d.getDate() - n); return wtDateKey(d); }
+  function dayLabelForKey(key) {
+    if (key === wtDateKey(new Date())) return 'Today';
+    if (key === daysAgoKey(1)) return 'Yesterday';
+    return wtFmtDate(key);
+  }
   var SESSIONS = [
-    { id: 1, day: 'Push', dateLabel: 'Yesterday', durationMin: 52, volume: 11820, sets: [
+    { id: 1, day: 'Push', dateKey: daysAgoKey(1), durationMin: 52, volume: 11820, sets: [
       { id: 101, name: 'Barbell Bench Press', setsCount: 4, reps: 6, weight: 82.5 },
       { id: 102, name: 'Incline DB Press', setsCount: 3, reps: 9, weight: 27.5 },
       { id: 103, name: 'Tricep Pushdown', setsCount: 3, reps: 11, weight: 20 }
     ]},
-    { id: 2, day: 'Lower A', dateLabel: 'Mon, Sep 7', durationMin: 58, volume: 15750, sets: [
+    { id: 2, day: 'Lower A', dateKey: daysAgoKey(3), durationMin: 58, volume: 15750, sets: [
       { id: 104, name: 'Back Squat', setsCount: 4, reps: 6, weight: 105 },
       { id: 105, name: 'Romanian Deadlift', setsCount: 3, reps: 9, weight: 80 },
       { id: 106, name: 'Standing Calf Raise', setsCount: 3, reps: 13, weight: 60 }
     ]},
-    { id: 3, day: 'Pull', dateLabel: 'Fri, Sep 4', durationMin: 47, volume: 11200, sets: [
+    { id: 3, day: 'Pull', dateKey: daysAgoKey(5), durationMin: 47, volume: 11200, sets: [
       { id: 107, name: 'Pull-Ups', setsCount: 4, reps: 8, weight: 0 },
       { id: 108, name: 'Chest-Supported Row', setsCount: 3, reps: 9, weight: 45 },
       { id: 109, name: 'Rear Delt Fly', setsCount: 3, reps: 14, weight: 8 }
     ]},
-    { id: 4, day: 'Lower B', dateLabel: 'Wed, Sep 2', durationMin: 55, volume: 14300, sets: [
+    { id: 4, day: 'Lower B', dateKey: daysAgoKey(8), durationMin: 55, volume: 14300, sets: [
       { id: 110, name: 'Deadlift', setsCount: 3, reps: 5, weight: 130 },
       { id: 111, name: 'Leg Press', setsCount: 3, reps: 11, weight: 160 }
     ]}
@@ -1311,7 +1405,7 @@ button { font-family: inherit; }
     var timeStr = h ? h + 'h ' + m + 'm' : m + 'm';
     var head = '<div class="session-head" data-id="' + sess.id + '">' +
       '<div class="session-main"><div class="session-day-name">' + esc(sess.day) + '</div>' +
-      '<div class="session-date-line">' + esc(sess.dateLabel) + '</div></div>' +
+      '<div class="session-date-line">' + esc(dayLabelForKey(sess.dateKey)) + '</div></div>' +
       '<div class="session-right"><div class="session-kg">' + Math.round(sess.volume).toLocaleString() + ' ' + UNITS + '</div>' +
       '<div class="session-time">' + timeStr + '</div></div>' +
       '<span class="session-chevron' + (expanded ? ' is-open' : '') + '">⌄</span></div>';
@@ -1398,7 +1492,8 @@ button { font-family: inherit; }
   var todayMarkedDone = false;
   function computeTodayTotals() {
     var sets = 0, vol = 0;
-    SESSIONS.filter(function (s) { return s.dateLabel === 'Today'; }).forEach(function (s) {
+    var tk = wtDateKey(new Date());
+    SESSIONS.filter(function (s) { return s.dateKey === tk; }).forEach(function (s) {
       s.sets.forEach(function (st) { sets += st.setsCount; vol += st.setsCount * st.reps * st.weight; });
     });
     if (currentSession) currentSession.sets.forEach(function (st) { sets += st.setsCount; vol += st.setsCount * st.reps * st.weight; });
@@ -1414,10 +1509,23 @@ button { font-family: inherit; }
     btn.textContent = todayMarkedDone ? '✓ Done' : 'Mark workout done';
     btn.classList.toggle('is-done', todayMarkedDone);
     btn.classList.toggle('is-pending', !todayMarkedDone);
-    var past = SESSIONS.filter(function (s) { return s.dateLabel !== 'Today'; });
+    var tk = wtDateKey(new Date());
+    var past = SESSIONS.filter(function (s) { return s.dateKey !== tk; });
     document.getElementById('wsPastCount').textContent = past.length;
   }
-  document.getElementById('wsDoneBtn').addEventListener('click', function () { todayMarkedDone = !todayMarkedDone; renderWorkoutSummary(); });
+  // First tap commits whatever's checked off today into history (same
+  // effect as Finish Workout, so either path works and neither
+  // double-commits); the pill itself stays a free toggle after that —
+  // a plain "done" stamp, same as the real app's Mark Done.
+  document.getElementById('wsDoneBtn').addEventListener('click', function () {
+    if (currentSession && currentSession.sets.length) {
+      commitSession();
+      refreshAllSessionViews();
+      renderChecklist();
+    }
+    todayMarkedDone = !todayMarkedDone;
+    renderWorkoutSummary();
+  });
   var wsPastOpen = false;
   document.getElementById('wsPastToggle').addEventListener('click', function () {
     wsPastOpen = !wsPastOpen;
@@ -1427,7 +1535,8 @@ button { font-family: inherit; }
     if (wsPastOpen) renderPastWorkouts();
   });
   function renderPastWorkouts() {
-    var past = SESSIONS.filter(function (s) { return s.dateLabel !== 'Today'; });
+    var tk = wtDateKey(new Date());
+    var past = SESSIONS.filter(function (s) { return s.dateKey !== tk; });
     var el = document.getElementById('wsPastBody');
     el.innerHTML = '<ul class="session-list">' + (past.length ? past.map(sessionRowHtml).join('') : '<div class="act-empty">No past workouts yet.</div>') + '</ul>';
     bindSessionRows('wsPastBody', past);
@@ -1435,9 +1544,60 @@ button { font-family: inherit; }
   function refreshAllSessionViews() {
     renderActivity();
     renderWorkoutSummary();
+    renderDateStrip();
     if (wsPastOpen) renderPastWorkouts();
     if (document.getElementById('allSessionsModalBg').style.display === 'flex') renderAllSessionsModal();
   }
+
+  // ------------------------------------------------------------------
+  // Calendar date strip — Mon-Sun of the current week, today
+  // highlighted, a dot under any day with a logged session. Tapping a
+  // past day opens a read-only summary of that day; tapping today just
+  // stays on the live view (and closes the summary if one was open).
+  // ------------------------------------------------------------------
+  var selectedDateKey = null;
+  function renderDateStrip() {
+    var today = new Date();
+    var todayKey = wtDateKey(today);
+    var dow = today.getDay(); // 0=Sun..6=Sat
+    var mondayOffset = dow === 0 ? -6 : 1 - dow;
+    var monday = new Date(today); monday.setDate(today.getDate() + mondayOffset);
+    var cells = [];
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(monday); d.setDate(monday.getDate() + i);
+      var key = wtDateKey(d);
+      cells.push({ key: key, d: d, isToday: key === todayKey, isFuture: d > today && key !== todayKey, hasSession: SESSIONS.some(function (s) { return s.dateKey === key; }) });
+    }
+    document.getElementById('dateStrip').innerHTML = cells.map(function (c) {
+      var sel = c.key === selectedDateKey;
+      return '<button type="button" class="date-cell' + (c.isToday ? ' is-today' : '') + (sel && !c.isToday ? ' is-selected' : '') + (c.isFuture ? ' is-future' : '') + '" data-key="' + c.key + '"' + (c.isFuture ? ' disabled' : '') + '>' +
+        '<span class="date-cell-dow">' + c.d.toLocaleDateString('en-US', { weekday: 'short' }) + '</span>' +
+        '<span class="date-cell-num">' + c.d.getDate() + '</span>' +
+        (c.hasSession ? '<span class="date-cell-dot"></span>' : '') +
+        '</button>';
+    }).join('');
+    document.querySelectorAll('.date-cell:not([disabled])').forEach(function (btn) {
+      btn.addEventListener('click', function () { onSelectDate(btn.dataset.key); });
+    });
+  }
+  function onSelectDate(key) {
+    if (key === wtDateKey(new Date())) { closeDayDetail(); return; }
+    selectedDateKey = key;
+    renderDateStrip();
+    openDayDetailModal(key);
+  }
+  function openDayDetailModal(key) {
+    document.getElementById('dayDetailTitle').textContent = dayLabelForKey(key);
+    var matches = SESSIONS.filter(function (s) { return s.dateKey === key; });
+    matches.forEach(function (s) { expandedSessionId = s.id; });
+    var body = document.getElementById('dayDetailBody');
+    body.innerHTML = matches.length ? '<ul class="session-list">' + matches.map(sessionRowHtml).join('') + '</ul>' : '<div class="act-empty">No workout logged this day.</div>';
+    bindSessionRows('dayDetailBody', matches);
+    openModal('dayDetailModalBg');
+  }
+  function closeDayDetail() { closeModal('dayDetailModalBg'); selectedDateKey = null; expandedSessionId = null; renderDateStrip(); }
+  document.getElementById('dayDetailClose').addEventListener('click', closeDayDetail);
+  document.getElementById('dayDetailModalBg').addEventListener('click', function (ev) { if (ev.target.id === 'dayDetailModalBg') closeDayDetail(); });
 
   // ------------------------------------------------------------------
   // 5a. EXERCISE LIBRARY — every exercise in the program, grouped by
@@ -1459,13 +1619,121 @@ button { font-family: inherit; }
         '<div class="lib-group-head" data-m="' + esc(m) + '"><span class="lib-dot" style="background:' + color + '"></span>' +
         '<span class="lib-group-name">' + esc(m) + '</span><span class="lib-group-count">' + groups[m].length + '</span>' +
         '<span class="lib-chevron' + (open ? ' is-open' : '') + '">⌄</span></div>' +
-        (open ? '<div class="lib-chips">' + groups[m].map(function (n) { return '<span class="lib-chip">' + esc(n) + '</span>'; }).join('') + '</div>' : '') +
+        (open ? '<div class="lib-chips">' + groups[m].map(function (n) { return '<button type="button" class="lib-chip" data-ex="' + esc(n) + '">' + esc(n) + '</button>'; }).join('') + '</div>' : '') +
         '</div>';
     }).join('');
     document.querySelectorAll('.lib-group-head').forEach(function (h) {
       h.addEventListener('click', function () { var m = h.dataset.m; libOpen[m] = !libOpen[m]; renderLibrary(); });
     });
+    document.querySelectorAll('.lib-chip').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) { ev.stopPropagation(); openExerciseHistory(btn.dataset.ex); });
+    });
   }
+
+  // ------------------------------------------------------------------
+  // Exercise history — tap any exercise in the Library to see its
+  // progression: current/all-time-best/session-count stat tiles, a
+  // time-range filter, and a chart across Top Weight / Est. 1RM /
+  // Volume (or just Reps for bodyweight moves). The history itself is
+  // generated (seeded by exercise name, so it's stable across opens,
+  // not random each time) until this is wired to real logged sets.
+  // ------------------------------------------------------------------
+  function seedFromString(str) { var h = 0; for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return Math.abs(h); }
+  function seededRandom(seed) { var s = seed || 1; return function () { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
+  function generateExerciseHistory(ex) {
+    var rnd = seededRandom(seedFromString(ex.name));
+    var weeks = 52;
+    var points = [];
+    var current = ex.bw ? Math.max(4, ex.repMin - 2) : Math.max(ex.step || 2.5, (ex.startWeight || 20) * 0.72);
+    for (var i = weeks - 1; i >= 0; i--) {
+      var d = new Date(); d.setDate(d.getDate() - i * 7);
+      if (ex.bw) {
+        current = Math.max(ex.repMin - 2, Math.round(current + (rnd() - 0.35) * 2));
+      } else {
+        current = Math.max(ex.step || 2.5, roundToStep(current + (rnd() - 0.35) * (ex.step || 2.5) * 1.6, ex.step || 2.5));
+      }
+      var reps = Math.round(ex.repMin + rnd() * (ex.repMax - ex.repMin));
+      points.push({ dateKey: wtDateKey(d), weight: ex.bw ? 0 : current, reps: ex.bw ? current : reps, setsCount: 3 });
+    }
+    return points;
+  }
+  var EH_RANGE_DAYS = { '1M': 31, '3M': 92, '6M': 183, '1Y': 366, 'ALL': 99999 };
+  var ehExercise = null, ehPoints = [], ehRange = '3M', ehMetric = 'weight';
+  function ehValueFn(p) {
+    if (ehMetric === 'reps') return p.reps;
+    if (ehMetric === '1rm') return epley1rm(p.weight, p.reps);
+    if (ehMetric === 'volume') return p.weight * p.reps * p.setsCount;
+    return p.weight;
+  }
+  function drawHistoryChart(svgEl, points, valueFn, color) {
+    var W = 300, H = 52;
+    var values = points.map(valueFn);
+    var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+    if (min === max) { min -= 1; max += 1; }
+    var pts = points.map(function (p, i) {
+      var x = points.length === 1 ? W / 2 : (i / (points.length - 1)) * W;
+      var y = 4 + (1 - (valueFn(p) - min) / (max - min)) * (H - 8);
+      return { x: x, y: y, p: p };
+    });
+    var line = 'M ' + pts.map(function (pt) { return pt.x.toFixed(1) + ' ' + pt.y.toFixed(1); }).join(' L ');
+    var area = line + ' L ' + W + ' ' + H + ' L 0 ' + H + ' Z';
+    var gradId = 'hgrad-' + Math.random().toString(36).slice(2, 9);
+    var labelIdxs = points.length <= 1 ? [0] : [0, Math.floor((points.length - 1) / 2), points.length - 1];
+    var labels = labelIdxs.map(function (i) {
+      var pt = pts[i];
+      var anchor = i === 0 ? 'start' : (i === points.length - 1 ? 'end' : 'middle');
+      return '<text x="' + pt.x.toFixed(1) + '" y="' + (H + 12) + '" font-size="7.5" fill="var(--text-3)" text-anchor="' + anchor + '">' + wtFmtDate(pt.p.dateKey) + '</text>';
+    }).join('');
+    svgEl.setAttribute('viewBox', '0 0 ' + W + ' ' + (H + 16));
+    svgEl.innerHTML =
+      '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="' + color + '" stop-opacity="0.3"/><stop offset="100%" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs>' +
+      '<path d="' + area + '" fill="url(#' + gradId + ')" stroke="none"></path>' +
+      '<path d="' + line + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
+      '<circle cx="' + pts[pts.length - 1].x + '" cy="' + pts[pts.length - 1].y + '" r="3" fill="' + color + '"></circle>' +
+      labels;
+  }
+  function renderEhRangeTabs() {
+    document.getElementById('ehRangeTabs').innerHTML = Object.keys(EH_RANGE_DAYS).map(function (r) {
+      return '<button type="button" class="' + (r === ehRange ? 'active' : '') + '" data-r="' + r + '">' + r + '</button>';
+    }).join('');
+    document.querySelectorAll('#ehRangeTabs button').forEach(function (btn) {
+      btn.addEventListener('click', function () { ehRange = btn.dataset.r; renderEhRangeTabs(); renderExerciseHistory(); });
+    });
+  }
+  function renderEhMetricTabs() {
+    var metrics = ehExercise.bw ? [['reps', 'Reps']] : [['weight', 'Top Weight'], ['1rm', 'Est. 1RM'], ['volume', 'Volume']];
+    document.getElementById('ehMetricTabs').innerHTML = metrics.map(function (m) {
+      return '<button type="button" class="' + (m[0] === ehMetric ? 'active' : '') + '" data-m="' + m[0] + '">' + m[1] + '</button>';
+    }).join('');
+    document.querySelectorAll('#ehMetricTabs button').forEach(function (btn) {
+      btn.addEventListener('click', function () { ehMetric = btn.dataset.m; renderEhMetricTabs(); renderExerciseHistory(); });
+    });
+  }
+  function renderExerciseHistory() {
+    var cutoff = new Date(); cutoff.setDate(cutoff.getDate() - EH_RANGE_DAYS[ehRange]);
+    var cutoffKey = wtDateKey(cutoff);
+    var filtered = ehPoints.filter(function (p) { return p.dateKey >= cutoffKey; });
+    if (!filtered.length) filtered = ehPoints.slice(-1);
+    var last = ehPoints[ehPoints.length - 1];
+    document.getElementById('ehCurrent').textContent = ehExercise.bw ? (last.reps + ' reps') : (last.weight + UNITS);
+    document.getElementById('ehBest').textContent = ehExercise.bw
+      ? (Math.max.apply(null, ehPoints.map(function (p) { return p.reps; })) + ' reps')
+      : (Math.max.apply(null, ehPoints.map(function (p) { return p.weight; })) + UNITS);
+    document.getElementById('ehCount').textContent = ehPoints.length;
+    drawHistoryChart(document.getElementById('ehChart'), filtered, ehValueFn, 'var(--lime)');
+  }
+  function openExerciseHistory(name) {
+    var ex = EX_INDEX[name];
+    if (!ex) return;
+    ehExercise = ex;
+    ehPoints = generateExerciseHistory(ex);
+    ehRange = '3M'; ehMetric = ex.bw ? 'reps' : 'weight';
+    document.getElementById('exHistoryTitle').textContent = ex.name;
+    renderEhRangeTabs(); renderEhMetricTabs(); renderExerciseHistory();
+    openModal('exHistoryModalBg');
+  }
+  document.getElementById('exHistoryClose').addEventListener('click', function () { closeModal('exHistoryModalBg'); });
+  document.getElementById('exHistoryModalBg').addEventListener('click', function (ev) { if (ev.target.id === 'exHistoryModalBg') closeModal('exHistoryModalBg'); });
 
   // ------------------------------------------------------------------
   // 5b. MUSCLE ANATOMY — real SVG regions ported from gym.html, restyled.
@@ -1610,6 +1878,7 @@ button { font-family: inherit; }
   // init
   // ------------------------------------------------------------------
   renderHeader(confirmedDay);
+  renderDateStrip();
   renderWeight();
   renderStrength();
   renderChecklist();
