@@ -545,6 +545,14 @@ body::after {
     return r.holes === 9 ? r.differential * 2 : r.differential;
   }
 
+  // Local calendar date, not UTC — new Date().toISOString().slice(0,10)
+  // gives the UTC day, which in Sydney (UTC+10/+11) reads as tomorrow's
+  // date for anything played roughly after 8-9pm local time. This
+  // matches gym's date-key logic (local getFullYear/getMonth/getDate).
+  function todayLocalDateKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
   function fmtDate(iso) {
     if (!iso) return '';
     const parts = iso.split('-').map(Number);
@@ -849,7 +857,7 @@ body::after {
     renderRounds();
   });
 
-  $('gInputDate').valueAsDate = new Date();
+  $('gInputDate').value = todayLocalDateKey();
   $('gInputPar').value = defaultPar();
 
   $('gSaveBtn').addEventListener('click', () => {
@@ -860,7 +868,7 @@ body::after {
     const course = $('gInputCourse').value.trim();
     const round = {
       id: 'r' + Date.now() + Math.random().toString(36).slice(2, 7),
-      date: $('gInputDate').value || new Date().toISOString().slice(0, 10),
+      date: $('gInputDate').value || todayLocalDateKey(),
       holes: formHoles,
       course: course,
       score: score,
@@ -881,7 +889,7 @@ body::after {
     $('gInputFairways').value = '';
     $('gInputPutts').value = '';
     $('gInputSlope').value = '';
-    $('gInputDate').valueAsDate = new Date();
+    $('gInputDate').value = todayLocalDateKey();
     formHoles = 18;
     $('gHolesSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.h === '18'));
     $('gInputPar').value = defaultPar();

@@ -2251,17 +2251,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:14px">
       <div>
         <div style="font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;font-weight:500">Total net worth</div>
-        <div id="netWorthTotal" style="font-size:34px;font-weight:700;color:var(--text-primary);line-height:1.05;margin-top:2px">CHF 0</div>
+        <div id="netWorthTotal" style="font-size:34px;font-weight:700;color:var(--text-primary);line-height:1.05;margin-top:2px">AUD 0</div>
         <div id="netWorthBreakdown" style="font-size:11px;color:var(--text-tertiary);margin-top:4px"></div>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:11px;color:var(--text-tertiary)">CHF</span>
         <select id="netWorthCurrency" style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit;cursor:pointer">
+          <option value="AUD" selected>AUD</option>
           <option value="CHF">CHF</option>
           <option value="USD">USD</option>
           <option value="EUR">EUR</option>
           <option value="GBP">GBP</option>
-          <option value="AUD" selected>AUD</option>
         </select>
       </div>
     </div>
@@ -2312,11 +2311,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
             <div class="rcpt-field">
               <label for="rcptCurrency">Currency</label>
               <select id="rcptCurrency">
+                <option value="AUD" selected>AUD</option>
                 <option value="CHF">CHF</option>
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
                 <option value="GBP">GBP</option>
-                <option value="AUD" selected>AUD</option>
               </select>
             </div>
             <div class="rcpt-field">
@@ -2497,7 +2496,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:12px">
       <div>
         <div style="font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;font-weight:500">Monthly burn</div>
-        <div id="subsTotal" style="font-size:28px;font-weight:700;color:var(--text-primary);line-height:1.1;margin-top:2px">CHF 0 <span style="font-size:13px;color:var(--text-tertiary);font-weight:500">/ mo</span></div>
+        <div id="subsTotal" style="font-size:28px;font-weight:700;color:var(--text-primary);line-height:1.1;margin-top:2px">AUD 0 <span style="font-size:13px;color:var(--text-tertiary);font-weight:500">/ mo</span></div>
         <div id="subsYearly" style="font-size:11px;color:var(--text-tertiary);margin-top:2px"></div>
       </div>
       <div id="subsCount" style="font-size:11px;color:var(--text-tertiary)"></div>
@@ -2508,11 +2507,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <input type="text" placeholder="Service (e.g. Netflix)" id="subName" style="flex:1.5;min-width:120px" />
       <input type="number" placeholder="Amount" id="subAmount" step="0.01" style="flex:1;max-width:100px" />
       <select id="subCurrency" style="padding:6px 10px;border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary);max-width:90px">
+        <option value="AUD" selected>AUD</option>
         <option value="CHF">CHF</option>
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="GBP">GBP</option>
-          <option value="AUD" selected>AUD</option>
       </select>
       <select id="subPeriod" style="padding:6px 10px;border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary);max-width:100px">
         <option value="monthly">Monthly</option>
@@ -2546,11 +2545,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <input type="text"   id="ordName"   placeholder="Item (e.g. New iPhone)" class="ord-input ord-input-name">
       <input type="number" id="ordCost"   placeholder="Cost" step="0.01" class="ord-input ord-input-cost">
       <select id="ordCurrency" class="ord-input ord-input-ccy">
+        <option value="AUD" selected>AUD</option>
         <option value="CHF">CHF</option>
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="GBP">GBP</option>
-          <option value="AUD" selected>AUD</option>
       </select>
       <select id="ordFromCat" class="ord-input ord-input-from" title="Which net worth account this comes out of">
         <option value="">No accounts yet</option>
@@ -2584,7 +2583,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div class="wish-hero-top">
       <div>
         <div class="wish-hero-eyebrow">WISHLIST TOTAL</div>
-        <div class="wish-hero-num" id="wishTotal">CHF 0</div>
+        <div class="wish-hero-num" id="wishTotal">AUD 0</div>
       </div>
       <div class="wish-hero-pct-wrap">
         <div class="wish-hero-pct-label">% OF NET WORTH</div>
@@ -2604,11 +2603,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       <input type="text"   id="wishName"   placeholder="Item name (e.g. New iPhone Pro Max)" class="wish-input wish-input-name">
       <input type="number" id="wishAmount" placeholder="Cost" step="0.01" class="wish-input wish-input-amt">
       <select id="wishCurrency" class="wish-input wish-input-ccy">
+        <option value="AUD" selected>AUD</option>
         <option value="CHF">CHF</option>
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="GBP">GBP</option>
-          <option value="AUD" selected>AUD</option>
       </select>
       <button class="wish-add-btn" id="wishAddBtn" onclick="window.__addWish && window.__addWish()">+ Add</button>
     </div>
@@ -2689,6 +2688,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
   function storeSet(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+  }
+  // Local calendar date, not UTC — new Date().toISOString().slice(0,10)
+  // gives the UTC day, which in Sydney (UTC+10/+11) reads as tomorrow's
+  // date for anything entered roughly after 8-9pm local time.
+  function todayLocalDateKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
   // ============================================================
@@ -3820,7 +3826,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       // units count on the next successful refresh.
       const amountCHF = hasUnits ? 0 : a / rate;
       const items = storeGet('nw:' + cat.key) || [];
-      const item = { name: n, amount: amountCHF, dateAdded: new Date().toISOString().slice(0, 10) };
+      const item = { name: n, amount: amountCHF, dateAdded: todayLocalDateKey() };
       if (hasTicker) { item.ticker = ticker; if (hasUnits) item.units = units; }
       // Freeze the conversion rate for anything that isn't a live-priced
       // ticker, so this number reads back exactly what was typed instead
