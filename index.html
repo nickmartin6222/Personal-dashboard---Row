@@ -230,7 +230,19 @@ body::after {
 .fin-total-val { font-family: var(--font); font-size: 34px; font-weight: 800; color: var(--text-primary); margin-top: 4px; letter-spacing: -0.02em; }
 .fin-total-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
 .fin-chart-wrap { margin-top: 16px; }
-.fin-chart-svg { width: 100%; height: 120px; display: block; overflow: visible; }
+.fin-chart-svg {
+  width: 100%; height: 120px; display: block; overflow: visible;
+  color: var(--positive); transition: color 0.4s ease;
+}
+.fin-chart-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 4; vector-effect: non-scaling-stroke; }
+.fin-chart-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+}
+@media (max-width: 480px) { .fin-chart-stats { grid-template-columns: repeat(2, 1fr); } }
+.fin-stat { display: flex; flex-direction: column; gap: 2px; padding: 4px 6px; }
+.fin-stat-label { font-size: 9px; letter-spacing: 0.14em; font-weight: 800; text-transform: uppercase; color: var(--text-tertiary); font-family: var(--font-mono); }
+.fin-stat-val { font-size: 13px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fin-donut-row { display: flex; align-items: center; gap: 18px; }
 .fin-donut { width: 96px; height: 96px; border-radius: 50%; flex-shrink: 0; position: relative; }
 .fin-donut::after { content: ''; position: absolute; inset: 18px; border-radius: 50%; background: var(--card-solid); }
@@ -401,6 +413,12 @@ body::after {
         <div class="fin-total-sub" id="finBreakdown"></div>
         <div class="fin-chart-wrap">
           <svg class="fin-chart-svg" id="finChartSvg" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
+          <div class="fin-chart-stats">
+            <div class="fin-stat"><div class="fin-stat-label">1% =</div><div class="fin-stat-val" id="finStat1pct">—</div></div>
+            <div class="fin-stat"><div class="fin-stat-label">High</div><div class="fin-stat-val" id="finStatHigh">—</div></div>
+            <div class="fin-stat"><div class="fin-stat-label">Low</div><div class="fin-stat-val" id="finStatLow">—</div></div>
+            <div class="fin-stat"><div class="fin-stat-label">Snapshots</div><div class="fin-stat-val" id="finStatCount">—</div></div>
+          </div>
         </div>
       </div>
       <div class="fin-donut-row">
@@ -535,11 +553,18 @@ body::after {
     const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'mint' : 'sage';
     applyTheme(next);
     try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    // The Finance Overview pie picks a different default palette per
+    // theme (dark = Finance's own category colors, light = the muted
+    // per-item palette) — needs a re-render to actually recolor.
+    if (typeof renderFinance === 'function') renderFinance();
   });
   // Stay in sync if the shared toggle button (topbar.js, present on
   // every page) changes the theme instead of this page's own pill.
   window.addEventListener('storage', (e) => {
-    if (e.key === THEME_KEY) applyTheme(e.newValue || 'mint');
+    if (e.key === THEME_KEY) {
+      applyTheme(e.newValue || 'mint');
+      if (typeof renderFinance === 'function') renderFinance();
+    }
   });
 
   const dows = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -705,7 +730,16 @@ body::after {
   function renderFinance() {
     const CAT_KEYS = ['bank', 'stocks', 'crypto', 'other'];
     const PALETTE = ['#4C7A5B', '#4F7FBF', '#8A6BB5', '#C99A44', '#C2554B', '#5F7A63', '#7A9A4A', '#3F5443'];
+    // Dark mode matches the Finance page's own dark-mode pie exactly —
+    // one fixed color per category (every bank account is the same
+    // blue, every stock the same mint) — rather than a per-item hash.
+    // Light mode keeps the muted per-item palette above, matching the
+    // rest of the light theme's own established colors.
+    const CAT_COLORS_DARK = { bank: '#7DD3FC', stocks: '#6EE7B7', crypto: '#FBBF24', other: '#B794F4' };
     function defaultColor(catKey, it) {
+      if (document.documentElement.getAttribute('data-theme') !== 'light') {
+        return CAT_COLORS_DARK[catKey] || '#FFFFFF';
+      }
       const seed = catKey + ':' + (it.ticker || it.name || '');
       let hash = 0;
       for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
@@ -755,24 +789,66 @@ body::after {
         + '<span class="fin-legend-name">' + s.name + '</span><span class="fin-legend-pct">' + pct + '%</span></div>';
     }).join('') + (rest > 0 ? '<div class="fin-legend-row"><span class="fin-legend-name">+' + rest + ' more</span></div>' : '');
 
-    // Trend line from nw:history (CHF-based snapshots)
+    // Trend line from nw:history (CHF-based snapshots) — same glowing
+    // neon-line style as the Finance page's own chart (gradient fill,
+    // grid lines, glow, dynamic up/down color), not a flat static line.
     const hist = readJSON('nw:history', []);
     const svg = $('finChartSvg');
-    if (!Array.isArray(hist) || hist.length < 2) { svg.innerHTML = ''; return; }
+    const statEls = [$('finStat1pct'), $('finStatHigh'), $('finStatLow'), $('finStatCount')];
+    if (!Array.isArray(hist) || hist.length < 2) {
+      svg.innerHTML = '';
+      statEls.forEach(el => { if (el) el.textContent = '—'; });
+      return;
+    }
     const vals = hist.map(h => h.v);
     const min = Math.min(...vals), max = Math.max(...vals);
     const range = Math.max(1, max - min);
     const W = 300, H = 100, pad = 4;
     const x = (i) => pad + (i / (hist.length - 1)) * (W - pad * 2);
     const y = (v) => H - pad - ((v - min) / range) * (H - pad * 2);
-    const lineD = hist.map((h, i) => (i === 0 ? 'M' : 'L') + x(i).toFixed(1) + ',' + y(h.v).toFixed(1)).join(' ');
+    const points = hist.map((h, i) => ({ x: x(i), y: y(h.v) }));
+    const lineD = finSmoothPath(points);
     const areaD = lineD + ' L' + x(hist.length - 1).toFixed(1) + ',' + H + ' L' + x(0).toFixed(1) + ',' + H + ' Z';
+    const first = vals[0], last = vals[vals.length - 1];
+    const direction = Math.abs(last - first) < 0.005 ? 'flat' : (last > first ? 'up' : 'down');
+    svg.style.color = direction === 'up' ? 'var(--positive)' : direction === 'down' ? 'var(--negative)' : 'var(--text-tertiary)';
     svg.innerHTML =
       '<defs><linearGradient id="finAreaGrad" x1="0" y1="0" x2="0" y2="1">'
-      + '<stop offset="0%" stop-color="#4C7A5B" stop-opacity="0.28"/><stop offset="100%" stop-color="#4C7A5B" stop-opacity="0"/>'
+      + '<stop offset="0%" stop-color="currentColor" stop-opacity="0.55"/>'
+      + '<stop offset="60%" stop-color="currentColor" stop-opacity="0.18"/>'
+      + '<stop offset="100%" stop-color="currentColor" stop-opacity="0"/>'
       + '</linearGradient></defs>'
+      + '<line class="fin-chart-grid" x1="0" x2="' + W + '" y1="20" y2="20"/>'
+      + '<line class="fin-chart-grid" x1="0" x2="' + W + '" y1="50" y2="50"/>'
+      + '<line class="fin-chart-grid" x1="0" x2="' + W + '" y1="80" y2="80"/>'
       + '<path d="' + areaD + '" fill="url(#finAreaGrad)"></path>'
-      + '<path d="' + lineD + '" fill="none" stroke="#4C7A5B" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></path>';
+      + '<path d="' + lineD + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" style="filter: drop-shadow(0 0 6px currentColor)"></path>';
+
+    const { ccy: statCcy, rate: statRate } = displayCcy();
+    const fmtStat = (v) => statCcy + ' ' + Math.round(v * statRate).toLocaleString('en-US');
+    if (statEls[0]) statEls[0].textContent = fmtStat(last / 100);
+    if (statEls[1]) statEls[1].textContent = fmtStat(max);
+    if (statEls[2]) statEls[2].textContent = fmtStat(min);
+    if (statEls[3]) statEls[3].textContent = String(hist.length);
+  }
+  // Same Catmull-Rom-ish cubic-bezier smoothing as the Finance page's
+  // own chart (nwSmoothPath), so both trend lines curve identically.
+  function finSmoothPath(points) {
+    if (points.length < 2) return '';
+    if (points.length === 2) return 'M' + points[0].x + ',' + points[0].y + ' L' + points[1].x + ',' + points[1].y;
+    const d = ['M' + points[0].x + ',' + points[0].y];
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i - 1] || points[i];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2] || p2;
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+      d.push('C' + c1x + ',' + c1y + ' ' + c2x + ',' + c2y + ' ' + p2.x + ',' + p2.y);
+    }
+    return d.join(' ');
   }
 
   // ============================================================

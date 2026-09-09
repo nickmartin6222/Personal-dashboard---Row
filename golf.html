@@ -26,6 +26,8 @@
   --accent: #6EE7B7;
   --warning: #F2C063;
   --danger: #FF6B6B;
+  --good: #6EE7B7;
+  --bad: #FF8A8A;
   --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: dark;
@@ -213,7 +215,11 @@ body::after {
   backdrop-filter: blur(24px) saturate(1.2);
   -webkit-backdrop-filter: blur(24px) saturate(1.2);
 }
-.golf-chart-svg { width: 100%; height: 140px; display: block; overflow: visible; }
+.golf-chart-svg {
+  width: 100%; height: 140px; display: block; overflow: visible;
+  color: var(--good); transition: color 0.4s ease;
+}
+.golf-chart-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 2 4; vector-effect: non-scaling-stroke; }
 .golf-chart-empty {
   text-align: center; font-size: 12px; font-style: italic;
   color: var(--text-tertiary); padding: 40px 0;
@@ -224,6 +230,14 @@ body::after {
   font-family: var(--font-mono);
 }
 .golf-chart-legend b { color: var(--accent); font-weight: 700; }
+.golf-chart-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+}
+@media (max-width: 480px) { .golf-chart-stats { grid-template-columns: repeat(2, 1fr); } }
+.golf-stat { display: flex; flex-direction: column; gap: 2px; padding: 4px 6px; }
+.golf-stat-label { font-size: 9px; letter-spacing: 0.14em; font-weight: 800; text-transform: uppercase; color: var(--text-tertiary); font-family: var(--font-mono); }
+.golf-stat-val { font-size: 13px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
 
 /* ===== Rounds history ===== */
 .golf-round-row {
@@ -287,6 +301,8 @@ body::after {
   --accent: #4C7A5B;
   --warning: #C99A44;
   --danger: #C2554B;
+  --good: #4C7A5B;
+  --bad: #C2554B;
   color-scheme: light;
 }
 [data-theme="light"] body::before {
@@ -425,7 +441,12 @@ body::after {
     </div>
     <svg class="golf-chart-svg" id="gChartSvg" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
     <div class="golf-chart-empty" id="gChartEmpty">Log 2+ rounds (matching this filter) to see a trend.</div>
-    <div class="golf-chart-legend" id="gChartLegend" style="display:none"></div>
+    <div class="golf-chart-stats" id="gChartStats" style="display:none">
+      <div class="golf-stat"><div class="golf-stat-label">Best</div><div class="golf-stat-val" id="gStatBest">—</div></div>
+      <div class="golf-stat"><div class="golf-stat-label">Avg</div><div class="golf-stat-val" id="gStatAvg">—</div></div>
+      <div class="golf-stat"><div class="golf-stat-label">Worst</div><div class="golf-stat-val" id="gStatWorst">—</div></div>
+      <div class="golf-stat"><div class="golf-stat-label">Rounds</div><div class="golf-stat-val" id="gStatCount">—</div></div>
+    </div>
   </div>
 
   <div class="section-title">Rounds</div>
@@ -585,19 +606,38 @@ body::after {
     return rounds.filter(r => (r.holes || 18) === h);
   }
 
+  // Same Catmull-Rom-ish cubic-bezier smoothing as the Finance page's
+  // own chart, so trend lines curve the same way everywhere.
+  function golfSmoothPath(points) {
+    if (points.length < 2) return '';
+    if (points.length === 2) return 'M' + points[0].x + ',' + points[0].y + ' L' + points[1].x + ',' + points[1].y;
+    const d = ['M' + points[0].x + ',' + points[0].y];
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i - 1] || points[i];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2] || p2;
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = p1.y + (p2.y - p0.y) / 6;
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = p2.y - (p3.y - p1.y) / 6;
+      d.push('C' + c1x + ',' + c1y + ' ' + c2x + ',' + c2y + ' ' + p2.x + ',' + p2.y);
+    }
+    return d.join(' ');
+  }
   function renderChart(rounds) {
     const svg = $('gChartSvg');
     const empty = $('gChartEmpty');
-    const legend = $('gChartLegend');
+    const stats = $('gChartStats');
     const chrono = rounds.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
     if (chrono.length < 2) {
       svg.innerHTML = '';
       empty.style.display = 'block';
-      legend.style.display = 'none';
+      stats.style.display = 'none';
       return;
     }
     empty.style.display = 'none';
-    legend.style.display = 'flex';
+    stats.style.display = 'grid';
 
     const scores = chrono.map(r => r.score);
     const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
@@ -608,20 +648,34 @@ body::after {
     const x = (i) => pad + (i / (chrono.length - 1)) * (W - pad * 2);
     const y = (v) => H - 20 - ((v - min) / range) * (H - 40);
 
-    const pathD = scores.map((s, i) => (i === 0 ? 'M' : 'L') + x(i).toFixed(1) + ',' + y(s).toFixed(1)).join(' ');
+    const points = scores.map((s, i) => ({ x: x(i), y: y(s) }));
+    const lineD = golfSmoothPath(points);
+    const areaD = lineD + ' L' + x(scores.length - 1).toFixed(1) + ',' + H + ' L' + x(0).toFixed(1) + ',' + H + ' Z';
     const avgY = y(avg).toFixed(1);
-    const dots = scores.map((s, i) =>
-      '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(s).toFixed(1) + '" r="3" fill="var(--accent)"></circle>'
-    ).join('');
+
+    // Lower score = better — a downward line is "improving", so the
+    // trend color inverts relative to a money chart (down is green).
+    const first = scores[0], last = scores[scores.length - 1];
+    const direction = Math.abs(last - first) < 0.05 ? 'flat' : (last < first ? 'up' : 'down');
+    svg.style.color = direction === 'up' ? 'var(--good)' : direction === 'down' ? 'var(--bad)' : 'var(--text-tertiary)';
 
     svg.innerHTML =
-      '<line x1="' + pad + '" y1="' + avgY + '" x2="' + (W - pad) + '" y2="' + avgY + '" stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="4 3"></line>' +
-      '<path d="' + pathD + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>' +
-      dots;
+      '<defs><linearGradient id="gChartGrad" x1="0" y1="0" x2="0" y2="1">'
+      + '<stop offset="0%" stop-color="currentColor" stop-opacity="0.55"/>'
+      + '<stop offset="60%" stop-color="currentColor" stop-opacity="0.18"/>'
+      + '<stop offset="100%" stop-color="currentColor" stop-opacity="0"/>'
+      + '</linearGradient></defs>'
+      + '<line class="golf-chart-grid" x1="0" x2="' + W + '" y1="30" y2="30"/>'
+      + '<line class="golf-chart-grid" x1="0" x2="' + W + '" y1="70" y2="70"/>'
+      + '<line class="golf-chart-grid" x1="0" x2="' + W + '" y1="110" y2="110"/>'
+      + '<line x1="' + pad + '" y1="' + avgY + '" x2="' + (W - pad) + '" y2="' + avgY + '" stroke="var(--border-strong)" stroke-width="1" stroke-dasharray="4 3"></line>'
+      + '<path d="' + areaD + '" fill="url(#gChartGrad)"></path>'
+      + '<path d="' + lineD + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" style="filter: drop-shadow(0 0 6px currentColor)"></path>';
 
-    legend.innerHTML =
-      '<span>' + chrono.length + ' rounds shown</span>' +
-      '<span>Avg: <b>' + avg.toFixed(1) + '</b> · Best: <b>' + min + '</b></span>';
+    $('gStatBest').textContent = String(min);
+    $('gStatAvg').textContent = avg.toFixed(1);
+    $('gStatWorst').textContent = String(max);
+    $('gStatCount').textContent = String(chrono.length);
   }
 
   function renderRounds() {
