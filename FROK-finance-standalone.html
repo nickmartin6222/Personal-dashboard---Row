@@ -892,6 +892,12 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   border-radius: 12px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  /* The grid row stretches this card to match the chart card's height
+     (align-items: stretch on .nw-overview-grid) — without this, the
+     ring+legend content just sat at the top, leaving all the extra
+     space as one lump at the bottom instead of even top/bottom gaps. */
+  justify-content: center;
 }
 .nw-donut-stage {
   position: relative;
@@ -2812,11 +2818,32 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   // (dark mode is left exactly as-is, this is scoped to light only).
   const NW_COLOR_PALETTE = ['#7DD3FC','#6EE7B7','#C9B8FF','#F2C063','#FF8A8A','#F472B6','#FCD34D','#34D399','#A78BFA','#60A5FA','#FB923C','#4ADE80'];
   const NW_COLOR_PALETTE_LIGHT = ['#4C7A5B', '#4F7FBF', '#8A6BB5', '#C99A44', '#C2554B', '#5F7A63', '#7A9A4A', '#3F5443'];
+  // Explicit colors for known holdings — same mapping as index.html's
+  // pie, so both pages agree exactly instead of each computing their
+  // own "some distinct color" from the hash. Keyed by ticker (stocks)
+  // or lowercased name (everything else, no ticker to key on).
+  const NAMED_COLORS = {
+    green:  { dark: '#6EE7B7', light: '#4C7A5B' },
+    orange: { dark: '#FB923C', light: '#C99A44' },
+    pink:   { dark: '#F472B6', light: '#B5568F' },
+    purpleLight: { dark: '#C9B8FF', light: '#8A6BB5' },
+    blue:   { dark: '#60A5FA', light: '#4F7FBF' }
+  };
+  const ITEM_COLOR_OVERRIDES = {
+    'ivv.ax': 'green',    // S&P 500
+    'vdhg.ax': 'orange',  // VDHG
+    'ndq.ax': 'pink',     // Nasdaq
+    'macquarie': 'purpleLight',
+    'travel': 'blue'
+  };
   function defaultItemColor(catKey, it) {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const key = (it.ticker || it.name || '').toLowerCase();
+    const named = ITEM_COLOR_OVERRIDES[key];
+    if (named) return NAMED_COLORS[named][isLight ? 'light' : 'dark'];
     const seed = catKey + ':' + (it.ticker || it.name || '');
     let hash = 0;
     for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const palette = isLight ? NW_COLOR_PALETTE_LIGHT : NW_COLOR_PALETTE;
     return palette[hash % palette.length];
   }
@@ -3440,16 +3467,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const count  = document.getElementById('nwDonutCount');
     if (!svg || !total || !legend) return;
 
-    // Build one slice per individual NW account. Dark mode colors by
-    // parent category (unchanged) — "star one" (bank) and "Revolute"
-    // (bank) become two blue slices, "vanguard" (stocks) a green slice,
-    // etc. Light mode instead gives each item its own distinct color via
-    // itemColor() (the same hash-based default index.html's own pie
-    // uses), matching the dashboard's pie instead of a 2-3 color block.
-    const isLightDonut = document.documentElement.getAttribute('data-theme') === 'light';
+    // One slice per individual NW account, each its own distinct color
+    // via itemColor() — matches the dashboard's own pie exactly (both
+    // themes) instead of grouping every account in a category into one
+    // color block.
     const slices = [];
     NW_CATS.forEach(cat => {
-      const meta = NW_SLICE_META[cat.key] || { color: '#FFFFFF' };
       const items = storeGet('nw:' + cat.key) || [];
       items.forEach((it, i) => {
         const v = Number(it.amount) || 0;
@@ -3457,7 +3480,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           slices.push({
             key: cat.key + '::' + i,
             name: String(it.name || '(unnamed)'),
-            color: isLightDonut ? itemColor(cat.key, it) : meta.color,
+            color: itemColor(cat.key, it),
             value: v
           });
         }

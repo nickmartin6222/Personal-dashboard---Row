@@ -104,15 +104,13 @@
 }
 .bottombar-tab-icon {
   font-size: 24px; line-height: 1;
-  filter: grayscale(100%) brightness(1.2);
   opacity: 0.55;
-  transition: opacity 0.15s, filter 0.15s, transform 0.10s;
+  transition: opacity 0.15s, transform 0.10s;
 }
 .bottombar-tab.active {
   color: #FAFAFA;
 }
 .bottombar-tab.active .bottombar-tab-icon {
-  filter: grayscale(100%) brightness(1.6);
   opacity: 1;
 }
 .bottombar-tab:active .bottombar-tab-icon { transform: scale(0.92); }
@@ -170,11 +168,7 @@ body.has-bottombar {
   border-top-color: rgba(20,18,15,0.10);
 }
 [data-theme="light"] .bottombar-tab { color: rgba(20,18,15,0.45); }
-[data-theme="light"] .bottombar-tab-icon { filter: grayscale(100%) brightness(0.7); }
 [data-theme="light"] .bottombar-tab.active { color: #1C1B17; }
-[data-theme="light"] .bottombar-tab.active .bottombar-tab-icon {
-  filter: grayscale(100%) brightness(0.3);
-}
 
 /* === Global mobile lockdown ===
    1) Hide the right-side scrollbar on phones (iOS uses overlay scrollbars anyway).
@@ -247,6 +241,10 @@ body.topbar-modal-open {
     <span class="bottombar-tab-icon">⛳</span>
     <span>Golf</span>
   </a>
+  <a href="FROK-finance-standalone.html#net" class="bottombar-tab" data-page="finance">
+    <span class="bottombar-tab-icon">📊</span>
+    <span>Finance</span>
+  </a>
 </nav>
 `;
 
@@ -267,6 +265,10 @@ body.topbar-modal-open {
     const p = (window.location.pathname || '').toLowerCase();
     if (p.endsWith('gym.html')) return 'fitness';
     if (p.endsWith('golf.html')) return 'golf';
+    // Finance suppresses this bottombar entirely (its own internal tabs
+    // take over instead), so this branch never actually lights up
+    // anything today — kept for consistency/future-proofing.
+    if (p.endsWith('frok-finance-standalone.html')) return 'finance';
     // health.html has no bottombar tab of its own (hidden from nav for now) —
     // falls back to 'main' so at least Home lights up if someone lands there.
     return 'main'; // index.html, health.html, /, or anything else falls back to main
