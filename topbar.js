@@ -11,12 +11,20 @@
   const css = `
 .topbar {
   position: sticky; top: 0; z-index: 40;
-  display: flex; justify-content: flex-end; align-items: center;
-  gap: 8px;
+  display: flex; justify-content: center; align-items: center;
   padding: max(10px, env(safe-area-inset-top)) 14px 8px;
   background: #0a0a0b;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+}
+/* Buttons align to the right edge of THIS wrapper, not the browser
+   window — width is set from JS to match the page's own content
+   container (.page/.po-shell/.shell) so the toggle sits at the same
+   spot relative to the tiles on every page, not the far edge of a wide
+   desktop window. */
+.topbar-inner {
+  width: 100%; max-width: 720px;
+  display: flex; justify-content: flex-end; align-items: center; gap: 8px;
 }
 .topbar-finance-btn {
   display: inline-flex; align-items: center; justify-content: center;
@@ -217,9 +225,11 @@ body.topbar-modal-open {
   // -------- HTML --------
   const topbarHtml = `
 <header class="topbar" id="topbar" role="navigation" aria-label="Quick actions">
-  <a href="FROK-finance-standalone.html" class="topbar-finance-btn" id="topbarFinance" aria-label="Finance">
-    <span class="topbar-finance-icon">📊</span>
-  </a>
+  <div class="topbar-inner" id="topbarInner">
+    <a href="FROK-finance-standalone.html#net" class="topbar-finance-btn" id="topbarFinance" aria-label="Finance">
+      <span class="topbar-finance-icon">📊</span>
+    </a>
+  </div>
 </header>
 `;
 
@@ -292,6 +302,32 @@ body.topbar-modal-open {
     document.body.classList.add('has-bottombar');
   }
 
+  // Finds this page's own content container so the topbar/floating
+  // buttons can align to ITS right edge instead of the browser
+  // window's — otherwise on a wide desktop the toggle ends up far from
+  // the actual page content ("the tiles"), unlike the dashboard where
+  // it's positioned inline within .page.
+  function contentEl() {
+    return document.querySelector('.page') || document.querySelector('.po-shell') || document.querySelector('.shell');
+  }
+  function alignChromeToContent() {
+    const el = contentEl();
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const inner = document.getElementById('topbarInner');
+    if (inner) {
+      // Match the content container's own rendered width (it already
+      // accounts for its max-width + side padding), so flex-end inside
+      // it lines up with the content's right edge exactly.
+      inner.style.maxWidth = Math.round(rect.width) + 'px';
+    }
+    const floating = document.getElementById('floatingChrome');
+    if (floating) {
+      const rightGap = Math.max(14, Math.round(window.innerWidth - rect.right));
+      floating.style.right = rightGap + 'px';
+    }
+  }
+
   // Shared fixed top-right container for pages with no normal topbar
   // (currently just finance) — holds the Home button.
   function getFloatingChrome() {
@@ -353,8 +389,8 @@ body.topbar-modal-open {
       paintState();
     });
 
-    const topbar = document.getElementById('topbar');
-    if (topbar) topbar.appendChild(btn);
+    const topbarInner = document.getElementById('topbarInner');
+    if (topbarInner) topbarInner.appendChild(btn);
     else getFloatingChrome().appendChild(btn);
   }
   window.addEventListener('storage', (e) => {
@@ -420,6 +456,13 @@ body.topbar-modal-open {
     injectThemeToggle();
     lockGestures();
     startModalLock();
+    alignChromeToContent();
+    window.addEventListener('resize', alignChromeToContent);
+    // Content width can change after boot (e.g. a page's own JS render
+    // adjusting layout) — a couple of follow-up passes catch that
+    // without needing a full ResizeObserver.
+    setTimeout(alignChromeToContent, 300);
+    setTimeout(alignChromeToContent, 1200);
   }
 
   if (document.readyState === 'loading') {

@@ -108,6 +108,7 @@ const CONFIG = {
     { name: "Pallof Press",               gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "A", muscle: "Core", repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
     { name: "Hanging Leg Raise",          gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "B", muscle: "Core", repMin: 8,  repMax: 15, step: 1,   startWeight: 0,  bw: true },
     { name: "Plank",                      gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "C", muscle: "Core", repMin: 30, repMax: 60, step: 5,   startWeight: 0,  bw: true, holdSeconds: true },
+    { name: "Ab Crunch Machine",          gym: "comm", day: "lowerA", tag: "accessory", slot: "Lower A Core", optionSet: "D", muscle: "Core", repMin: 10, repMax: 15, step: 5,   startWeight: 25 },
 
     // ---- Push (chest / triceps / shoulders) ----
     { name: "Barbell Bench Press",        gym: "comm", day: "push", tag: "primary",   slot: "Horizontal Press",     muscle: "Chest", repMin: 5,  repMax: 8,  step: 2.5, startWeight: 60 },
@@ -146,6 +147,7 @@ const CONFIG = {
     { name: "Dead Bug",                   gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "A", muscle: "Core", repMin: 8,  repMax: 15, step: 1, startWeight: 0, bw: true },
     { name: "Side Plank",                 gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "B", muscle: "Core", repMin: 20, repMax: 45, step: 5, startWeight: 0, bw: true, holdSeconds: true },
     { name: "Russian Twist",              gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "C", muscle: "Core", repMin: 10, repMax: 20, step: 2.5, startWeight: 5 },
+    { name: "Ab Crunch Machine",          gym: "comm", day: "lowerB", tag: "accessory", slot: "Lower B Core", optionSet: "D", muscle: "Core", repMin: 10, repMax: 15, step: 5,   startWeight: 25 },
 
     // ---- Pull (back / biceps / shoulders) ----
     { name: "Lat Pulldown",               gym: "comm", day: "pull", tag: "primary",   slot: "Vertical Pull",        muscle: "Back", repMin: 6,  repMax: 10, step: 5,   startWeight: 50 },
@@ -165,7 +167,8 @@ const CONFIG = {
     { name: "Cross-Body Hammer Curl",     gym: "comm", day: "pull", tag: "accessory", slot: "Pull Curl 2",          optionSet: "C", muscle: "Biceps", repMin: 8,  repMax: 12, step: 1.25,startWeight: 12.5 },
     { name: "Hanging Knee Raise",         gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "A", muscle: "Core", repMin: 8,  repMax: 15, step: 1,   startWeight: 0, bw: true },
     { name: "Pallof Press",               gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "B", muscle: "Core", repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
-    { name: "Cable Woodchop",             gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "C", muscle: "Core", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 }
+    { name: "Cable Woodchop",             gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "C", muscle: "Core", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 },
+    { name: "Ab Crunch Machine",          gym: "comm", day: "pull", tag: "accessory", slot: "Pull Core", optionSet: "D", muscle: "Core", repMin: 10, repMax: 15, step: 5,   startWeight: 25 }
   ],
 
   // Color per muscle-group label (used for the small dot next to each
@@ -2402,32 +2405,48 @@ img, video, canvas, svg { max-width: 100%; }
     // logged history stays attached) onto the real seed definition
     // instead of leaving it orphaned or adding a duplicate.
     if ((s.programVersion || 0) < 10) {
-      const seed = (CONFIG.defaultExercises || []).find(e => e.name === 'Ab Crunch Machine');
-      if (seed) {
-        const isCorrect = e => e.day === seed.day && e.slot === seed.slot && e.optionSet === seed.optionSet;
+      // All four canonical Ab Crunch Machine variants (one per training
+      // day) — an exercise matching any of these by day+slot+optionSet
+      // is already correctly configured and left untouched. Only an
+      // orphan matching NONE of them (the old Core Finisher rename,
+      // which kept its original day/slot/no-optionSet) gets repointed.
+      const seeds = (CONFIG.defaultExercises || []).filter(e => e.name === 'Ab Crunch Machine');
+      const pushSeed = seeds.find(e => e.day === 'push') || seeds[0];
+      if (pushSeed) {
+        const isCorrect = e => seeds.some(sd => e.day === sd.day && e.slot === sd.slot && e.optionSet === sd.optionSet);
         s.exercises.forEach(ex => {
           if ((ex.name || '').toLowerCase() === 'ab crunch machine' && !isCorrect(ex)) {
-            ex.day = seed.day;
-            ex.slot = seed.slot;
-            ex.optionSet = seed.optionSet;
-            ex.tag = seed.tag;
-            ex.muscle = seed.muscle;
-            ex.repMin = seed.repMin;
-            ex.repMax = seed.repMax;
-            ex.step = seed.step;
-            if (!(ex.startWeight > 0)) ex.startWeight = seed.startWeight;
+            ex.day = pushSeed.day;
+            ex.slot = pushSeed.slot;
+            ex.optionSet = pushSeed.optionSet;
+            ex.tag = pushSeed.tag;
+            ex.muscle = pushSeed.muscle;
+            ex.repMin = pushSeed.repMin;
+            ex.repMax = pushSeed.repMax;
+            ex.step = pushSeed.step;
+            if (!(ex.startWeight > 0)) ex.startWeight = pushSeed.startWeight;
           }
         });
-        // Now safe to run the normal additive merge — any orphan is
-        // already repointed to the seed's identity, so this only adds
-        // one if the user genuinely never had any Ab Crunch Machine.
-        const existingExKeys10 = new Set(s.exercises.map(e => (e.name + '|' + e.day).toLowerCase()));
-        const key = (seed.name + '|' + seed.day).toLowerCase();
-        if (!existingExKeys10.has(key)) {
-          s.exercises.push(Object.assign({ id: 'seed10_' + Date.now() }, seed));
-        }
       }
       s.programVersion = 10;
+    }
+
+    // Eleventh migration: Ab Crunch Machine is now a core option on
+    // every training day (Lower A, Push, Lower B, Pull), not just Push
+    // — re-runs the same generic additive merge migration 9 already
+    // does, since anyone already past version 9 would otherwise never
+    // pick up the 3 new day variants (that migration's own version
+    // guard permanently skips it for them).
+    if ((s.programVersion || 0) < 11) {
+      const existingExKeys11 = new Set(s.exercises.map(e => (e.name + '|' + e.day).toLowerCase()));
+      (CONFIG.defaultExercises || []).forEach((e, i) => {
+        const key = (e.name + '|' + e.day).toLowerCase();
+        if (!existingExKeys11.has(key)) {
+          s.exercises.push(Object.assign({ id: 'seed11_' + i + '_' + Date.now() }, e));
+          existingExKeys11.add(key);
+        }
+      });
+      s.programVersion = 11;
     }
 
     return s;

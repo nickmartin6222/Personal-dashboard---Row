@@ -2760,8 +2760,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
   tabs.forEach(b => b.addEventListener('click', () => setActiveTab(b.dataset.tab)));
+  // An inbound link with a #tab hash (the dashboard's Finance card, the
+  // shared topbar icon) always wins over whatever tab was last open —
+  // otherwise landing on Nova once meant every future visit from
+  // outside the page reopened Nova instead of the main Net Worth view.
+  // A bare reload/refresh (no hash) still restores the last tab as before.
+  const VALID_TABS = ['net','subs','incoming','wish','nova'];
+  const hashTab = (location.hash || '').replace('#', '');
   const savedTab = storeGet(TAB_KEY);
-  setActiveTab(savedTab && ['net','subs','incoming','wish','nova'].includes(savedTab) ? savedTab : 'net');
+  const initialTab = VALID_TABS.includes(hashTab) ? hashTab
+    : (savedTab && VALID_TABS.includes(savedTab) ? savedTab : 'net');
+  setActiveTab(initialTab);
+  if (hashTab) history.replaceState(null, '', location.pathname + location.search);
 
   // ============================================================
   // NET WORTH (copied from the main dashboard, verbatim logic)
