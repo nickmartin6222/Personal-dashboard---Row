@@ -54,12 +54,34 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .hdr-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; }
 .hdr-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); margin: 0 0 14px; }
 
-.week-strip { display: flex; justify-content: space-between; margin-bottom: 22px; }
-.week-day { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.week-day-label { font-size: 11px; color: var(--text-quaternary); font-weight: 600; }
-.week-day-dot { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-tertiary); }
-.week-day-dot.hit { background: var(--accent); border-color: var(--accent); color: #04140f; }
-.week-day-dot.today { border-color: var(--text-primary); }
+/* ===== Date strip — same structure as gym-preview.html's calendar
+   review (date-nav/date-strip/date-cell): a real navigable week view,
+   not a fixed snapshot. Tapping a past day shows that day's numbers
+   in the cards below instead of always today's. ===== */
+.date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.date-nav-btn {
+  width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); flex: none;
+  background: var(--bg-card); color: var(--text-secondary); font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+}
+.date-nav-btn:disabled { opacity: 0.3; cursor: default; }
+.date-nav-btn:not(:disabled):active { color: var(--text-primary); border-color: var(--border-strong); }
+.date-nav-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.02em; }
+.date-nav-label.is-jump { color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.date-strip { display: flex; gap: 6px; margin-bottom: 22px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+.date-strip::-webkit-scrollbar { display: none; }
+.date-cell {
+  flex: 1 0 40px; min-width: 40px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); cursor: pointer; -webkit-tap-highlight-color: transparent; position: relative; font-family: inherit;
+}
+.date-cell-dow { font-family: var(--font-mono); font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.7; }
+.date-cell-num { font-size: 14px; font-weight: 800; }
+.date-cell.is-today { background: var(--accent); border-color: var(--accent); color: #04140f; }
+.date-cell.is-selected:not(.is-today) { border-color: var(--accent); color: var(--text-primary); }
+.date-cell-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); position: absolute; bottom: 4px; }
+.date-cell.is-today .date-cell-dot { background: #04140f; opacity: 0.85; }
+.date-cell.is-future { opacity: 0.35; cursor: default; }
 
 /* ===== Cards ===== */
 .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 12px; position: relative; }
@@ -133,9 +155,14 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
   <div class="demo-flag">DRAFT DEMO — this is health-preview.html, not the live health.html. Real data (steps/calories/macros) is live; goals and creatine are placeholders you can tap to set. Nothing here is wired into navigation yet.</div>
 
   <div class="hdr-eyebrow" id="hdrDate">—</div>
-  <div class="hdr-title">Today</div>
+  <div class="hdr-title" id="hdrTitle">Today</div>
 
-  <div class="week-strip" id="weekStrip"></div>
+  <div class="date-nav">
+    <button type="button" class="date-nav-btn" id="dateNavPrev" aria-label="Previous week">‹</button>
+    <span class="date-nav-label" id="dateNavLabel">This week</span>
+    <button type="button" class="date-nav-btn" id="dateNavNext" aria-label="Next week" disabled>›</button>
+  </div>
+  <div class="date-strip" id="dateStrip"></div>
 
   <!-- Calories -->
   <div class="card card-tap" id="calCard">
@@ -247,26 +274,70 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
   function goals() { return Object.assign({}, DEFAULT_GOALS, storeGet('health:goals', {})); }
 
-  function renderHeader() {
-    const today = new Date();
-    document.getElementById('hdrDate').textContent = today.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  // ===== Date strip — same structure as gym-preview.html's calendar
+  // review: a real navigable week view (weekOffset pages it back/forward
+  // 7 days at a time), not a fixed snapshot. Tapping a past day shows
+  // that day's numbers in the cards below instead of always today's.
+  let selectedDateKey = todayKey();
+  let weekOffset = 0;
 
+  function renderDateStrip() {
+    const today = new Date();
+    const tKey = todayKey();
+    const dow = today.getDay(); // 0=Sun..6=Sat
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(today); monday.setDate(today.getDate() + mondayOffset + weekOffset * 7);
     const steps = storeGet('health:steps', {});
-    const g = goals();
-    const dates = last7Dates();
-    const strip = document.getElementById('weekStrip');
-    strip.innerHTML = dates.map(dk => {
-      const d = new Date(dk + 'T12:00:00');
-      const isToday = dk === todayKey();
-      const hit = (steps[dk] || 0) >= g.steps;
-      return '<div class="week-day"><div class="week-day-label">' + DOW[d.getDay()] + '</div>'
-        + '<div class="week-day-dot' + (hit ? ' hit' : '') + (isToday ? ' today' : '') + '">' + (hit ? '✓' : '') + '</div></div>';
+    const nutrition = storeGet('health:nutrition', {});
+    const cells = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      cells.push({
+        key, d,
+        isToday: key === tKey,
+        isFuture: d > today && key !== tKey,
+        hasData: steps[key] != null || (nutrition[key] && nutrition[key].calories),
+      });
+    }
+    document.getElementById('dateStrip').innerHTML = cells.map(c => {
+      const sel = c.key === selectedDateKey;
+      return '<button type="button" class="date-cell' + (c.isToday ? ' is-today' : '') + (sel && !c.isToday ? ' is-selected' : '') + (c.isFuture ? ' is-future' : '') + '" data-key="' + c.key + '"' + (c.isFuture ? ' disabled' : '') + '>'
+        + '<span class="date-cell-dow">' + DOW[c.d.getDay()] + '</span>'
+        + '<span class="date-cell-num">' + c.d.getDate() + '</span>'
+        + (c.hasData ? '<span class="date-cell-dot"></span>' : '')
+        + '</button>';
     }).join('');
+    document.querySelectorAll('.date-cell:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', () => selectDate(btn.dataset.key));
+    });
+    const label = document.getElementById('dateNavLabel');
+    label.textContent = weekOffset === 0 ? 'This week'
+      : cells[0].d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' – ' + cells[6].d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    label.classList.toggle('is-jump', weekOffset !== 0);
+    document.getElementById('dateNavNext').disabled = weekOffset >= 0;
+
+    const selD = new Date(selectedDateKey + 'T12:00:00');
+    const titleEl = document.getElementById('hdrTitle');
+    if (titleEl) titleEl.textContent = selectedDateKey === tKey ? 'Today' : selD.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    const eyebrowEl = document.getElementById('hdrDate');
+    if (eyebrowEl) eyebrowEl.textContent = selD.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    document.querySelectorAll('.dark-sub').forEach(el => { el.textContent = selectedDateKey === tKey ? 'Today' : selD.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); });
   }
+  function selectDate(key) {
+    selectedDateKey = key;
+    renderDateStrip();
+    renderCalories();
+    renderStepsDistance();
+    renderCreatine();
+  }
+  document.getElementById('dateNavPrev').addEventListener('click', () => { weekOffset--; renderDateStrip(); });
+  document.getElementById('dateNavNext').addEventListener('click', () => { if (weekOffset < 0) { weekOffset++; renderDateStrip(); } });
+  document.getElementById('dateNavLabel').addEventListener('click', () => { if (weekOffset !== 0) { weekOffset = 0; renderDateStrip(); } });
 
   function renderCalories() {
     const nutrition = storeGet('health:nutrition', {});
-    const today = nutrition[todayKey()] || {};
+    const today = nutrition[selectedDateKey] || {};
     const g = goals();
     const cal = Math.round(today.calories || 0);
     const left = g.calories - cal;
@@ -295,11 +366,11 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     const distance = storeGet('health:distance', {});
     const unit = storeGet('health:distanceUnit', 'mi');
     const dates = last7Dates();
-    const todaySteps = steps[todayKey()];
-    const todayDist = distance[todayKey()];
+    const daySteps = steps[selectedDateKey];
+    const dayDist = distance[selectedDateKey];
 
-    document.getElementById('stepsVal').textContent = todaySteps == null ? '—' : todaySteps.toLocaleString();
-    document.getElementById('distVal').textContent = todayDist == null ? '—' : todayDist.toFixed(2) + unit;
+    document.getElementById('stepsVal').textContent = daySteps == null ? '—' : daySteps.toLocaleString();
+    document.getElementById('distVal').textContent = dayDist == null ? '—' : dayDist.toFixed(2) + unit;
     miniBars(document.getElementById('stepsMini'), dates.map(dk => steps[dk] || 0), 'var(--steps)');
     miniBars(document.getElementById('distMini'), dates.map(dk => distance[dk] || 0), 'var(--distance)');
   }
@@ -307,17 +378,17 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
   function renderCreatine() {
     const log = storeGet('health:creatine', {});
     const dates = last7Dates();
-    const takenToday = !!log[todayKey()];
+    const taken = !!log[selectedDateKey];
     const check = document.getElementById('creatineCheck');
-    check.classList.toggle('on', takenToday);
-    document.getElementById('creatineSub').textContent = takenToday ? 'Taken today' : 'Not taken yet today';
+    check.classList.toggle('on', taken);
+    document.getElementById('creatineSub').textContent = taken ? 'Taken' : 'Not taken';
     document.getElementById('creatineStreak').innerHTML = dates.map(dk =>
       '<div class="creatine-dot' + (log[dk] ? ' hit' : '') + '"></div>'
     ).join('');
   }
 
   function renderAll() {
-    renderHeader();
+    renderDateStrip();
     renderCalories();
     renderStepsDistance();
     renderCreatine();
@@ -368,8 +439,7 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
   document.getElementById('creatineCheck').addEventListener('click', () => {
     const log = storeGet('health:creatine', {});
-    const k = todayKey();
-    log[k] = !log[k];
+    log[selectedDateKey] = !log[selectedDateKey];
     storeSet('health:creatine', log);
     renderCreatine();
   });
