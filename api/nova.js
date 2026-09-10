@@ -12,7 +12,7 @@
 // Requires a GEMINI_API_KEY environment variable in Vercel (Project
 // Settings -> Environment Variables) — from aistudio.google.com, no
 // billing needed to start. Optional GEMINI_MODEL env var overrides
-// the model id (default gemini-2.5-flash) without a code change, since
+// the model id (default gemini-3.6-flash) without a code change, since
 // Google renames/retires model ids fairly often.
 // ============================================================
 export default async function handler(req, res) {
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
   const key = process.env.GEMINI_API_KEY;
   if (!key) return res.status(500).json({ error: 'GEMINI_API_KEY not set on the server' });
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
   let body = req.body;
   if (typeof body === 'string') {
