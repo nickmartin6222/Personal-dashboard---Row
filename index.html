@@ -945,11 +945,23 @@ body::after {
     if (linePath) {
       if (!financeAnimatedIn) {
         const len = linePath.getTotalLength();
+        linePath.style.transition = 'none';
         linePath.style.strokeDasharray = String(len);
         linePath.style.strokeDashoffset = String(len);
+        // Force the browser to actually paint the "undrawn" state above
+        // before starting the transition — a single requestAnimationFrame
+        // can still fire before that paint happens, in which case the
+        // dashoffset change below lands in the same frame as the initial
+        // value and the line just snaps straight to fully drawn instead
+        // of animating. Reading a layout property forces the flush, and
+        // the nested rAF (fires on the frame AFTER the one that paints
+        // the undrawn state) is the standard belt-and-braces fix for this.
+        linePath.getBoundingClientRect();
         requestAnimationFrame(() => {
-          linePath.style.transition = 'stroke-dashoffset 2s cubic-bezier(.22,.7,.2,1)';
-          linePath.style.strokeDashoffset = '0';
+          requestAnimationFrame(() => {
+            linePath.style.transition = 'stroke-dashoffset 3s cubic-bezier(.22,.7,.2,1)';
+            linePath.style.strokeDashoffset = '0';
+          });
         });
       }
     }
