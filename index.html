@@ -449,7 +449,7 @@ body::after {
     </div>
   </a>
 
-  <div class="section-title">Fitness, golf &amp; nutrition</div>
+  <div class="section-title">Fitness, golf &amp; health</div>
   <div class="mini-grid">
     <a class="mini-tile" href="gym-preview.html">
       <div class="mini-tile-top"><span class="mini-tile-emoji">💪</span><span class="mini-tile-arrow">→</span></div>
@@ -463,11 +463,11 @@ body::after {
       <div class="mini-tile-val" id="golfVal">—</div>
       <div class="mini-tile-sub">Rounds &amp; trend</div>
     </a>
-    <a class="mini-tile" href="nutrition.html">
-      <div class="mini-tile-top"><span class="mini-tile-emoji">🥗</span><span class="mini-tile-arrow">→</span></div>
-      <div class="mini-tile-label">Today</div>
-      <div class="mini-tile-val" id="nutVal">—</div>
-      <div class="mini-tile-sub">Goals hit</div>
+    <a class="mini-tile" href="health.html">
+      <div class="mini-tile-top"><span class="mini-tile-emoji">❤️</span><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Steps</div>
+      <div class="mini-tile-val" id="healthVal">—</div>
+      <div class="mini-tile-sub">Today</div>
     </a>
   </div>
 
@@ -933,13 +933,11 @@ body::after {
     const hcp = currentHandicap();
     $('golfVal').textContent = hcp == null ? '—' : hcp.toFixed(1);
 
-    const MACRO_KEYS = ['calories', 'protein', 'carbs', 'fibre', 'fat'];
     const d = new Date();
     const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    const log = readJSON('nutrition:log', {});
-    const today = (log && typeof log === 'object') ? (log[dk] || {}) : {};
-    const hit = MACRO_KEYS.filter(k => today[k] === 'hit').length;
-    $('nutVal').textContent = hit + '/' + MACRO_KEYS.length;
+    const steps = readJSON('health:steps', {});
+    const todaySteps = steps && typeof steps === 'object' ? steps[dk] : null;
+    $('healthVal').textContent = todaySteps == null ? '—' : Number(todaySteps).toLocaleString();
   }
 
   // ============================================================
@@ -983,6 +981,18 @@ body::after {
   function renderAll() { renderGoals(); renderFinance(); renderStockHoldings(); renderMiniTiles(); }
   renderAll();
   window.addEventListener('storage', renderAll);
+
+  // Pull health:steps/:nutrition down independently (not just when
+  // health.html itself has been visited on this device) so the Health
+  // tile has real data the first time someone opens the dashboard.
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof initCloudSync !== 'function') return;
+    initCloudSync({
+      appKey: 'health-metrics',
+      syncedKeys: ['health:steps', 'health:nutrition'],
+      onApplied: function () { window.dispatchEvent(new Event('storage')); }
+    });
+  });
 
   // Hover/touch tracking for the net worth chart — shows the exact
   // value + date for the nearest plotted point, same as Finance's own

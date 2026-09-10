@@ -104,11 +104,16 @@ export default async function handler(req, res) {
 
       const matcher = NUTRITION_MATCHERS.find(x => x.test(name));
       if (matcher) {
+        // Apple Health (and this app's Whoop card) can report energy in
+        // kilojoules rather than kcal depending on the device's region/
+        // units setting — convert to kcal so "calories" is always kcal.
+        const isEnergyInKJ = matcher.key === 'calories' && /kj|kilojoule/i.test(m.units || '');
         m.data.forEach(pt => {
           if (!pt || pt.qty == null || !pt.date) return;
           const day = localDateKey(pt.date);
           if (!nutritionThisCall[day]) nutritionThisCall[day] = {};
-          nutritionThisCall[day][matcher.key] = (nutritionThisCall[day][matcher.key] || 0) + (Number(pt.qty) || 0);
+          const qty = (Number(pt.qty) || 0) / (isEnergyInKJ ? 4.184 : 1);
+          nutritionThisCall[day][matcher.key] = (nutritionThisCall[day][matcher.key] || 0) + qty;
         });
       }
     });
