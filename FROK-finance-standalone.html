@@ -364,99 +364,7 @@ body::after {
   text-align: center; letter-spacing: 0.02em;
 }
 
-/* ===== Receipt scanner — drag a photo in, AI reads it, deduct it ===== */
-.rcpt-card { margin-bottom: 14px; }
-.rcpt-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-}
-.rcpt-head-title { display: flex; align-items: center; gap: 8px; }
-.rcpt-head-title .rcpt-emoji { font-size: 16px; }
-.rcpt-head-title .rcpt-t { font-size: 13px; font-weight: 700; color: var(--text-primary); }
-.rcpt-head-title .rcpt-s { font-size: 11px; color: var(--text-tertiary); }
-.rcpt-drop {
-  margin-top: 12px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 6px; text-align: center;
-  min-height: 104px; padding: 18px 16px;
-  border: 1.5px dashed rgba(255,255,255,0.14);
-  border-radius: var(--radius-md);
-  background: rgba(255,255,255,0.02);
-  color: var(--text-tertiary); cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
-}
-.rcpt-drop:hover { border-color: rgba(107,227,164,0.35); color: var(--text-secondary); }
-.rcpt-drop.dragover {
-  border-color: var(--success);
-  background: rgba(107,227,164,0.06);
-  color: var(--text-primary);
-}
-.rcpt-drop-icon {
-  width: 40px; height: 40px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(107,227,164,0.12); color: var(--success); font-size: 18px;
-}
-.rcpt-drop-main { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
-.rcpt-drop-sub  { font-size: 11px; color: var(--text-tertiary); }
-
-/* Busy + error + result states */
-.rcpt-state { margin-top: 12px; display: flex; align-items: center; gap: 12px; }
-.rcpt-thumb {
-  width: 56px; height: 56px; flex: none; border-radius: 10px; object-fit: cover;
-  border: 1px solid rgba(255,255,255,0.10); background: rgba(0,0,0,0.3);
-}
-.rcpt-busy-text { font-size: 13px; color: var(--text-secondary); }
-.rcpt-busy-text .rcpt-dots::after {
-  content: '…'; animation: rcptDots 1.2s steps(4,end) infinite; }
-@keyframes rcptDots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
-.rcpt-error {
-  margin-top: 12px; font-size: 12.5px; color: var(--danger);
-  background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.22);
-  border-radius: 10px; padding: 10px 12px;
-}
-
-/* Confirmation card after a successful read */
-.rcpt-confirm {
-  margin-top: 12px; border: 1px solid rgba(107,227,164,0.22);
-  background: rgba(107,227,164,0.04); border-radius: var(--radius-md); padding: 14px;
-}
-.rcpt-confirm-top { display: flex; gap: 12px; }
-.rcpt-fields { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.rcpt-field { display: flex; flex-direction: column; gap: 3px; }
-.rcpt-field.full { grid-column: 1 / -1; }
-.rcpt-field label {
-  font-size: 9.5px; letter-spacing: 0.10em; text-transform: uppercase;
-  color: var(--text-tertiary); font-weight: 700;
-}
-.rcpt-field input, .rcpt-field select {
-  background: rgba(0,0,0,0.30); border: 1px solid rgba(255,255,255,0.10);
-  color: var(--text-primary); border-radius: 8px; padding: 7px 9px;
-  font-family: inherit; font-size: 13px; outline: none; width: 100%;
-}
-.rcpt-field input.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.rcpt-field input:focus, .rcpt-field select:focus { border-color: rgba(107,227,164,0.5); }
-.rcpt-items {
-  margin-top: 10px; font-size: 11.5px; color: var(--text-tertiary);
-  max-height: 96px; overflow-y: auto;
-}
-.rcpt-items .rcpt-item { display: flex; justify-content: space-between; padding: 2px 0; }
-.rcpt-actions { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
-.rcpt-btn {
-  border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.04);
-  color: var(--text-secondary); border-radius: 10px; padding: 8px 14px;
-  font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.rcpt-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
-.rcpt-btn-apply {
-  background: var(--success); border-color: var(--success); color: #07140d;
-}
-.rcpt-btn-apply:hover { filter: brightness(1.08); color: #07140d; }
-.rcpt-btn-apply:disabled { opacity: 0.45; cursor: default; filter: none; }
-.rcpt-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 8px; }
 .hidden { display: none !important; }
-@media (max-width: 520px) {
-  .rcpt-fields { grid-template-columns: 1fr; }
-}
 
 /* Hide scrollbars everywhere */
 html, body { scrollbar-width: none; -ms-overflow-style: none; }
@@ -2085,12 +1993,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 [data-theme="light"] .nova-chip:hover { background: rgba(28,30,27,0.07); color: var(--text-primary); }
 [data-theme="light"] .nova-input { flex: 1; resize: none; min-height: 44px; max-height: 130px; background: rgba(28,30,27,0.04); border: 1px solid rgba(28,30,27,0.12); color: var(--text-primary); border-radius: 12px; padding: 11px 13px; font-family: inherit; font-size: 14px; line-height: 1.4; outline: none; }
 [data-theme="light"] .nova-input:focus { border-color: rgba(28,30,27,0.22); }
-[data-theme="light"] .rcpt-drop { margin-top: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; min-height: 104px; padding: 18px 16px; border: 1.5px dashed rgba(28,30,27,0.14); border-radius: var(--radius-md); background: rgba(28,30,27,0.02); color: var(--text-tertiary); cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; }
-[data-theme="light"] .rcpt-thumb { width: 56px; height: 56px; flex: none; border-radius: 10px; object-fit: cover; border: 1px solid rgba(28,30,27,0.10); background: rgba(28,30,27,0.04); }
-[data-theme="light"] .rcpt-field input,
-[data-theme="light"] .rcpt-field select { background: rgba(28,30,27,0.04); border: 1px solid rgba(28,30,27,0.10); color: var(--text-primary); border-radius: 8px; padding: 7px 9px; font-family: inherit; font-size: 13px; outline: none; width: 100%; }
-[data-theme="light"] .rcpt-btn { border: 1px solid rgba(28,30,27,0.10); background: rgba(28,30,27,0.04); color: var(--text-secondary); border-radius: 10px; padding: 8px 14px; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; }
-[data-theme="light"] .rcpt-btn:hover { background: rgba(28,30,27,0.08); color: var(--text-primary); }
 [data-theme="light"] .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(28,30,27,0.08), transparent); }
 [data-theme="light"] .card::before { content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 1px; background: linear-gradient(90deg, transparent, rgba(28,30,27,0.16), transparent); pointer-events: none; }
 [data-theme="light"] .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; padding: 3px 9px 3px 8px; border-radius: 999px; margin: 2px; font-weight: 700; letter-spacing: 0.04em; border: none; background: rgba(28,30,27,0.05); color: var(--text-secondary); font-family: var(--font-mono); text-transform: uppercase; }
@@ -2240,87 +2142,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       </div>
     </div>
 
-    <!-- Receipt scanner — drag a photo in, AI reads it, deduct from an account -->
-    <div class="card nw-subcard rcpt-card" id="rcptCard">
-      <div class="rcpt-head">
-        <div class="rcpt-head-title">
-          <span class="rcpt-emoji">🧾</span>
-          <div>
-            <div class="rcpt-t">Scan anything</div>
-            <div class="rcpt-s">Drop a receipt or a bank screenshot — AI reads it, you name the account</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Drop zone (default) -->
-      <div class="rcpt-drop" id="rcptDrop" role="button" tabindex="0" aria-label="Upload a financial image">
-        <div class="rcpt-drop-icon">↗</div>
-        <div class="rcpt-drop-main">Drop an image here</div>
-        <div class="rcpt-drop-sub">receipt, bill or bank screenshot · click to upload · paste with ⌘V</div>
-      </div>
-      <input type="file" id="rcptFile" accept="image/*" capture="environment" class="hidden" />
-
-      <!-- Busy state -->
-      <div class="rcpt-state hidden" id="rcptBusy">
-        <img class="rcpt-thumb" id="rcptThumb" alt="" />
-        <div class="rcpt-busy-text">Reading image<span class="rcpt-dots"></span></div>
-      </div>
-
-      <!-- Error -->
-      <div class="rcpt-error hidden" id="rcptError"></div>
-
-      <!-- Confirmation -->
-      <div class="rcpt-confirm hidden" id="rcptConfirm">
-        <div class="rcpt-confirm-top">
-          <img class="rcpt-thumb" id="rcptConfirmThumb" alt="" />
-          <div class="rcpt-fields">
-            <div class="rcpt-field full">
-              <label for="rcptName">Account / bank name</label>
-              <input type="text" id="rcptName" list="rcptAccountList" placeholder="e.g. Revolut" autocomplete="off" />
-              <datalist id="rcptAccountList"></datalist>
-            </div>
-            <div class="rcpt-field">
-              <label for="rcptAmount">Amount</label>
-              <input type="text" inputmode="decimal" id="rcptAmount" class="mono" placeholder="0.00" />
-            </div>
-            <div class="rcpt-field">
-              <label for="rcptCurrency">Currency</label>
-              <select id="rcptCurrency">
-                <option value="AUD" selected>AUD</option>
-                <option value="CHF">CHF</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-              </select>
-            </div>
-            <div class="rcpt-field">
-              <label for="rcptAction">Action</label>
-              <select id="rcptAction">
-                <option value="set">Set balance</option>
-                <option value="add">Add to account</option>
-                <option value="spend">Spend (deduct)</option>
-              </select>
-            </div>
-            <div class="rcpt-field">
-              <label for="rcptCategory">Category</label>
-              <select id="rcptCategory">
-                <option value="bank">🏦 Bank</option>
-                <option value="stocks">📈 Stocks</option>
-                <option value="crypto">🪙 Crypto</option>
-                <option value="other">💼 Other</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="rcpt-items hidden" id="rcptItems"></div>
-        <div class="rcpt-hint" id="rcptHint"></div>
-        <div class="rcpt-actions">
-          <button type="button" class="rcpt-btn" id="rcptDiscard">Discard</button>
-          <button type="button" class="rcpt-btn rcpt-btn-apply" id="rcptApply">Apply</button>
-        </div>
-      </div>
-    </div>
-
     <!-- Overview row: stock-style line chart on the left, donut allocation chart on the right -->
     <div class="nw-overview-grid">
       <div class="nw-chart-wrap" id="nwChartWrap">
@@ -2436,26 +2257,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
           <input type="text" placeholder="Name (e.g. Vanguard S&P 500)" id="stocksName" />
           <input type="number" placeholder="Value" id="stocksAmount" step="0.01" />
           <button class="quick-add-btn" id="stocksAddBtn">+</button>
-        </div>
-      </div>
-      <!-- Crypto -->
-      <div class="card nw-subcard">
-        <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span>🪙 Crypto</span><span id="cryptoTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
-        <div id="cryptoList" class="nw-list"></div>
-        <div class="quick-add">
-          <input type="text" placeholder="Coin / wallet" id="cryptoName" />
-          <input type="number" placeholder="Value" id="cryptoAmount" step="0.01" />
-          <button class="quick-add-btn" id="cryptoAddBtn">+</button>
-        </div>
-      </div>
-      <!-- Other assets -->
-      <div class="card nw-subcard">
-        <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span>💼 Other assets</span><span id="otherTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
-        <div id="otherList" class="nw-list"></div>
-        <div class="quick-add">
-          <input type="text" placeholder="Asset name" id="otherName" />
-          <input type="number" placeholder="Value" id="otherAmount" step="0.01" />
-          <button class="quick-add-btn" id="otherAddBtn">+</button>
         </div>
       </div>
     </div>
@@ -2700,9 +2501,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   // ============================================================
   const ORD_FROM_META = {
     bank:   { name: 'Bank',   color: '#7DD3FC' },
-    stocks: { name: 'Stocks', color: '#6EE7B7' },
-    crypto: { name: 'Crypto', color: '#FBBF24' },
-    other:  { name: 'Other',  color: '#B794F4' }
+    stocks: { name: 'Stocks', color: '#6EE7B7' }
   };
 
   // ============================================================
@@ -2741,9 +2540,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   const CURRENCY_KEY = 'nw_currency';
   const NW_CATS = [
     { key: 'bank',   listId: 'bankList',   totalId: 'bankTotal',   nameId: 'bankName',   amtId: 'bankAmount',   addId: 'bankAddBtn' },
-    { key: 'stocks', listId: 'stocksList', totalId: 'stocksTotal', nameId: 'stocksName', amtId: 'stocksAmount', addId: 'stocksAddBtn' },
-    { key: 'crypto', listId: 'cryptoList', totalId: 'cryptoTotal', nameId: 'cryptoName', amtId: 'cryptoAmount', addId: 'cryptoAddBtn' },
-    { key: 'other',  listId: 'otherList',  totalId: 'otherTotal',  nameId: 'otherName',  amtId: 'otherAmount',  addId: 'otherAddBtn' }
+    { key: 'stocks', listId: 'stocksList', totalId: 'stocksTotal', nameId: 'stocksName', amtId: 'stocksAmount', addId: 'stocksAddBtn' }
   ];
   // Per-holding pie chart colour — customizable (item.color), with a
   // stable default derived from the holding's name/ticker so colours
@@ -3382,8 +3179,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   const NW_SLICE_META = {
     bank:   { name: 'Bank',     color: '#7DD3FC' },
     stocks: { name: 'Stocks',   color: '#6EE7B7' },
-    crypto: { name: 'Crypto',   color: '#FBBF24' },
-    other:  { name: 'Other',    color: '#B794F4' },
     subs:   { name: 'Subs/yr',  color: '#FF8A8A' }
   };
   function donutArcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
@@ -4007,7 +3802,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     if (!sel) return;
     const prev = sel.value;
     const accounts = (typeof listAllNwAccounts === 'function') ? listAllNwAccounts() : [];
-    const ICONS = { bank: '🏦', stocks: '📈', crypto: '🪙', other: '💼' };
+    const ICONS = { bank: '🏦', stocks: '📈' };
     if (!accounts.length) {
       sel.innerHTML = '<option value="">No accounts yet</option>';
       sel.disabled = true;
@@ -4085,7 +3880,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     ).join('');
     // Build From-account options from the live NW accounts
     const accounts = (typeof listAllNwAccounts === 'function') ? listAllNwAccounts() : [];
-    const ICONS = { bank: '🏦', stocks: '📈', crypto: '🪙', other: '💼' };
+    const ICONS = { bank: '🏦', stocks: '📈' };
     const currentFrom = (it.fromCat && it.fromAccount) ? (it.fromCat + '::' + it.fromAccount) : '';
     const fromOpts = '<option value="">No account linked</option>' + accounts.map(a => {
       const v = a.catKey + '::' + a.itemName;
@@ -4390,7 +4185,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     if (!sel) return;
     const accounts = listAllNwAccounts();
     const prev = sel.value;
-    const ICONS = { bank: '🏦', stocks: '📈', crypto: '🪙', other: '💼' };
+    const ICONS = { bank: '🏦', stocks: '📈' };
     if (!accounts.length) {
       sel.innerHTML = '<option value="">No accounts yet</option>';
       sel.disabled = true;
@@ -4508,7 +4303,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       alert('Add at least one net worth account before deducting.');
       return;
     }
-    const ICONS = { bank: '🏦', stocks: '📈', crypto: '🪙', other: '💼' };
+    const ICONS = { bank: '🏦', stocks: '📈' };
     const cost = Number(order.amount) || 0;
     const optsHtml = accounts.map(a => {
       const insufficient = a.amountCHF < cost - 0.005;
@@ -4819,7 +4614,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     function gatherFinance() {
       const breakdown = {};
       let netWorthCHF = 0;
-      ['bank', 'stocks', 'crypto', 'other'].forEach(k => {
+      ['bank', 'stocks'].forEach(k => {
         const items = storeGet('nw:' + k) || [];
         breakdown[k] = items.map(it => ({ name: it.name, amountCHF: Number(it.amount) || 0 }));
         items.forEach(it => { netWorthCHF += Number(it.amount) || 0; });
@@ -4912,333 +4707,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     });
   })();
 
-  // ============================================================
-  // IMAGE SCANNER — drag/drop/paste any financial image (receipt,
-  // bill, bank-app screenshot, balance, statement), send it straight
-  // to Anthropic vision (via callClaude), then log it to a named
-  // net-worth account: set its balance, add to it, or deduct a spend.
-  // No chat mentor involved — pure import tool.
-  // ============================================================
-  (function initReceiptScanner() {
-    const card       = document.getElementById('rcptCard');
-    if (!card) return;
-    const dropEl     = document.getElementById('rcptDrop');
-    const fileEl     = document.getElementById('rcptFile');
-    const busyEl     = document.getElementById('rcptBusy');
-    const busyThumb  = document.getElementById('rcptThumb');
-    const errorEl    = document.getElementById('rcptError');
-    const confirmEl  = document.getElementById('rcptConfirm');
-    const confThumb  = document.getElementById('rcptConfirmThumb');
-    const nameEl     = document.getElementById('rcptName');
-    const amountEl   = document.getElementById('rcptAmount');
-    const currencyEl2= document.getElementById('rcptCurrency');
-    const actionEl   = document.getElementById('rcptAction');
-    const categoryEl = document.getElementById('rcptCategory');
-    const acctListEl = document.getElementById('rcptAccountList');
-    const itemsEl    = document.getElementById('rcptItems');
-    const hintEl     = document.getElementById('rcptHint');
-    const applyBtn   = document.getElementById('rcptApply');
-    const discardBtn = document.getElementById('rcptDiscard');
-
-    const VALID_CCY  = ['CHF', 'USD', 'EUR', 'GBP', 'AUD'];
-    const CAT_NAMES  = { bank: 'Bank', stocks: 'Stocks', crypto: 'Crypto', other: 'Other' };
-    let receiptDate  = '';
-    let acctIndex    = {}; // lowercased account name -> { cat }
-
-    // Vision extraction schema + instructions — forced tool-use guarantees
-    // clean JSON back from Claude (no prose to parse).
-    const SCAN_TOOL = {
-      name: 'read_finance_image',
-      description: 'Record the financial figures read from an image: a receipt, bill, invoice, bank / fintech app screenshot, account balance, transaction list or statement.',
-      input_schema: {
-        type: 'object',
-        properties: {
-          readable: { type: 'boolean', description: 'True if the image contains any legible monetary amount at all.' },
-          kind:     { type: 'string', enum: ['balance', 'expense', 'income', 'other'], description: 'balance = an account balance/total on a banking screen; expense = money spent; income = money received; other = anything else.' },
-          source:   { type: 'string', description: 'Best label: the bank/app/account name for a balance (e.g. Revolut), or the merchant/payee for a transaction (e.g. Migros). Empty if unknown.' },
-          currency: { type: 'string', description: 'ISO 4217 code (CHF, USD, EUR, GBP, AUD, ...). Infer from symbols (Fr/CHF, $, €, £, A$) or language. Default CHF if unclear.' },
-          amount:   { type: 'number', description: 'The single most important amount: the account balance on a balance screen, or the total on a receipt/transaction. Always positive. 0 if none.' },
-          date:     { type: 'string', description: 'Date as YYYY-MM-DD if visible, else empty string.' },
-          items:    { type: 'array', description: 'Individual transactions or line items if the image is a list/receipt. Best effort, omit if none.', items: { type: 'object', properties: { name: { type: 'string' }, amount: { type: 'number' } }, required: ['name', 'amount'] } }
-        },
-        required: ['readable', 'kind', 'source', 'currency', 'amount']
-      }
-    };
-    const SCAN_SYSTEM =
-      "You read ANY image that contains financial information — receipts, bills, invoices, "
-      + "bank or fintech app screenshots, account balances, transaction lists and statements — "
-      + "and extract its figures.\n"
-      + "- Always call the read_finance_image tool exactly once with your best reading. Do NOT "
-      + "refuse just because the image isn't a paper receipt; a screenshot of a bank balance is valid.\n"
-      + "- \"amount\" is the single headline figure: the account balance on a balance/home screen, "
-      + "or the grand total on a receipt or transaction. Use a positive number.\n"
-      + "- Set \"kind\" to balance for an account balance/total, expense for money spent, income for "
-      + "money received, otherwise other.\n"
-      + "- \"source\" is the bank/app/account name for a balance, or the merchant/payee for a purchase.\n"
-      + "- Numbers must be plain (no symbols or thousands separators). Read \"Fr 199.54\" as 199.54 / CHF.\n"
-      + "- Only set readable=false if there is genuinely no monetary amount anywhere in the image.";
-
-    function show(el)  { el.classList.remove('hidden'); }
-    function hide(el)  { el.classList.add('hidden'); }
-
-    function reset() {
-      show(dropEl); hide(busyEl); hide(errorEl); hide(confirmEl);
-      fileEl.value = '';
-      receiptDate = '';
-    }
-    function showError(msg) {
-      hide(busyEl); hide(confirmEl); show(dropEl);
-      errorEl.textContent = '⚠ ' + msg;
-      show(errorEl);
-    }
-
-    // Downscale to a sane size (Claude vision likes ≤1568px) and return
-    // a JPEG data URL + raw base64 so the payload stays small & reliable.
-    function readImage(file) {
-      return new Promise((res, rej) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.onload  = () => { URL.revokeObjectURL(url); res(img); };
-        img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("Couldn't read that image.")); };
-        img.src = url;
-      });
-    }
-    async function downscale(file) {
-      const img = await readImage(file);
-      let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
-      const MAX = 1568;
-      const scale = Math.min(1, MAX / Math.max(w, h || 1));
-      w = Math.max(1, Math.round(w * scale));
-      h = Math.max(1, Math.round(h * scale));
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      const dataUrl = c.toDataURL('image/jpeg', 0.85);
-      return { dataUrl, base64: dataUrl.split(',')[1] || '', mediaType: 'image/jpeg' };
-    }
-
-    // Build the autocomplete list of existing account names + an index
-    // mapping each name to its category, so typing a known name targets
-    // the right account.
-    function fillAccountList() {
-      acctListEl.innerHTML = '';
-      acctIndex = {};
-      NW_CATS.forEach(c => {
-        (storeGet('nw:' + c.key) || []).forEach(it => {
-          const nm = String(it.name || '').trim();
-          if (!nm) return;
-          acctIndex[nm.toLowerCase()] = { cat: c.key };
-          const o = document.createElement('option');
-          o.value = nm;
-          acctListEl.appendChild(o);
-        });
-      });
-    }
-    // If the typed name matches an existing account, snap the category to it.
-    function matchAccount() {
-      const hit = acctIndex[nameEl.value.trim().toLowerCase()];
-      if (hit) categoryEl.value = hit.cat;
-    }
-
-    function parseAmount() {
-      const n = parseFloat(String(amountEl.value).replace(/[^0-9.\-]/g, ''));
-      return isNaN(n) ? 0 : n;
-    }
-    // Find an existing account by name across all categories.
-    function findAccount(name) {
-      const target = name.trim().toLowerCase();
-      for (const c of NW_CATS) {
-        const items = storeGet('nw:' + c.key) || [];
-        const idx = items.findIndex(it => String(it.name).trim().toLowerCase() === target);
-        if (idx >= 0) return { cat: c.key, items, idx, cur: Number(items[idx].amount) || 0 };
-      }
-      return null;
-    }
-
-    function refreshHint() {
-      const name = nameEl.value.trim();
-      const amount = parseAmount();
-      const rate = exchangeRates[currencyEl2.value] || 1;
-      const datePart = receiptDate ? ('Dated ' + receiptDate + ' · ') : '';
-      if (!name) { hintEl.textContent = 'Type the account or bank name to log this to.'; applyBtn.disabled = true; return; }
-      if (!(amount > 0)) { hintEl.textContent = receiptDate ? ('Dated ' + receiptDate) : ''; applyBtn.disabled = true; return; }
-
-      const amtCHF = amount / rate;
-      const existing = findAccount(name);
-      const catKey = existing ? existing.cat : categoryEl.value;
-      const label = CAT_NAMES[catKey] + ' · ' + name;
-      const cur = existing ? existing.cur : 0;
-      const action = actionEl.value;
-      let msg;
-      if (action === 'set') {
-        msg = (existing ? 'Sets ' : 'Creates ') + label + ' at ' + fmtMoney(amtCHF) + '.';
-      } else if (action === 'add') {
-        msg = 'Adds ' + fmtMoney(amtCHF) + ' to ' + label + ' → ' + fmtMoney(cur + amtCHF) + '.';
-      } else {
-        msg = 'Deducts ' + fmtMoney(amtCHF) + ' from ' + label + ' → ' + fmtMoney(cur - amtCHF) + '.';
-      }
-      hintEl.textContent = datePart + msg;
-      applyBtn.disabled = false;
-    }
-
-    function showConfirm(receipt, dataUrl) {
-      hide(busyEl); hide(errorEl); hide(dropEl);
-      if (receipt.readable === false) {
-        showError("Couldn't find any amounts in that image. Try a clearer screenshot or photo.");
-        return;
-      }
-      confThumb.src = dataUrl;
-      nameEl.value = String(receipt.source || '').trim();
-      const amount = Number(receipt.amount) || 0;
-      amountEl.value = amount ? String(amount) : '';
-      let ccy = String(receipt.currency || '').toUpperCase();
-      if (!VALID_CCY.includes(ccy)) ccy = (currencyEl && currencyEl.value) || 'CHF';
-      currencyEl2.value = ccy;
-      receiptDate = String(receipt.date || '').trim();
-
-      // Default action from what the image is: a balance sets the account,
-      // income adds, a spend deducts. Default category to Bank.
-      const kind = String(receipt.kind || '').toLowerCase();
-      actionEl.value = kind === 'expense' ? 'spend' : (kind === 'income' ? 'add' : 'set');
-      categoryEl.value = 'bank';
-
-      fillAccountList();
-      matchAccount();
-
-      // Transactions / line items, best effort
-      const items = Array.isArray(receipt.items) ? receipt.items : [];
-      if (items.length) {
-        itemsEl.innerHTML = items.slice(0, 20).map(it => {
-          const amt = Number(it.amount != null ? it.amount : it.price);
-          return '<div class="rcpt-item"><span>' + escapeHtml(String(it.name || '')) + '</span>'
-            + '<span>' + (amt ? amt.toFixed(2) : '') + '</span></div>';
-        }).join('');
-        show(itemsEl);
-      } else {
-        itemsEl.innerHTML = ''; hide(itemsEl);
-      }
-
-      refreshHint();
-      show(confirmEl);
-    }
-
-    async function handleFile(file) {
-      if (!file || !/^image\//.test(file.type)) {
-        showError('Please choose an image file.');
-        return;
-      }
-      hide(dropEl); hide(errorEl); hide(confirmEl);
-      let img;
-      try {
-        img = await downscale(file);
-      } catch (e) {
-        showError(e.message || "Couldn't read that image.");
-        return;
-      }
-      busyThumb.src = img.dataUrl;
-      show(busyEl);
-      try {
-        const data = await callClaude({
-          model: 'claude-opus-4-8',
-          max_tokens: 1024,
-          system: SCAN_SYSTEM,
-          tools: [SCAN_TOOL],
-          tool_choice: { type: 'tool', name: 'read_finance_image' },
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.base64 } },
-              { type: 'text', text: 'Read this image and record any financial figures.' }
-            ]
-          }]
-        });
-        const block = (data.content || []).find(b => b && b.type === 'tool_use' && b.name === 'read_finance_image');
-        if (!block || !block.input) { showError('Could not read that image. Try a clearer screenshot or photo.'); return; }
-        showConfirm(block.input, img.dataUrl);
-      } catch (e) {
-        showError((e && e.message) || "Couldn't reach the image reader.");
-      }
-    }
-
-    function apply() {
-      if (applyBtn.disabled) return;
-      const name = nameEl.value.trim();
-      const amount = parseAmount();
-      if (!name) { showError('Type an account or bank name to log this to.'); return; }
-      if (!(amount > 0)) { refreshHint(); return; }
-
-      const rate = exchangeRates[currencyEl2.value] || 1;
-      const amtCHF = amount / rate;
-      const action = actionEl.value;
-
-      // Operate on the existing account if the name matches one; otherwise
-      // create a new account in the chosen category.
-      let { cat, items, idx, cur, isNew } = (() => {
-        const found = findAccount(name);
-        if (found) return { ...found, isNew: false };
-        const c = categoryEl.value;
-        const arr = storeGet('nw:' + c) || [];
-        arr.push({ name: name, amount: 0 });
-        return { cat: c, items: arr, idx: arr.length - 1, cur: 0, isNew: true };
-      })();
-
-      let next;
-      if (action === 'set')       next = amtCHF;
-      else if (action === 'add')  next = cur + amtCHF;
-      else                        next = cur - amtCHF; // spend
-
-      if (next < -0.005) {
-        if (!confirm('“' + name + '” will go negative (' + fmtMoney(next) + '). Log it anyway?')) return;
-      }
-
-      const delta = next - cur;
-      items[idx].amount = next;
-      storeSet('nw:' + cat, items);
-      logActivity(cat, name, delta, isNew ? 'add' : 'edit');
-      renderAllNetWorth();
-      reset();
-    }
-
-    // --- Wiring -------------------------------------------------
-    dropEl.addEventListener('click', () => fileEl.click());
-    dropEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileEl.click(); }
-    });
-    fileEl.addEventListener('change', () => { if (fileEl.files && fileEl.files[0]) handleFile(fileEl.files[0]); });
-
-    ['dragenter', 'dragover'].forEach(ev =>
-      dropEl.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); dropEl.classList.add('dragover'); }));
-    ['dragleave', 'dragend'].forEach(ev =>
-      dropEl.addEventListener(ev, (e) => { e.preventDefault(); e.stopPropagation(); dropEl.classList.remove('dragover'); }));
-    dropEl.addEventListener('drop', (e) => {
-      e.preventDefault(); e.stopPropagation();
-      dropEl.classList.remove('dragover');
-      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      if (f) handleFile(f);
-    });
-
-    // Paste a screenshot — only when the Net Worth tab is showing, so we
-    // don't hijack pastes into Nova's composer or other inputs.
-    document.addEventListener('paste', (e) => {
-      const netSection = document.querySelector('.section[data-section="net"]');
-      if (!netSection || netSection.hasAttribute('hidden')) return;
-      const items = (e.clipboardData && e.clipboardData.items) || [];
-      for (const it of items) {
-        if (it.type && it.type.indexOf('image') === 0) {
-          const f = it.getAsFile();
-          if (f) { e.preventDefault(); handleFile(f); break; }
-        }
-      }
-    });
-
-    nameEl.addEventListener('input', () => { matchAccount(); refreshHint(); });
-    amountEl.addEventListener('input', refreshHint);
-    currencyEl2.addEventListener('change', refreshHint);
-    actionEl.addEventListener('change', refreshHint);
-    categoryEl.addEventListener('change', refreshHint);
-    applyBtn.addEventListener('click', apply);
-    discardBtn.addEventListener('click', reset);
-  })();
 
   // Re-render every section when cloud sync pulls in a remote change
   // (dispatched as a 'storage' event by the initCloudSync onApplied
