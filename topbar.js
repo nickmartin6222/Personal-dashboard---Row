@@ -42,6 +42,7 @@
   filter: grayscale(100%) brightness(1.4);
   opacity: 0.85;
 }
+.topbar-finance-icon svg { width: 20px; height: 20px; display: block; }
 .home-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 44px; height: 42px;
@@ -55,6 +56,7 @@
   transition: background 0.15s;
 }
 .home-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.home-btn svg { width: 18px; height: 18px; display: block; }
 /* Same pill + sliding dot as the dashboard's own toggle (index.html
    .theme-toggle) — colors hardcoded here since this file runs on pages
    that don't share the dashboard's --card/--sage variables. */
@@ -107,6 +109,7 @@
   opacity: 0.55;
   transition: opacity 0.15s, transform 0.10s;
 }
+.bottombar-tab-icon svg { width: 24px; height: 24px; display: block; }
 .bottombar-tab.active {
   color: #FAFAFA;
 }
@@ -221,7 +224,7 @@ body.topbar-modal-open {
 <header class="topbar" id="topbar" role="navigation" aria-label="Quick actions">
   <div class="topbar-inner" id="topbarInner">
     <a href="FROK-finance-standalone.html#net" class="topbar-finance-btn" id="topbarFinance" aria-label="Finance">
-      <span class="topbar-finance-icon">📊</span>
+      <span class="topbar-finance-icon"><i data-lucide="wallet"></i></span>
     </a>
   </div>
 </header>
@@ -230,19 +233,19 @@ body.topbar-modal-open {
   const bottombarHtml = `
 <nav class="bottombar" id="bottombar" role="navigation" aria-label="Main tabs">
   <a href="index.html" class="bottombar-tab" data-page="main">
-    <span class="bottombar-tab-icon">🏠</span>
+    <span class="bottombar-tab-icon"><i data-lucide="house"></i></span>
     <span>Main</span>
   </a>
   <a href="gym-preview.html" class="bottombar-tab" data-page="fitness">
-    <span class="bottombar-tab-icon">💪</span>
+    <span class="bottombar-tab-icon"><i data-lucide="dumbbell"></i></span>
     <span>Fitness</span>
   </a>
   <a href="golf.html" class="bottombar-tab" data-page="golf">
-    <span class="bottombar-tab-icon">⛳</span>
+    <span class="bottombar-tab-icon"><i data-lucide="flag"></i></span>
     <span>Golf</span>
   </a>
   <a href="FROK-finance-standalone.html#net" class="bottombar-tab" data-page="finance">
-    <span class="bottombar-tab-icon">📊</span>
+    <span class="bottombar-tab-icon"><i data-lucide="wallet"></i></span>
     <span>Finance</span>
   </a>
 </nav>
@@ -272,6 +275,24 @@ body.topbar-modal-open {
     // health.html has no bottombar tab of its own (hidden from nav for now) —
     // falls back to 'main' so at least Home lights up if someone lands there.
     return 'main'; // index.html, health.html, /, or anything else falls back to main
+  }
+
+  // topbar.js runs on pages that may not have Lucide in their own <head>
+  // (it's only added there page by page as they're converted off emoji),
+  // so it loads the library itself once and renders any data-lucide
+  // placeholders this file just injected.
+  function ensureLucideIcons() {
+    if (window.lucide) { window.lucide.createIcons(); return; }
+    // Some pages already load Lucide themselves in <head> — reuse that
+    // tag instead of loading the library a second time.
+    let script = document.querySelector('script[data-lucide-loader], script[src*="lucide"]');
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://unpkg.com/lucide@latest/dist/umd/lucide.js';
+      script.setAttribute('data-lucide-loader', '1');
+      document.head.appendChild(script);
+    }
+    script.addEventListener('load', () => { if (window.lucide) window.lucide.createIcons(); }, { once: true });
   }
 
   function injectStyleAndHTML() {
@@ -360,7 +381,7 @@ body.topbar-modal-open {
     btn.href = 'index.html';
     btn.className = 'home-btn';
     btn.setAttribute('aria-label', 'Back to dashboard');
-    btn.textContent = '🏠';
+    btn.innerHTML = '<i data-lucide="house"></i>';
     // On Fitness, the normal topbar already exists — add the home
     // button into its own right-aligned row (same place the theme
     // toggle lands) instead of the fixed floating-chrome layer, which
@@ -468,6 +489,7 @@ body.topbar-modal-open {
   function boot() {
     injectStyleAndHTML();
     injectHomeButton();
+    ensureLucideIcons();
     injectThemeToggle();
     lockGestures();
     startModalLock();
