@@ -202,9 +202,8 @@ button { font-family: inherit; }
 .wcard-meta { font-size: 11px; color: var(--text-3); }
 
 /* ---------- strength score + weekly progress (side by side) ---------- */
-.strength-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: stretch; }
-@media (max-width: 560px) { .strength-grid { grid-template-columns: 1fr; } }
-.score-card, .wp-card { display: flex; flex-direction: column; min-width: 0; }
+.strength-grid { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: stretch; }
+.wp-card { display: flex; flex-direction: column; min-width: 0; }
 .score-num-row { display: flex; align-items: flex-end; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
 .score-num { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
 .score-word { font-size: 12.5px; font-weight: 700; margin-bottom: 3px; }
@@ -344,35 +343,13 @@ button { font-family: inherit; }
 .cancel-workout-btn:hover, .cancel-workout-btn:active { color: var(--bad); border-color: var(--bad); }
 .tw-hint { font-size: 11px; color: var(--text-3); text-align: center; margin-top: 8px; }
 
-/* ---------- workout summary strip (full width) ---------- */
-.ws-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.ws-stats-row { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
-.ws-num { font-size: 28px; font-weight: 800; }
-.ws-num-label { font-size: 12.5px; color: var(--text-3); }
-.ws-dot { color: var(--text-4); }
-.ws-vol { font-size: 14px; color: var(--text-2); font-weight: 600; }
-.ws-actions { display: flex; align-items: center; gap: 8px; flex: none; }
-.ws-done-pill { font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; padding: 9px 15px; border-radius: 999px; border: none; cursor: pointer; white-space: nowrap; }
-.ws-done-pill.is-pending { background: var(--bg-raised); color: var(--text-2); border: 1px solid var(--border); }
-.ws-done-pill.is-done { background: rgba(110,231,183,0.14); color: var(--mint); }
-.ws-expand-btn {
-  width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border); flex: none;
-  background: var(--bg-raised); color: var(--text-3); cursor: pointer;
-  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
+.mark-done-btn {
+  flex: none; padding: 13px 14px; border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong); background: var(--bg-raised); color: var(--text-2);
+  font-weight: 700; font-size: 12.5px; cursor: pointer; white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
 }
-.ws-expand-btn #wsExpandChevron { display: inline-block; transition: transform 0.2s ease; }
-.ws-expand-btn.is-open #wsExpandChevron { transform: rotate(180deg); }
-.ws-logged-body { margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
-.ws-past-toggle {
-  width: 100%; display: flex; align-items: center; justify-content: space-between;
-  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
-  background: none; border-left: none; border-right: none; border-bottom: none;
-  cursor: pointer; color: var(--text-1); font-size: 13px; font-weight: 700; -webkit-tap-highlight-color: transparent;
-}
-.ws-past-count { font-family: var(--font-mono); font-size: 10.5px; background: var(--bg-raised); padding: 2px 7px; border-radius: 999px; color: var(--text-3); margin-left: 6px; }
-.ws-past-arrow { color: var(--text-3); font-size: 12px; transition: transform 0.2s ease; }
-.ws-past-arrow.is-open { transform: rotate(180deg); }
-.ws-past-body { margin-top: 4px; }
+.mark-done-btn.is-done { background: rgba(110,231,183,0.14); color: var(--mint); border-color: transparent; }
 
 /* ---------- session rows (recent activity / past workouts / all-workouts modal) ---------- */
 .session-list { list-style: none; margin: 0; padding: 0; }
@@ -657,18 +634,8 @@ button { font-family: inherit; }
     <div class="wcard-foot"><span class="wcard-meta" id="wMeta"></span></div>
   </section>
 
-  <!-- 3. STRENGTH SCORE + WEEKLY PROGRESS -->
+  <!-- 3. WEEKLY PROGRESS -->
   <div class="strength-grid">
-    <section class="card score-card">
-      <div class="card-eyebrow">STRENGTH SCORE</div>
-      <div class="score-num-row">
-        <span class="score-num" id="scoreNum">—</span>
-        <span class="score-word" id="scoreWord" data-level="excellent">—</span>
-      </div>
-      <div class="score-chart-wrap chart-wrap"><svg id="scoreChart" viewBox="0 0 200 44" preserveAspectRatio="none" width="100%" height="44"></svg><div class="chart-tooltip" id="scoreTooltip" hidden></div></div>
-      <div class="score-delta" id="scoreDelta"></div>
-    </section>
-
     <section class="card wp-card">
       <div class="card-eyebrow">WEEKLY PROGRESS</div>
       <div class="scard-main">
@@ -723,37 +690,11 @@ button { font-family: inherit; }
         <div class="start-row">
           <button class="start-btn" id="startBtn" type="button"><span id="startBtnLabel">▶ Start Workout</span></button>
           <button class="pause-workout-btn" id="pauseWorkoutBtn" type="button" hidden title="Pause"><span id="pauseWorkoutBtnIcon">⏸</span></button>
+          <button class="mark-done-btn" id="markDoneBtn" type="button" title="Mark today's workout completed">Mark done</button>
           <button class="cancel-workout-btn" id="cancelWorkoutBtn" type="button" hidden title="Discard this session — a false start">Cancel</button>
         </div>
         <div class="tw-hint" id="twHint" style="display:none">Tap Start Workout, then tap an exercise to log a set.</div>
       </div>
-    </section>
-
-    <section class="card ws-card">
-      <div class="ws-top">
-        <div>
-          <div class="card-eyebrow" id="wsEyebrow">TODAY</div>
-          <div class="ws-stats-row">
-            <span class="ws-num" id="wsSets">0</span><span class="ws-num-label">sets</span>
-            <span class="ws-dot">·</span>
-            <span class="ws-vol" id="wsVol">0 kg lifted</span>
-          </div>
-        </div>
-        <div class="ws-actions">
-          <button class="ws-done-pill is-pending" id="wsDoneBtn" type="button">Mark workout done</button>
-          <button class="ws-expand-btn" id="wsExpandBtn" type="button" aria-label="Show what's logged today" aria-expanded="false">
-            <span id="wsExpandChevron">⌄</span>
-          </button>
-        </div>
-      </div>
-      <div class="ws-logged-body" id="wsLoggedBody" hidden>
-        <ul class="exercise-list" id="wsLoggedList"></ul>
-      </div>
-      <button class="ws-past-toggle" id="wsPastToggle" type="button" aria-expanded="false">
-        <span>Past workouts <span class="ws-past-count" id="wsPastCount">0</span></span>
-        <span class="ws-past-arrow" id="wsPastArrow">▾</span>
-      </button>
-      <div class="ws-past-body" id="wsPastBody" hidden></div>
     </section>
 
     <section class="card ra-card">
@@ -1260,8 +1201,12 @@ button { font-family: inherit; }
     closeModal('scheduleModalBg');
     // Today's split may have just changed — resync to it, same as a
     // fresh page load would, unless that's an unmatched custom day.
+    // 'Rest' is a real, valid choice here too — this exact fallback
+    // was the bug: picking Rest for today got silently overridden
+    // back to DAY_ORDER[0] a moment later, so the header/checklist
+    // never actually reflected the change.
     activeDay = todayDayLabel();
-    if (!DAY_META[activeDay]) activeDay = DAY_ORDER[0];
+    if (activeDay !== 'Rest' && !DAY_META[activeDay]) activeDay = DAY_ORDER[0];
     commitDay();
   });
 
@@ -1519,61 +1464,15 @@ button { font-family: inherit; }
     hit.ontouchend = function () { hideTimer = setTimeout(hideTip, 1500); };
   }
 
-  // ------------------------------------------------------------------
-  // 3. STRENGTH SCORE — a real calculation, not a canned number.
-  //
-  // It compares your current estimated 1-rep max on four real primary
-  // lifts from the actual program against your recent best on each
-  // (Epley: weight × (1 + reps/30)), averages the four ratios, and
-  // scales to 0-100. 100 means you're matching/beating your recent
-  // best across the board on average; it dips if you stall or deload.
-  // Bands: 85+ Excellent, 70-84 Good, under 70 Fair. PRIMARY_LOG here
-  // is a placeholder — it gets overwritten with your real logged data
-  // (current = your actual last set, recentBest = the highest Epley
-  // total you've ever logged for it) once SESSIONS is loaded below;
-  // see recomputeScoreFromSessions().
-  // ------------------------------------------------------------------
-  var PRIMARY_LIFTS = ['Barbell RDL', 'Barbell Bench Press', 'Goblet / Front Squat', 'Chest-Supported T-Bar Row'];
-  var PRIMARY_LOG = {
-    'Barbell RDL': { current: { weight: 60, reps: 8 }, recentBest: { weight: 60, reps: 8 } },
-    'Barbell Bench Press': { current: { weight: 60, reps: 6 }, recentBest: { weight: 60, reps: 6 } },
-    'Goblet / Front Squat': { current: { weight: 20, reps: 8 }, recentBest: { weight: 20, reps: 8 } },
-    'Chest-Supported T-Bar Row': { current: { weight: 40, reps: 8 }, recentBest: { weight: 40, reps: 8 } }
-  };
-  function epley1rm(w, r) { return w * (1 + r / 30); }
-  function computeStrengthScore() {
-    var ratios = PRIMARY_LIFTS.map(function (name) {
-      var d = PRIMARY_LOG[name]; if (!d) return null;
-      var cur = epley1rm(d.current.weight, d.current.reps);
-      var best = epley1rm(d.recentBest.weight, d.recentBest.reps);
-      return Math.min(1, cur / best);
-    }).filter(function (x) { return x != null; });
-    if (!ratios.length) return 0;
-    return Math.round((ratios.reduce(function (a, b) { return a + b; }, 0) / ratios.length) * 100);
-  }
-  var SCORE = (function () {
-    var v = computeStrengthScore();
-    return {
-      value: v,
-      trend: [Math.round(v * 0.65), Math.round(v * 0.72), Math.round(v * 0.68), Math.round(v * 0.79), Math.round(v * 0.83), Math.round(v * 0.80), Math.round(v * 0.88), v],
-      deltaPct: 0
-    };
-  })();
-  SCORE.deltaPct = SCORE.trend[0] ? Math.round(((SCORE.value - SCORE.trend[0]) / SCORE.trend[0]) * 100) : 0;
 
   var STRENGTH = { done: 4, goal: 4, volume: 12450, hours: 6.42, weeklyHistory: [8200, 9600, 7400, 11800, 10200, 13100, 9800, 12450] };
   var volumeExpanded = false;
 
-  function scoreWordFor(v) { return v >= 85 ? { w: 'Excellent', l: 'excellent' } : v >= 70 ? { w: 'Good', l: 'good' } : { w: 'Fair', l: 'fair' }; }
+  // Also used by the exercise history modal's "1RM" metric view — kept
+  // even though the Strength Score feature that introduced it is gone.
+  function epley1rm(w, r) { return w * (1 + r / 30); }
 
   function renderStrength() {
-    document.getElementById('scoreNum').textContent = SCORE.value;
-    var sw = scoreWordFor(SCORE.value);
-    var wordEl = document.getElementById('scoreWord');
-    wordEl.textContent = sw.w; wordEl.dataset.level = sw.l;
-    document.getElementById('scoreDelta').textContent = (SCORE.deltaPct >= 0 ? '+' : '') + SCORE.deltaPct + '% vs last month';
-    renderChart(document.getElementById('scoreChart'), document.getElementById('scoreTooltip'), SCORE.trend, { min: 0, max: 100, color: 'var(--lime)' });
-
     document.getElementById('sDone').textContent = STRENGTH.done;
     document.getElementById('sGoal').textContent = '/ ' + STRENGTH.goal;
     var pct = Math.round((STRENGTH.done / STRENGTH.goal) * 100);
@@ -1599,7 +1498,10 @@ button { font-family: inherit; }
   // ------------------------------------------------------------------
   var PICKS_KEY = 'po_preview_picks_v5';
   var activeDay = todayDayLabel();
-  if (!DAY_META[activeDay]) activeDay = DAY_ORDER[0];
+  // 'Rest' is a real, valid day-type (no exercises, DAY_META has no
+  // entry for it on purpose) — only fall back to DAY_ORDER[0] for a
+  // genuinely unrecognized value, not for a deliberate Rest day.
+  if (activeDay !== 'Rest' && !DAY_META[activeDay]) activeDay = DAY_ORDER[0];
   var confirmedDay = activeDay;
   var picks = {}; // { day: { areaIndex: [selected option names] } }
   var doneState = {};
@@ -1719,9 +1621,10 @@ button { font-family: inherit; }
     document.getElementById('twHint').style.display = currentSession ? 'none' : '';
   }
   // Single source of truth for "cross an exercise off today" — used by
-  // both the Today's Workout checklist and the Workout Summary's
-  // expanded logged-list, so checking/unchecking in either place stays
-  // in sync with the other automatically.
+  // the Today's Workout checklist. Unchecking is also the "unlock" —
+  // exercises stay crossed off (and quick-logged) for the rest of the
+  // day via doneState/saveDoneToday even across a reload, so tapping
+  // the checkbox again is how you deliberately undo that for today.
   function toggleExerciseDone(name) {
     var nowDone = !doneState[name];
     doneState[name] = nowDone;
@@ -1740,12 +1643,27 @@ button { font-family: inherit; }
         var areaDef = findAreaForExercise(confirmedDay, name);
         currentSession.sets.push({ name: name, setsCount: areaDef ? areaDef.sets : 3, reps: last.reps, weight: ex.bw ? 0 : (last.weight || ex.startWeight || 0) });
       }
-    } else if (currentSession) {
-      // Unchecking removes whatever was logged for it today (from
-      // either the quick-log above or the detailed modal).
-      currentSession.sets = currentSession.sets.filter(function (s) { return s.name !== name; });
+      saveCurrentSession();
+    } else {
+      // Unchecking fully unlocks it for today — removes it from the
+      // live session if it's there, AND from any already-committed
+      // session(s) dated today (e.g. a workout already marked done),
+      // so re-checking it later can't create a duplicate logged entry
+      // alongside an old committed one.
+      var tk = wtDateKey(new Date());
+      var changed = false;
+      SESSIONS = SESSIONS.filter(function (s) {
+        if (s.dateKey !== tk) return true;
+        var before = s.sets.length;
+        s.sets = s.sets.filter(function (st) { return st.name !== name; });
+        if (s.sets.length !== before) { changed = true; s.volume = s.sets.reduce(function (sum, st) { return sum + st.setsCount * st.reps * st.weight; }, 0); }
+        return s.sets.length > 0;
+      });
+      if (changed) saveSessions();
+      if (currentSession) { currentSession.sets = currentSession.sets.filter(function (s) { return s.name !== name; }); saveCurrentSession(); }
+      if (changed) refreshAllSessionViews();
     }
-    saveCurrentSession();
+    saveDoneToday();
     renderChecklist();
     renderWorkoutSummary();
   }
@@ -1762,6 +1680,7 @@ button { font-family: inherit; }
     todaysExerciseList(confirmedDay).forEach(function (ex) { validNames[ex.name] = true; });
     if (currentSession) { currentSession.sets = currentSession.sets.filter(function (s) { return validNames[s.name]; }); saveCurrentSession(); }
     Object.keys(doneState).forEach(function (name) { if (!validNames[name]) doneState[name] = false; });
+    saveDoneToday();
     renderChecklist();
     renderAnatomy();
     renderWorkoutSummary();
@@ -1897,6 +1816,7 @@ button { font-family: inherit; }
     renderStrength();
     currentSession = null;
     clearSavedCurrentSession();
+    saveDoneToday();
     updateSessionButtonsUI();
   }
   // Discards the live session entirely — a false start, or logged the
@@ -1909,6 +1829,7 @@ button { font-family: inherit; }
     names.forEach(function (name) { doneState[name] = false; });
     currentSession = null;
     clearSavedCurrentSession();
+    saveDoneToday();
     updateSessionButtonsUI();
     renderChecklist();
     renderWorkoutSummary();
@@ -1928,6 +1849,36 @@ button { font-family: inherit; }
     } catch (e) {}
   }
   function clearSavedCurrentSession() { try { localStorage.removeItem(CURRENT_SESSION_KEY); } catch (e) {} }
+  // Which exercises are crossed off TODAY — separate from currentSession
+  // (which only exists while a workout is actively in progress and gets
+  // cleared the moment it's finished/marked done). Without this, doneState
+  // silently reset to empty the instant a workout was committed or the
+  // page reloaded after — exercises looked "undone" again even though
+  // today's workout was already logged. Scoped to a date key so it
+  // naturally clears itself once the next day actually rolls around,
+  // rather than needing an explicit reset. Unchecking an exercise (the
+  // checklist's own checkbox toggle) is the "unlock" — it persists
+  // here too, and also cleans up any already-committed history entry.
+  var DONE_TODAY_KEY = 'po_preview_done_today_v1';
+  function saveDoneToday() {
+    try {
+      var names = Object.keys(doneState).filter(function (n) { return doneState[n]; });
+      if (!names.length) { localStorage.removeItem(DONE_TODAY_KEY); return; }
+      localStorage.setItem(DONE_TODAY_KEY, JSON.stringify({ dateKey: wtDateKey(new Date()), names: names }));
+    } catch (e) {}
+  }
+  function restoreDoneToday() {
+    try {
+      var raw = localStorage.getItem(DONE_TODAY_KEY);
+      if (!raw) return;
+      var saved = JSON.parse(raw);
+      if (!saved || saved.dateKey !== wtDateKey(new Date()) || !Array.isArray(saved.names)) {
+        localStorage.removeItem(DONE_TODAY_KEY); // stale — a prior day's record
+        return;
+      }
+      saved.names.forEach(function (name) { doneState[name] = true; });
+    } catch (e) {}
+  }
   function restoreCurrentSession() {
     try {
       var raw = localStorage.getItem(CURRENT_SESSION_KEY);
@@ -2019,6 +1970,7 @@ button { font-family: inherit; }
     currentSession.sets.push({ name: modalEx.name, setsCount: modalSets, reps: modalReps, weight: modalEx.bw ? 0 : modalWeight });
     doneState[modalEx.name] = true;
     saveCurrentSession();
+    saveDoneToday();
     closeModal('exModalBg');
     renderChecklist();
     renderWorkoutSummary();
@@ -2224,36 +2176,6 @@ button { font-family: inherit; }
     STRENGTH.weeklyHistory = computeWeeklyHistoryFromSessions();
   }
   recomputeStrengthFromSessions();
-  // Strength Score: swap the placeholder PRIMARY_LOG for real data now
-  // that SESSIONS is loaded — current = your actual last logged set,
-  // recentBest = the highest Epley total ever logged for it. An
-  // exercise with no history at all just keeps current===recentBest
-  // (ratio 1, neutral) rather than showing a meaningless number.
-  function bestLogFor(ex) {
-    var best = null, bestVal = -1;
-    SESSIONS.forEach(function (sess) {
-      sess.sets.forEach(function (s) {
-        if (s.name !== ex.name) return;
-        var val = epley1rm(s.weight, s.reps);
-        if (val > bestVal) { bestVal = val; best = { weight: s.weight, reps: s.reps }; }
-      });
-    });
-    return best;
-  }
-  function recomputeScoreFromSessions() {
-    PRIMARY_LIFTS.forEach(function (name) {
-      var ex = EX_INDEX[name];
-      if (!ex) return;
-      var current = lastLogFor(ex);
-      var best = bestLogFor(ex) || current;
-      PRIMARY_LOG[name] = { current: current, recentBest: best };
-    });
-    var v = computeStrengthScore();
-    SCORE.value = v;
-    SCORE.trend = [Math.round(v * 0.65), Math.round(v * 0.72), Math.round(v * 0.68), Math.round(v * 0.79), Math.round(v * 0.83), Math.round(v * 0.80), Math.round(v * 0.88), v];
-    SCORE.deltaPct = SCORE.trend[0] ? Math.round(((SCORE.value - SCORE.trend[0]) / SCORE.trend[0]) * 100) : 0;
-  }
-  recomputeScoreFromSessions();
 
   var expandedSessionId = null, editingSetId = null, editingDurationId = null;
 
@@ -2383,137 +2305,33 @@ button { font-family: inherit; }
   document.getElementById('allSessionsClose').addEventListener('click', function () { closeModal('allSessionsModalBg'); });
   document.getElementById('allSessionsModalBg').addEventListener('click', function (ev) { if (ev.target.id === 'allSessionsModalBg') closeModal('allSessionsModalBg'); });
 
-  // ------------------------------------------------------------------
-  // Workout Summary strip — today's totals + Mark Done + Past Workouts.
-  // ------------------------------------------------------------------
-  var todayMarkedDone = false;
-  var wsLoggedOpen = false;
-  function computeTodayTotals() {
-    var sets = 0, vol = 0;
-    var tk = wtDateKey(new Date());
-    SESSIONS.filter(function (s) { return s.dateKey === tk; }).forEach(function (s) {
-      s.sets.forEach(function (st) { sets += st.setsCount; vol += st.setsCount * st.reps * st.weight; });
-    });
-    if (currentSession) currentSession.sets.forEach(function (st) { sets += st.setsCount; vol += st.setsCount * st.reps * st.weight; });
-    return { sets: sets, vol: vol };
-  }
+  // Mark done button next to Start Workout — its label/style reflect
+  // real data (is every exercise in today's plan checked off?) rather
+  // than a separate flag, so it can't desync from what's actually
+  // logged. Tapping it commits whatever's currently checked off into
+  // history, same as finishing a workout normally.
   function renderWorkoutSummary() {
-    var d = new Date();
-    document.getElementById('wsEyebrow').textContent = 'TODAY · ' + d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
-    var t = computeTodayTotals();
-    document.getElementById('wsSets').textContent = t.sets;
-    document.getElementById('wsVol').textContent = Math.round(t.vol).toLocaleString() + ' ' + UNITS + ' lifted';
-    var btn = document.getElementById('wsDoneBtn');
-    btn.textContent = todayMarkedDone ? '✓ Done' : 'Mark workout done';
-    btn.classList.toggle('is-done', todayMarkedDone);
-    btn.classList.toggle('is-pending', !todayMarkedDone);
-    var tk = wtDateKey(new Date());
-    var past = SESSIONS.filter(function (s) { return s.dateKey !== tk; });
-    document.getElementById('wsPastCount').textContent = past.length;
-    if (wsLoggedOpen) renderWsLoggedList();
+    var btn = document.getElementById('markDoneBtn');
+    if (!btn) return;
+    var list = todaysExerciseList(confirmedDay);
+    var allDone = list.length > 0 && list.every(function (ex) { return !!doneState[ex.name]; });
+    btn.textContent = allDone ? '✓ Done' : 'Mark done';
+    btn.classList.toggle('is-done', allDone);
   }
-  // Expand to see exactly what's logged today before confirming/Mark
-  // Done. This has to cover BOTH the live in-progress session AND any
-  // already-committed session(s) dated today (e.g. real history
-  // imported from your actual log, or an earlier Finish/Mark Done
-  // today) — the top "sets · kg" tally already counts both, so this
-  // list has to match it or it reads as a bug (as it did: totals
-  // showed real numbers while the list said "nothing logged").
-  function todayLoggedNames() {
-    var tk = wtDateKey(new Date());
-    var names = new Set();
-    SESSIONS.filter(function (s) { return s.dateKey === tk; }).forEach(function (s) { s.sets.forEach(function (st) { names.add(st.name); }); });
-    if (currentSession) currentSession.sets.forEach(function (st) { names.add(st.name); });
-    return Array.from(names);
-  }
-  function todaySetsForName(name) {
-    var tk = wtDateKey(new Date());
-    var entries = [];
-    SESSIONS.filter(function (s) { return s.dateKey === tk; }).forEach(function (s) { s.sets.forEach(function (st) { if (st.name === name) entries.push(st); }); });
-    if (currentSession) currentSession.sets.forEach(function (st) { if (st.name === name) entries.push(st); });
-    return entries;
-  }
-  // Crossing an exercise off here removes it from today entirely —
-  // from the live session if it's there, and from any already-
-  // committed today session too (recomputing that session's volume,
-  // or dropping the session altogether if that empties it).
-  function removeExerciseFromToday(name) {
-    var tk = wtDateKey(new Date());
-    var changed = false;
-    SESSIONS = SESSIONS.filter(function (s) {
-      if (s.dateKey !== tk) return true;
-      var before = s.sets.length;
-      s.sets = s.sets.filter(function (st) { return st.name !== name; });
-      if (s.sets.length !== before) { changed = true; s.volume = s.sets.reduce(function (sum, st) { return sum + st.setsCount * st.reps * st.weight; }, 0); }
-      return s.sets.length > 0;
-    });
-    if (changed) saveSessions();
-    if (currentSession) { currentSession.sets = currentSession.sets.filter(function (st) { return st.name !== name; }); saveCurrentSession(); }
-    doneState[name] = false;
-    renderChecklist();
-    refreshAllSessionViews();
-  }
-  function renderWsLoggedList() {
-    var names = todayLoggedNames();
-    var el = document.getElementById('wsLoggedList');
-    if (!names.length) { el.innerHTML = '<div class="act-empty">Nothing logged yet today.</div>'; return; }
-    el.innerHTML = names.map(function (name) {
-      var ex = EX_INDEX[name];
-      var entries = todaySetsForName(name);
-      var summary = entries.map(function (s) { return s.setsCount + '×' + s.reps + (ex && ex.bw ? '' : ' @ ' + s.weight + UNITS + (ex && ex.perSide ? '/side' : '')); }).join(', ');
-      return '<li class="ex-row is-done" data-name="' + esc(name) + '">' +
-        '<button type="button" class="ex-check is-done">✓</button>' +
-        '<div class="ex-tap"><span class="ex-name">' + esc(name) + '</span><span class="ex-target">' + esc(summary) + '</span></div>' +
-        '</li>';
-    }).join('');
-    el.querySelectorAll('.ex-check').forEach(function (btn) {
-      btn.addEventListener('click', function (ev) { ev.stopPropagation(); removeExerciseFromToday(btn.closest('.ex-row').dataset.name); });
-    });
-    el.querySelectorAll('.ex-tap').forEach(function (tap) {
-      tap.addEventListener('click', function () { openExerciseModal(tap.closest('.ex-row').dataset.name); });
-    });
-  }
-  document.getElementById('wsExpandBtn').addEventListener('click', function () {
-    wsLoggedOpen = !wsLoggedOpen;
-    document.getElementById('wsLoggedBody').hidden = !wsLoggedOpen;
-    document.getElementById('wsExpandBtn').classList.toggle('is-open', wsLoggedOpen);
-    document.getElementById('wsExpandBtn').setAttribute('aria-expanded', String(wsLoggedOpen));
-    if (wsLoggedOpen) renderWsLoggedList();
-  });
-  // First tap commits whatever's checked off today into history (same
-  // effect as Finish Workout, so either path works and neither
-  // double-commits); the pill itself stays a free toggle after that —
-  // a plain "done" stamp, same as the real app's Mark Done.
-  document.getElementById('wsDoneBtn').addEventListener('click', function () {
+  document.getElementById('markDoneBtn').addEventListener('click', function () {
     if (currentSession && currentSession.sets.length) {
       commitSession();
       refreshAllSessionViews();
       renderChecklist();
     }
-    todayMarkedDone = !todayMarkedDone;
     renderWorkoutSummary();
   });
-  var wsPastOpen = false;
-  document.getElementById('wsPastToggle').addEventListener('click', function () {
-    wsPastOpen = !wsPastOpen;
-    document.getElementById('wsPastBody').hidden = !wsPastOpen;
-    document.getElementById('wsPastArrow').classList.toggle('is-open', wsPastOpen);
-    document.getElementById('wsPastToggle').setAttribute('aria-expanded', String(wsPastOpen));
-    if (wsPastOpen) renderPastWorkouts();
-  });
-  function renderPastWorkouts() {
-    var tk = wtDateKey(new Date());
-    var past = SESSIONS.filter(function (s) { return s.dateKey !== tk; });
-    var el = document.getElementById('wsPastBody');
-    el.innerHTML = '<ul class="session-list">' + (past.length ? past.map(sessionRowHtml).join('') : '<div class="act-empty">No past workouts yet.</div>') + '</ul>';
-    bindSessionRows('wsPastBody', past);
-  }
+
   function refreshAllSessionViews() {
     renderActivity();
     renderWorkoutSummary();
     renderDateStrip();
     renderLibrary();
-    if (wsPastOpen) renderPastWorkouts();
     if (document.getElementById('allSessionsModalBg').style.display === 'flex') renderAllSessionsModal();
   }
 
@@ -2875,6 +2693,7 @@ button { font-family: inherit; }
   // init
   // ------------------------------------------------------------------
   restoreCurrentSession();
+  restoreDoneToday();
   updateSessionButtonsUI();
   renderHeader(confirmedDay);
   renderDateStrip();
@@ -2952,7 +2771,7 @@ button { font-family: inherit; }
   function pcRerender() {
     try { renderWeight(); } catch (e) {}
     try { var fresh = buildSessionsFromLiveState(); if (fresh) SESSIONS = fresh; } catch (e) {}
-    try { recomputeStrengthFromSessions(); recomputeScoreFromSessions(); renderStrength(); } catch (e) {}
+    try { recomputeStrengthFromSessions(); renderStrength(); } catch (e) {}
     try { refreshAllSessionViews(); } catch (e) {}
   }
   function pcApplyRemoteState(remote) {
