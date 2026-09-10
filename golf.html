@@ -276,11 +276,17 @@ body::after {
 .golf-round-meta {
   font-size: 11.5px; color: var(--text-tertiary);
   font-family: var(--font-mono); margin-top: 2px;
+  white-space: normal; overflow-wrap: break-word; line-height: 1.5;
 }
 .golf-round-diff {
-  flex-shrink: 0; text-align: right;
+  flex-shrink: 0; text-align: right; min-width: 44px;
   font-family: var(--font-mono); font-size: 13px; font-weight: 700;
   color: var(--accent);
+}
+@media (max-width: 380px) {
+  .golf-round-row { gap: 8px; padding: 11px 10px; }
+  .golf-round-score { width: 36px; height: 36px; font-size: 14px; }
+  .golf-round-diff { min-width: 38px; font-size: 12px; }
 }
 .golf-round-diff-label { display: block; font-size: 9px; color: var(--text-tertiary); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
 .golf-round-del {
@@ -793,9 +799,13 @@ body::after {
       body.className = 'golf-round-body';
       const course = document.createElement('div');
       course.className = 'golf-round-course';
-      course.textContent = (r.course || 'Unnamed course') + ((r.holes || 18) === 9 ? ' · 9H' : '');
+      course.textContent = r.course || 'Unnamed course';
       body.appendChild(course);
+      // Holes goes in the meta line (which wraps) rather than appended
+      // onto the course name (which ellipsis-truncates) — a long course
+      // name was silently eating the "9H" indicator.
       const metaBits = [fmtDate(r.date)];
+      if ((r.holes || 18) === 9) metaBits.push('9H');
       if (r.fairways) metaBits.push(r.fairways + ' FW');
       if (r.putts != null) metaBits.push(r.putts + ' putts');
       const meta = document.createElement('div');
