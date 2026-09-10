@@ -13,9 +13,9 @@
 <!--
   Cross-device build — data syncs via Supabase (same pattern as
   golf.html / nutrition.html), so entries made on one device show up
-  on every other one. AI features (image scanner + Nova coach) call
-  Anthropic through the server-side /api/nova proxy — no API key is
-  ever stored in or sent from the browser.
+  on every other one. Nova (the money coach) calls Gemini through the
+  server-side /api/nova proxy — no API key is ever stored in or sent
+  from the browser.
 -->
 <style>
 :root {
@@ -2474,9 +2474,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   // ============================================================
-  // AI BRIDGE — Nova and the image scanner both call Anthropic
-  // through the server-side /api/nova proxy (mirrors /api/stock-price.js).
-  // No key is ever stored in or sent from the browser.
+  // AI BRIDGE — Nova calls Gemini through the server-side /api/nova
+  // proxy (mirrors /api/stock-price.js). No key is ever stored in or
+  // sent from the browser. Function name kept as callClaude() even
+  // though the model swapped — /api/nova.js translates both
+  // directions so this function's own request/response shape (and
+  // every call site) didn't need to change.
   // ============================================================
   async function callClaude(body) {
     const r = await fetch('/api/nova', {
@@ -4599,7 +4602,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
   // ============================================================
   // NOVA — AI money coach. Sends the chat + a snapshot of the user's
-  // finances straight to Anthropic (via callClaude) and renders the reply.
+  // finances to Gemini (via callClaude -> /api/nova) and renders the reply.
   // ============================================================
   (function initNova() {
     const messagesEl = document.getElementById('novaMessages');
@@ -4673,8 +4676,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         + "Finance snapshot (JSON):\n" + JSON.stringify(gatherFinance());
 
       try {
+        // model is set server-side now (GEMINI_MODEL in /api/nova.js) —
+        // this field is unused but harmless to leave off entirely.
         const data = await callClaude({
-          model: 'claude-opus-4-8',
           max_tokens: 1024,
           system: system,
           messages: convo
