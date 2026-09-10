@@ -600,22 +600,21 @@ body::after {
   // (weight) goals both just work.
   // ============================================================
   const GOALS_KEY = 'goals:targets';
-  // handicapStart/weightStart are real historical baselines (confirmed:
-  // handicap started at 25, weight at 78) — not auto-captured from
-  // wherever you happen to be right now, so the bar actually shows how
-  // far you've already come, not a bar that starts empty forever.
-  const DEFAULT_GOALS = { savings: 15000, stock: 15000, handicap: 15, weight: 83, handicapStart: 25, weightStart: 78 };
+  // handicapStart is a real historical baseline (confirmed: handicap
+  // started at 25) — not auto-captured from wherever you happen to be
+  // right now, so the bar actually shows how far you've already come,
+  // not a bar that starts empty forever.
+  const DEFAULT_GOALS = { savings: 15000, stock: 15000, handicap: 15, steps: 8000, handicapStart: 25 };
 
   function loadGoals() {
     const g = readJSON(GOALS_KEY, null);
     const merged = (g && typeof g === 'object') ? Object.assign({}, DEFAULT_GOALS, g) : Object.assign({}, DEFAULT_GOALS);
-    // Starting baselines are fixed historical facts (handicap started at
-    // 25, weight at 78), not something that should ever come from a
-    // stale stored value — an earlier build auto-captured "wherever you
-    // are right now" as the start, which got saved to localStorage and
-    // would otherwise silently keep overriding the real baseline forever.
+    // handicapStart is a fixed historical fact (handicap started at 25),
+    // not something that should ever come from a stale stored value — an
+    // earlier build auto-captured "wherever you are right now" as the
+    // start, which got saved to localStorage and would otherwise silently
+    // keep overriding the real baseline forever.
     merged.handicapStart = DEFAULT_GOALS.handicapStart;
-    merged.weightStart = DEFAULT_GOALS.weightStart;
     return merged;
   }
   function saveGoals(g) { writeJSON(GOALS_KEY, g); }
@@ -656,11 +655,11 @@ body::after {
     const best = comparable.slice().sort((a, b) => a - b).slice(0, Math.min(8, comparable.length));
     return Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
   }
-  function currentWeight() {
-    const arr = readJSON('po_coach_weights', []);
-    if (!Array.isArray(arr) || !arr.length) return null;
-    const sorted = arr.slice().sort((a, b) => (a.dateKey || '').localeCompare(b.dateKey || ''));
-    return sorted[sorted.length - 1].weight;
+  function currentSteps() {
+    const steps = readJSON('health:steps', {});
+    const d = new Date();
+    const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return (steps && typeof steps === 'object' && steps[dk] != null) ? steps[dk] : null;
   }
 
   // Simple current/target ratio, capped 0-100%.
@@ -676,54 +675,74 @@ body::after {
     return Math.max(0, Math.min(100, pct));
   }
 
+  // Each bar fill is a two-stop neon gradient (deep shade -> bright hue)
+  // rather than a flat color, so the goals section has the same glowing
+  // pop the mint accent has elsewhere instead of reading flat/muted.
   const GOAL_DEFS = [
     {
-      key: 'savings', label: 'Savings', color: '#4C7A5B',
+      key: 'savings', label: 'Savings', color: 'linear-gradient(90deg, #1C6B45, #6EE3A4)',
       current: () => nwCategoryTotal('bank'),
       target: (g) => g.savings,
       progress: (g, cur) => ratioProgress(cur, g.savings),
       fmt: (v) => displayCcy().ccy + ' ' + Math.round(v).toLocaleString()
     },
     {
-      key: 'stock', label: 'Stock amount', color: '#4F7FBF',
+      key: 'stock', label: 'Stock amount', color: 'linear-gradient(90deg, #1E4F91, #5AC8FA)',
       current: () => nwCategoryTotal('stocks'),
       target: (g) => g.stock,
       progress: (g, cur) => ratioProgress(cur, g.stock),
       fmt: (v) => displayCcy().ccy + ' ' + Math.round(v).toLocaleString()
     },
     {
-      key: 'handicap', label: 'Golf handicap', color: '#C99A44',
+      key: 'handicap', label: 'Golf handicap', color: 'linear-gradient(90deg, #A66B1F, #FFC857)',
       current: () => currentHandicap(),
       target: (g) => g.handicap,
       progress: (g, cur) => distanceProgress(g.handicapStart, cur == null ? g.handicapStart : cur, g.handicap),
       fmt: (v) => v == null ? 'no rounds yet' : v.toFixed(1)
     },
     {
-      key: 'weight', label: 'Body weight', color: '#8A6BB5',
-      current: () => currentWeight(),
-      target: (g) => g.weight,
-      progress: (g, cur) => distanceProgress(g.weightStart, cur == null ? g.weightStart : cur, g.weight),
-      fmt: (v) => v == null ? 'no weigh-ins yet' : v + ' kg'
+      key: 'steps', label: 'Steps today', color: 'linear-gradient(90deg, #5B3E8C, #C79BFF)',
+      current: () => currentSteps(),
+      target: (g) => g.steps,
+      progress: (g, cur) => ratioProgress(cur == null ? 0 : cur, g.steps),
+      fmt: (v) => v == null ? 'no steps yet' : Math.round(v).toLocaleString()
     }
   ];
 
   let editingGoal = null;
+  // Load-in animations (line draws in, donut fans out, bars fill up) only
+  // play once, on the very first render — every render after that (a
+  // cloud sync applying, a goal edit, anything) just snaps straight to
+  // the real value instead of replaying the animation on every update.
+  let goalsAnimatedIn = false;
+  let financeAnimatedIn = false;
 
   function renderGoals() {
     const goals = loadGoals();
+    const firstRender = !goalsAnimatedIn;
     $('goalsGrid').innerHTML = GOAL_DEFS.map(def => {
       const cur = def.current();
       const pct = Math.round(def.progress(goals, cur));
       const isEditing = editingGoal === def.key;
+      // First render ever: start every bar at 0% so it visibly fills up
+      // to its real value a beat later, instead of just appearing full.
+      const startWidth = firstRender ? 0 : pct;
       return '<div class="goal-card" data-key="' + def.key + '">'
         + '<div class="goal-card-top"><span class="goal-card-label">' + def.label + '</span><span class="goal-card-pct">' + pct + '%</span></div>'
         + '<div class="goal-card-vals">' + def.fmt(cur) + ' &rarr; ' + def.fmt(def.target(goals)) + '</div>'
-        + '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%;background:' + def.color + '"></div></div>'
+        + '<div class="goal-bar-track"><div class="goal-bar-fill" data-pct="' + pct + '" style="width:' + startWidth + '%;background:' + def.color + '"></div></div>'
         + (isEditing
             ? '<div class="goal-edit-row"><input type="number" inputmode="decimal" id="goalInput_' + def.key + '" value="' + def.target(goals) + '"><button type="button" data-save="' + def.key + '">Save</button></div>'
             : '<button type="button" class="goal-edit-btn" data-edit="' + def.key + '">Edit target</button>')
         + '</div>';
     }).join('');
+
+    if (firstRender) {
+      requestAnimationFrame(() => {
+        $('goalsGrid').querySelectorAll('.goal-bar-fill').forEach(el => { el.style.width = el.dataset.pct + '%'; });
+      });
+      goalsAnimatedIn = true;
+    }
 
     $('goalsGrid').querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => { editingGoal = btn.dataset.edit; renderGoals(); });
@@ -838,10 +857,24 @@ body::after {
           const sliceAngle = (s.amount / total) * Math.PI * 2;
           const pad = slices.length > 1 ? 0.02 : 0;
           const a1 = angle + pad, a2 = angle + sliceAngle - pad;
-          if (a2 > a1) html += '<path d="' + donutArcPath(48, 48, 48, 34, a1, a2) + '" fill="' + s.color + '"></path>';
+          if (a2 > a1) html += '<path class="fin-donut-slice" d="' + donutArcPath(48, 48, 48, 34, a1, a2) + '" fill="' + s.color + '" style="transform-origin:48px 48px"></path>';
           angle += sliceAngle;
         });
         donutSvg.innerHTML = html;
+        if (!financeAnimatedIn) {
+          // Fan out: each wedge pops in from a slightly shrunk/invisible
+          // state, staggered so they read as sweeping around the ring
+          // rather than all popping at once.
+          const wedges = donutSvg.querySelectorAll('.fin-donut-slice');
+          wedges.forEach(el => { el.style.opacity = '0'; el.style.transform = 'scale(0.5)'; });
+          requestAnimationFrame(() => {
+            wedges.forEach((el, i) => {
+              el.style.transition = 'opacity 0.4s ease ' + (i * 70) + 'ms, transform 0.4s cubic-bezier(.34,1.56,.64,1) ' + (i * 70) + 'ms';
+              el.style.opacity = '1';
+              el.style.transform = 'scale(1)';
+            });
+          });
+        }
       } else {
         donutSvg.innerHTML = '<circle cx="48" cy="48" r="48" fill="var(--card-soft)"></circle><circle cx="48" cy="48" r="34" fill="var(--card)"></circle>';
       }
@@ -888,9 +921,26 @@ body::after {
       + '<line class="fin-chart-grid" x1="0" x2="' + W + '" y1="50" y2="50"/>'
       + '<line class="fin-chart-grid" x1="0" x2="' + W + '" y1="80" y2="80"/>'
       + '<path d="' + areaD + '" fill="url(#finAreaGrad)"></path>'
-      + '<path d="' + lineD + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" style="filter: drop-shadow(0 0 6px currentColor)"></path>'
+      + '<path id="finLinePath" d="' + lineD + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" style="filter: drop-shadow(0 0 6px currentColor)"></path>'
       + '<line id="finChartHoverLine" class="fin-chart-hover-line" x1="0" y1="0" x2="0" y2="' + H + '" hidden></line>'
       + '<circle id="finChartHoverDot" class="fin-chart-hover-dot" r="3" cx="0" cy="0" hidden></circle>';
+
+    // Draw-in: the line starts fully "undrawn" and traces itself across
+    // — the classic stroke-dasharray/dashoffset trick — only on the very
+    // first render, so a routine data refresh doesn't replay it.
+    const linePath = document.getElementById('finLinePath');
+    if (linePath) {
+      if (!financeAnimatedIn) {
+        const len = linePath.getTotalLength();
+        linePath.style.strokeDasharray = String(len);
+        linePath.style.strokeDashoffset = String(len);
+        requestAnimationFrame(() => {
+          linePath.style.transition = 'stroke-dashoffset 1s ease';
+          linePath.style.strokeDashoffset = '0';
+        });
+      }
+    }
+    financeAnimatedIn = true;
 
     const { ccy: statCcy, rate: statRate } = displayCcy();
     const fmtStat = (v) => statCcy + ' ' + Math.round(v * statRate).toLocaleString('en-US');
