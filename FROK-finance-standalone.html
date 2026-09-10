@@ -2839,7 +2839,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       }
     } catch (e) {}
   }
-  loadExchangeRates();
+  // Stock prices convert through exchangeRates too (see refreshStockPrices
+  // below) — if that ran before this fetch resolved, it'd divide by the
+  // still-hardcoded fallback rate (1) instead of the real one, inflating
+  // every foreign-currency holding's stored CHF value by roughly the real
+  // rate (e.g. ~1.7x for AUD). Exposed as a promise so the initial stock
+  // price refresh can wait for real rates instead of racing this fetch.
+  const exchangeRatesReady = loadExchangeRates();
 
   // ============================================================
   // LIVE STOCK PRICES — for any Stocks/Investments item that has a
@@ -2928,7 +2934,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       renderAllNetWorth();
     }
   }
-  refreshStockPrices();
+  exchangeRatesReady.then(() => refreshStockPrices());
   setInterval(refreshStockPrices, 60 * 60 * 1000); // hourly check; the 4h gate inside actually throttles it
 
   function fmtMoney(amountCHF) {
