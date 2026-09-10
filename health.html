@@ -215,9 +215,8 @@ main {
       const steps = storeGet('health:steps') || {};
       const nutrition = storeGet('health:nutrition') || {};
       const todaySteps = steps[today];
-      const todayMeals = nutrition[today] ? Object.values(nutrition[today]) : [];
-      const hasAny = todaySteps != null || todayMeals.length > 0;
-
+      const todayNutrition = nutrition[today];
+      const hasAny = todaySteps != null || (todayNutrition && todayNutrition.calories);
       const empty = document.getElementById('actEmpty');
       if (!hasAny) { if (empty) empty.style.display = ''; return; }
       if (empty) empty.style.display = 'none';
@@ -226,13 +225,9 @@ main {
       if (todaySteps != null) {
         html += '<div class="act-card"><div class="act-label">Steps</div><div class="act-val">' + todaySteps.toLocaleString() + '</div><div class="act-sub">today</div></div>';
       }
-      if (todayMeals.length > 0) {
-        const totals = todayMeals.reduce((a, m) => {
-          a.calories += m.calories || 0; a.protein += m.proteinG || 0; a.carbs += m.carbsG || 0; a.fat += m.fatG || 0;
-          return a;
-        }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
-        html += '<div class="act-card"><div class="act-label">Calories</div><div class="act-val">' + Math.round(totals.calories).toLocaleString() + '</div>'
-          + '<div class="act-sub">P ' + Math.round(totals.protein) + 'g · C ' + Math.round(totals.carbs) + 'g · F ' + Math.round(totals.fat) + 'g</div></div>';
+      if (todayNutrition && todayNutrition.calories) {
+        html += '<div class="act-card"><div class="act-label">Calories</div><div class="act-val">' + Math.round(todayNutrition.calories).toLocaleString() + '</div>'
+          + '<div class="act-sub">P ' + Math.round(todayNutrition.proteinG || 0) + 'g · C ' + Math.round(todayNutrition.carbsG || 0) + 'g · F ' + Math.round(todayNutrition.fatG || 0) + 'g</div></div>';
       }
       grid.querySelectorAll('.act-card').forEach(el => el.remove());
       grid.insertAdjacentHTML('beforeend', html);

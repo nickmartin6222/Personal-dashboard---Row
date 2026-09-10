@@ -1,38 +1,51 @@
 // ============================================================
 // POST /api/health-import
-// Receives a webhook payload from the "Health Connect Webhook" Android
-// app (https://github.com/mcnaveen/health-connect-webhook), which reads
-// Health Connect on the phone — including whatever Google Health /
-// MyFitnessPal have written into it (steps, nutrition, etc.) — and
-// POSTs it here on a schedule.
+// Receives a webhook payload from the "Health Auto Export" iPhone app
+// (healthyapps.dev), which reads Apple Health/HealthKit on the phone —
+// including whatever Google Health / MyFitnessPal have written into it
+// (steps, nutrition, etc.) — and POSTs it here on a schedule.
 //
-// Payload shape (from that app's docs): a JSON object with `timestamp`,
-// `app_version`, and optional snake_case arrays per data type, e.g.:
-//   { "steps": [{ count, start_time, end_time }, ...],
-//     "nutrition": [{ start_time, end_time, calories, protein_grams,
-//                      carbs_grams, fat_grams, sugar_grams,
-//                      sodium_grams, dietary_fiber_grams, name }, ...] }
-// Any batch may cover a rolling window and can resend the same day —
-// entries are merged into per-day totals (last write wins per day for
-// steps, per day+meal+start_time for nutrition), not appended, so a
-// re-send never double-counts.
+// Payload shape (help.healthyapps.dev/en/health-auto-export/export-format):
+//   { "data": { "metrics": [
+//       { "name": "step_count", "units": "count",
+//         "data": [ { "qty": 8500, "date": "2024-02-06 14:30:00 -0800" } ] },
+//       { "name": "dietary_energy", "units": "kcal", "data": [ {...} ] },
+//       ... one metric object per health metric the automation is set to send
+//   ] } }
+// Each `date` string is the phone's own local wall-clock time with its
+// UTC offset already applied, so the date portion (first 10 chars) is
+// the local calendar day directly — no timezone math needed here.
+//
+// A batch may resend the same day (e.g. an hourly automation re-covers
+// today repeatedly) — every metric+date pair is summed WITHIN this one
+// call, then that sum REPLACES whatever was stored for that metric+date,
+// so overlapping/resent batches never double-count.
 //
 // Auth: requires an `x-api-key` header matching HEALTH_IMPORT_SECRET
-// (a Vercel env var) — set the same value as a custom header in the
-// webhook app's config so nobody else can post fake data here.
+// (a Vercel env var) — set the same value as a custom header on the
+// REST API automation in the app so nobody else can post fake data here.
 //
 // Writes straight into the same Supabase app_state table sync.js uses,
 // under appKey 'health-metrics', as health:steps / health:nutrition —
 // health.html picks those up via the normal initCloudSync flow.
 // ============================================================
 
-function localDateKey(iso) {
-  try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney' }).format(new Date(iso));
-  } catch (e) {
-    return String(iso).slice(0, 10);
-  }
+function localDateKey(dateStr) {
+  return String(dateStr).slice(0, 10);
 }
+
+// Health Auto Export metric `name`s aren't 100% pinned down in the docs,
+// so match by keyword rather than an exact string — resilient to minor
+// naming differences (e.g. "dietary_energy" vs "dietary_energy_consumed").
+const NUTRITION_MATCHERS = [
+  { key: 'calories', test: n => /energy/i.test(n) && !/basal|active/i.test(n) },
+  { key: 'proteinG', test: n => /protein/i.test(n) },
+  { key: 'carbsG', test: n => /carbohydrate/i.test(n) },
+  { key: 'fatG', test: n => /fat/i.test(n) && /total/i.test(n) },
+  { key: 'sugarG', test: n => /sugar/i.test(n) },
+  { key: 'sodiumG', test: n => /sodium/i.test(n) },
+  { key: 'fiberG', test: n => /fiber/i.test(n) },
+];
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -53,7 +66,8 @@ export default async function handler(req, res) {
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (e) { return res.status(400).json({ error: 'invalid JSON body' }); }
   }
-  if (!body || typeof body !== 'object') return res.status(400).json({ error: 'JSON body required' });
+  const metrics = (body && body.data && Array.isArray(body.data.metrics)) ? body.data.metrics : null;
+  if (!metrics) return res.status(400).json({ error: 'expected { data: { metrics: [...] } } body' });
 
   const restHeaders = {
     apikey: SUPABASE_KEY,
@@ -70,28 +84,42 @@ export default async function handler(req, res) {
     const steps = state['health:steps'] || {};
     const nutrition = state['health:nutrition'] || {};
 
-    // 2) Merge in the new payload.
-    (body.steps || []).forEach(s => {
-      if (!s || s.count == null || !s.start_time) return;
-      const day = localDateKey(s.start_time);
-      steps[day] = Math.round(Number(s.count) || 0);
+    // 2) Sum this call's own entries per metric+date, then overwrite
+    // (not add to) whatever was already stored for those dates.
+    const stepsThisCall = {};
+    const nutritionThisCall = {};
+
+    metrics.forEach(m => {
+      if (!m || !m.name || !Array.isArray(m.data)) return;
+      const name = String(m.name);
+
+      if (/step_count|^steps$/i.test(name)) {
+        m.data.forEach(pt => {
+          if (!pt || pt.qty == null || !pt.date) return;
+          const day = localDateKey(pt.date);
+          stepsThisCall[day] = (stepsThisCall[day] || 0) + (Number(pt.qty) || 0);
+        });
+        return;
+      }
+
+      const matcher = NUTRITION_MATCHERS.find(x => x.test(name));
+      if (matcher) {
+        m.data.forEach(pt => {
+          if (!pt || pt.qty == null || !pt.date) return;
+          const day = localDateKey(pt.date);
+          if (!nutritionThisCall[day]) nutritionThisCall[day] = {};
+          nutritionThisCall[day][matcher.key] = (nutritionThisCall[day][matcher.key] || 0) + (Number(pt.qty) || 0);
+        });
+      }
     });
 
-    (body.nutrition || []).forEach(n => {
-      if (!n || !n.start_time) return;
-      const day = localDateKey(n.start_time);
-      if (!nutrition[day]) nutrition[day] = {};
-      const mealKey = (n.name || 'meal') + '@' + n.start_time;
-      nutrition[day][mealKey] = {
-        name: n.name || 'Meal',
-        calories: Number(n.calories) || 0,
-        proteinG: Number(n.protein_grams) || 0,
-        carbsG: Number(n.carbs_grams) || 0,
-        fatG: Number(n.fat_grams) || 0,
-        sugarG: Number(n.sugar_grams) || 0,
-        sodiumG: Number(n.sodium_grams) || 0,
-        fiberG: Number(n.dietary_fiber_grams) || 0,
-      };
+    Object.keys(stepsThisCall).forEach(day => { steps[day] = Math.round(stepsThisCall[day]); });
+    Object.keys(nutritionThisCall).forEach(day => {
+      nutrition[day] = Object.assign(
+        { calories: 0, proteinG: 0, carbsG: 0, fatG: 0, sugarG: 0, sodiumG: 0, fiberG: 0 },
+        nutrition[day] || {},
+        nutritionThisCall[day]
+      );
     });
 
     state['health:steps'] = steps;
@@ -110,7 +138,11 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ ok: true, daysUpdated: { steps: Object.keys(steps).length, nutrition: Object.keys(nutrition).length } });
+    return res.status(200).json({
+      ok: true,
+      stepsDaysTouched: Object.keys(stepsThisCall),
+      nutritionDaysTouched: Object.keys(nutritionThisCall),
+    });
   } catch (e) {
     return res.status(502).json({ error: 'import failed: ' + (e && e.message ? e.message : String(e)) });
   }
