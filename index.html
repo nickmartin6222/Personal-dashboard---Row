@@ -198,7 +198,7 @@ body::after {
 .goal-card-pct { font-family: var(--font); font-size: 13px; font-weight: 800; color: var(--sage); font-variant-numeric: tabular-nums; }
 .goal-card-vals { font-size: 12px; color: var(--text-tertiary); margin-bottom: 10px; font-variant-numeric: tabular-nums; }
 .goal-bar-track { height: 8px; border-radius: 999px; background: var(--sage-pale); overflow: hidden; }
-.goal-bar-fill { height: 100%; border-radius: 999px; transition: width 1.3s cubic-bezier(.22,.7,.2,1); }
+.goal-bar-fill { height: 100%; border-radius: 999px; transition: width 2s cubic-bezier(.22,.7,.2,1); }
 .goal-edit-btn {
   margin-top: 12px; width: 100%; padding: 8px; border-radius: 9px;
   border: 1px solid var(--border-strong); background: transparent;
@@ -717,6 +717,13 @@ body::after {
   // the real value instead of replaying the animation on every update.
   let goalsAnimatedIn = false;
   let financeAnimatedIn = false;
+  // Snapshots of what the donut/line chart last actually rendered — an
+  // unrelated re-render (e.g. the health-metrics cloud sync applying,
+  // which has nothing to do with finance) shouldn't rebuild these SVGs
+  // at all when the underlying data hasn't changed, since a full
+  // innerHTML rebuild destroys whatever load-in animation is mid-flight.
+  let lastDonutSnapshot = null;
+  let lastHistSnapshot = null;
 
   function renderGoals() {
     const goals = loadGoals();
@@ -848,7 +855,9 @@ body::after {
 
     slices.sort((a, b) => b.amount - a.amount);
     const donutSvg = $('finDonutSvg');
-    if (donutSvg) {
+    const donutSnapshot = JSON.stringify({ slices: slices.map(s => [s.name, s.color, s.amount]), total });
+    if (donutSvg && donutSnapshot !== lastDonutSnapshot) {
+      lastDonutSnapshot = donutSnapshot;
       if (slices.length && total > 0) {
         // The SVG itself is rotated -90deg via CSS, so slices can just
         // start at angle 0 (equivalent to 12 o'clock once rotated).
@@ -870,7 +879,7 @@ body::after {
           wedges.forEach(el => { el.style.opacity = '0'; el.style.transform = 'scale(0.5)'; });
           requestAnimationFrame(() => {
             wedges.forEach((el, i) => {
-              el.style.transition = 'opacity 0.8s ease ' + (i * 110) + 'ms, transform 0.8s cubic-bezier(.34,1.56,.64,1) ' + (i * 110) + 'ms';
+              el.style.transition = 'opacity 1.2s ease ' + (i * 200) + 'ms, transform 1.2s cubic-bezier(.34,1.56,.64,1) ' + (i * 200) + 'ms';
               el.style.opacity = '1';
               el.style.transform = 'scale(1)';
             });
@@ -900,6 +909,9 @@ body::after {
       finChartHoverPoints = [];
       return;
     }
+    const histSnapshot = JSON.stringify(hist);
+    if (histSnapshot === lastHistSnapshot) return; // unchanged — leave the chart (and any in-flight animation) alone
+    lastHistSnapshot = histSnapshot;
     const vals = hist.map(h => h.v);
     const min = Math.min(...vals), max = Math.max(...vals);
     const range = Math.max(1, max - min);
