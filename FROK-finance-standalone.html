@@ -4614,17 +4614,24 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const convo = []; // [{ role:'user'|'assistant', content:string }]
 
     // Snapshot of everything Nova should be able to reason about.
+    // Converts CHF (the canonical internal currency) to the user's
+    // actual display currency before handing anything to Nova — it
+    // used to send raw CHF numbers with just a "currency: AUD" label
+    // attached, which read as instruction-only and got ignored,
+    // so Nova was quoting CHF figures back as if they were AUD.
     function gatherFinance() {
+      const symbol = currencyEl ? currencyEl.value : 'CHF';
+      const rate = exchangeRates[symbol] || 1;
       const breakdown = {};
       let netWorthCHF = 0;
       ['bank', 'stocks'].forEach(k => {
         const items = storeGet('nw:' + k) || [];
-        breakdown[k] = items.map(it => ({ name: it.name, amountCHF: Number(it.amount) || 0 }));
+        breakdown[k] = items.map(it => ({ name: it.name, amount: Math.round((Number(it.amount) || 0) * rate) }));
         items.forEach(it => { netWorthCHF += Number(it.amount) || 0; });
       });
       return {
-        currency: storeGet('nw_currency') || 'CHF',
-        netWorthCHF: Math.round(netWorthCHF),
+        currency: symbol,
+        netWorth: Math.round(netWorthCHF * rate),
         accounts: breakdown,
         subscriptions: storeGet('subs') || [],
         incomingOrders: storeGet('incoming_orders') || [],
@@ -4665,9 +4672,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         + "- Ground every claim in their actual data. Quote real figures (with the currency "
         + "shown) instead of speaking in generalities. If the snapshot doesn't contain what "
         + "you'd need, say so and ask one focused follow-up question.\n"
-        + "- Net-worth amounts in the snapshot are stored in CHF; \"currency\" is the user's "
-        + "display currency. Subscriptions list a cost and billing period; orders are incoming "
-        + "purchases; wishlist items are things they're saving for.\n"
+        + "- Every amount in the snapshot is already in \"currency\" — the user's real display "
+        + "currency. Always show that same currency code with any figure you quote. Subscriptions "
+        + "list a cost and billing period; orders are incoming purchases; wishlist items are "
+        + "things they're saving for.\n"
         + "- You give general financial education and guidance, not regulated investment, tax "
         + "or legal advice. For big or irreversible money decisions, remind them to confirm "
         + "with a qualified professional.\n"
