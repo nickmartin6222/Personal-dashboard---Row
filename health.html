@@ -9,6 +9,8 @@
 <meta name="color-scheme" content="dark">
 <title>Health — Vitals</title>
 <script src="topbar.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="sync.js" defer></script>
 <style>
 :root {
   --bg: #050506;
@@ -175,6 +177,78 @@ main {
 <body>
 
 <main>
+
+  <!-- ===== Daily activity (steps + nutrition, synced from Google Health / MyFitnessPal via Health Connect) ===== -->
+  <style>
+    .act-section { margin-bottom: 32px; }
+    .act-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .act-card {
+      padding: 18px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    .act-label { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; }
+    .act-val { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+    .act-sub { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+    .act-empty { grid-column: 1 / -1; padding: 18px; text-align: center; color: var(--text-tertiary); font-size: 13px; background: rgba(255,255,255,0.02); border: 1px dashed var(--border); border-radius: 16px; }
+    [data-theme="light"] .act-card { background: #FFFFFF; }
+  </style>
+  <div class="act-section">
+    <div class="section-title">Today</div>
+    <div class="act-grid" id="actGrid">
+      <div class="act-empty" id="actEmpty">No steps/nutrition synced yet — connect the Health Connect Webhook app on your phone to start seeing today's activity here.</div>
+    </div>
+  </div>
+  <script>
+  (function () {
+    function todayLocalDateKey() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function storeGet(key) {
+      try { const raw = localStorage.getItem(key); return raw == null ? null : JSON.parse(raw); } catch (e) { return null; }
+    }
+    function renderActivity() {
+      const grid = document.getElementById('actGrid');
+      const today = todayLocalDateKey();
+      const steps = storeGet('health:steps') || {};
+      const nutrition = storeGet('health:nutrition') || {};
+      const todaySteps = steps[today];
+      const todayMeals = nutrition[today] ? Object.values(nutrition[today]) : [];
+      const hasAny = todaySteps != null || todayMeals.length > 0;
+
+      const empty = document.getElementById('actEmpty');
+      if (!hasAny) { if (empty) empty.style.display = ''; return; }
+      if (empty) empty.style.display = 'none';
+
+      let html = '';
+      if (todaySteps != null) {
+        html += '<div class="act-card"><div class="act-label">Steps</div><div class="act-val">' + todaySteps.toLocaleString() + '</div><div class="act-sub">today</div></div>';
+      }
+      if (todayMeals.length > 0) {
+        const totals = todayMeals.reduce((a, m) => {
+          a.calories += m.calories || 0; a.protein += m.proteinG || 0; a.carbs += m.carbsG || 0; a.fat += m.fatG || 0;
+          return a;
+        }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+        html += '<div class="act-card"><div class="act-label">Calories</div><div class="act-val">' + Math.round(totals.calories).toLocaleString() + '</div>'
+          + '<div class="act-sub">P ' + Math.round(totals.protein) + 'g · C ' + Math.round(totals.carbs) + 'g · F ' + Math.round(totals.fat) + 'g</div></div>';
+      }
+      grid.querySelectorAll('.act-card').forEach(el => el.remove());
+      grid.insertAdjacentHTML('beforeend', html);
+    }
+    renderActivity();
+    window.addEventListener('storage', renderActivity);
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof initCloudSync !== 'function') return;
+      initCloudSync({
+        appKey: 'health-metrics',
+        syncedKeys: ['health:steps', 'health:nutrition'],
+        onApplied: function () { window.dispatchEvent(new Event('storage')); }
+      });
+    });
+  })();
+  </script>
 
   <!-- ===== WHOOP card (full) ===== -->
   <style>
