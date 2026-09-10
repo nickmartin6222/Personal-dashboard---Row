@@ -647,6 +647,8 @@ body::after {
     return d.join(' ');
   }
   let gChartHoverPoints = [];
+  let gChartAnimatedIn = false;
+  let gChartLastSnapshot = null;
   function renderChart(rounds) {
     const svg = $('gChartSvg');
     const empty = $('gChartEmpty');
@@ -661,6 +663,10 @@ body::after {
     }
     empty.style.display = 'none';
     stats.style.display = 'grid';
+
+    const chartSnapshot = JSON.stringify(chrono.map(r => [r.date, r.score]));
+    if (chartSnapshot === gChartLastSnapshot) return;
+    gChartLastSnapshot = chartSnapshot;
 
     const scores = chrono.map(r => r.score);
     const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
@@ -693,9 +699,27 @@ body::after {
       + '<line class="golf-chart-grid" x1="0" x2="' + W + '" y1="110" y2="110"/>'
       + '<line x1="' + pad + '" y1="' + avgY + '" x2="' + (W - pad) + '" y2="' + avgY + '" stroke="var(--border-strong)" stroke-width="1" stroke-dasharray="4 3"></line>'
       + '<path d="' + areaD + '" fill="url(#gChartGrad)"></path>'
-      + '<path d="' + lineD + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" style="filter: drop-shadow(0 0 6px currentColor)"></path>'
+      + '<path id="gLinePath" d="' + lineD + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" style="filter: drop-shadow(0 0 6px currentColor)"></path>'
       + '<line id="gChartHoverLine" class="golf-chart-hover-line" x1="0" y1="0" x2="0" y2="' + H + '" hidden></line>'
       + '<circle id="gChartHoverDot" class="golf-chart-hover-dot" r="4" cx="0" cy="0" hidden></circle>';
+
+    if (!gChartAnimatedIn) {
+      gChartAnimatedIn = true;
+      const gLinePath = document.getElementById('gLinePath');
+      if (gLinePath) {
+        const gLen = gLinePath.getTotalLength();
+        gLinePath.style.transition = 'none';
+        gLinePath.style.strokeDasharray = String(gLen);
+        gLinePath.style.strokeDashoffset = String(gLen);
+        gLinePath.getBoundingClientRect();
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            gLinePath.style.transition = 'stroke-dashoffset 2s cubic-bezier(.22,.7,.2,1)';
+            gLinePath.style.strokeDashoffset = '0';
+          });
+        });
+      }
+    }
 
     $('gStatBest').textContent = String(min);
     $('gStatAvg').textContent = avg.toFixed(1);

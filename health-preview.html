@@ -403,13 +403,26 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     const max = Math.max(1, ...values);
     document.getElementById('wkTitle').textContent = title;
     document.getElementById('wkTotal').textContent = (Math.round(total * 10) / 10).toLocaleString() + (unit ? unit : '');
-    document.getElementById('wkChart').innerHTML = dates.map((dk, i) => {
+    const chartEl = document.getElementById('wkChart');
+    chartEl.innerHTML = dates.map((dk, i) => {
       const d = new Date(dk + 'T12:00:00');
       const h = Math.max(3, (values[i] / max) * 100);
-      return '<div class="wk-bar-wrap"><div class="wk-bar" style="height:' + h + '%;background:' + color + '"></div>'
+      return '<div class="wk-bar-wrap"><div class="wk-bar" data-h="' + h + '" style="height:0%;background:' + color + '"></div>'
         + '<div class="wk-bar-label">' + DOW[d.getDay()] + '</div></div>';
     }).join('');
     wkOverlay.hidden = false;
+    // Fill up, staggered left to right — every time the sheet opens,
+    // not just once, since this is a modal rather than a persistent
+    // page section.
+    const bars = chartEl.querySelectorAll('.wk-bar');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        bars.forEach((el, i) => {
+          el.style.transition = 'height 0.9s cubic-bezier(.22,.7,.2,1) ' + (i * 70) + 'ms';
+          el.style.height = el.dataset.h + '%';
+        });
+      });
+    });
   }
   document.getElementById('wkClose').addEventListener('click', () => { wkOverlay.hidden = true; });
   wkOverlay.addEventListener('click', (e) => { if (e.target === wkOverlay) wkOverlay.hidden = true; });

@@ -3402,6 +3402,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       + ' A ' + rInner + ' ' + rInner + ' 0 ' + large + ' 0 ' + x2i.toFixed(2) + ' ' + y2i.toFixed(2)
       + ' Z';
   }
+  let nwDonutAnimatedIn = false;
+  let nwDonutLastSnapshot = null;
   function renderAllocationDonut(catTotals, grand) {
     const svg    = document.getElementById('nwDonutSvg');
     const total  = document.getElementById('nwDonutTotal');
@@ -3454,19 +3456,39 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
     // Sort largest first
     slices.sort((a, b) => b.value - a.value);
-    let angle = -Math.PI / 2;
-    let html = '';
-    slices.forEach(s => {
-      const sliceAngle = (s.value / sliceTotal) * Math.PI * 2;
-      const pad = slices.length > 1 ? 0.015 : 0;
-      const a1 = angle + pad;
-      const a2 = angle + sliceAngle - pad;
-      if (a2 > a1) {
-        html += '<path d="' + donutArcPath(70, 70, 60, 44, a1, a2) + '" fill="' + s.color + '"></path>';
+    const donutSnapshot = JSON.stringify(slices.map(s => [s.key, s.color, s.value]));
+    if (donutSnapshot !== nwDonutLastSnapshot) {
+      nwDonutLastSnapshot = donutSnapshot;
+      let angle = -Math.PI / 2;
+      let html = '';
+      slices.forEach(s => {
+        const sliceAngle = (s.value / sliceTotal) * Math.PI * 2;
+        const pad = slices.length > 1 ? 0.015 : 0;
+        const a1 = angle + pad;
+        const a2 = angle + sliceAngle - pad;
+        if (a2 > a1) {
+          html += '<path class="nw-donut-slice" d="' + donutArcPath(70, 70, 60, 44, a1, a2) + '" fill="' + s.color + '" style="transform-origin:70px 70px"></path>';
+        }
+        angle += sliceAngle;
+      });
+      svg.innerHTML = html;
+      if (!nwDonutAnimatedIn) {
+        // Fan out: each wedge pops in from a slightly shrunk/invisible
+        // state, staggered so they read as sweeping around the ring
+        // rather than all popping at once — same treatment as the home
+        // dashboard's allocation donut.
+        const wedges = svg.querySelectorAll('.nw-donut-slice');
+        wedges.forEach(el => { el.style.opacity = '0'; el.style.transform = 'scale(0.5)'; });
+        requestAnimationFrame(() => {
+          wedges.forEach((el, i) => {
+            el.style.transition = 'opacity 1.2s ease ' + (i * 200) + 'ms, transform 1.2s cubic-bezier(.34,1.56,.64,1) ' + (i * 200) + 'ms';
+            el.style.opacity = '1';
+            el.style.transform = 'scale(1)';
+          });
+        });
       }
-      angle += sliceAngle;
-    });
-    svg.innerHTML = html;
+    }
+    nwDonutAnimatedIn = true;
 
     legend.innerHTML = slices.map(s => {
       const pct = ((s.value / sliceTotal) * 100).toFixed(1);
@@ -3557,6 +3579,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   let nwChartHoverPoints = [];
+  let nwChartAnimatedIn = false;
   function renderNetWorthChart() {
     const wrap = document.getElementById('nwChartWrap');
     const svg = document.getElementById('nwChartSvg');
@@ -3628,6 +3651,26 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     // curve position it was actually plotted at.
     nwChartHoverPoints = hist.map((p, i) => ({ x: points[i].x, y: points[i].y, v: p.v, t: p.t }));
     renderChartStats(hist);
+
+    // Draw-in, only the very first time this chart ever successfully
+    // renders (not on every range-tab switch) — same technique as the
+    // home dashboard's net worth chart: force a paint of the "undrawn"
+    // state before transitioning, since a single requestAnimationFrame
+    // can still fire before that paint happens.
+    if (!nwChartAnimatedIn) {
+      nwChartAnimatedIn = true;
+      const len = linePath.getTotalLength();
+      linePath.style.transition = 'none';
+      linePath.style.strokeDasharray = String(len);
+      linePath.style.strokeDashoffset = String(len);
+      linePath.getBoundingClientRect();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          linePath.style.transition = 'stroke-dashoffset 2s cubic-bezier(.22,.7,.2,1)';
+          linePath.style.strokeDashoffset = '0';
+        });
+      });
+    }
   }
 
   // Hover/touch tracking — shows the exact value + date for whichever

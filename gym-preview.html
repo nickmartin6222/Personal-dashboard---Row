@@ -1293,6 +1293,8 @@ button { font-family: inherit; }
     wtSave(entries);
   }
   var wLogEditing = false;
+  var wChartAnimatedIn = false;
+  var wChartLastSnapshot = null;
   function renderWeight() {
     var entries = wtLoad();
     document.getElementById('wUnit').textContent = UNITS;
@@ -1338,9 +1340,30 @@ button { font-family: inherit; }
       });
       var line = 'M ' + pts.map(function (p) { return p.x.toFixed(1) + ' ' + p.y.toFixed(1); }).join(' L ');
       var area = line + ' L ' + W + ' ' + H + ' L 0 ' + H + ' Z';
-      document.getElementById('wChartContent').innerHTML =
-        '<path d="' + area + '" fill="url(#wFill)" stroke="none"></path>' +
-        '<path d="' + line + '" fill="none" stroke="var(--mint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>';
+      var wSnapshot = JSON.stringify(entries);
+      if (wSnapshot !== wChartLastSnapshot) {
+        wChartLastSnapshot = wSnapshot;
+        document.getElementById('wChartContent').innerHTML =
+          '<path d="' + area + '" fill="url(#wFill)" stroke="none"></path>' +
+          '<path class="w-chart-line" d="' + line + '" fill="none" stroke="var(--mint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>';
+        if (!wChartAnimatedIn) {
+          wChartAnimatedIn = true;
+          var wLinePathEl = document.querySelector('.w-chart-line');
+          if (wLinePathEl) {
+            var wLen = wLinePathEl.getTotalLength();
+            wLinePathEl.style.transition = 'none';
+            wLinePathEl.style.strokeDasharray = String(wLen);
+            wLinePathEl.style.strokeDashoffset = String(wLen);
+            wLinePathEl.getBoundingClientRect();
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () {
+                wLinePathEl.style.transition = 'stroke-dashoffset 2s cubic-bezier(.22,.7,.2,1)';
+                wLinePathEl.style.strokeDashoffset = '0';
+              });
+            });
+          }
+        }
+      }
 
       var hoverLine = document.getElementById('wHoverLine'), hoverDot = document.getElementById('wHoverDot');
       var tooltip = document.getElementById('wTooltip'), tooltipVal = document.getElementById('wTooltipVal'), tooltipDate = document.getElementById('wTooltipDate');
@@ -1400,8 +1423,21 @@ button { font-family: inherit; }
   // custom valueFn reads the plotted value out of each. Pass a
   // tooltipEl to get interaction; omit it to just draw a static chart.
   // ------------------------------------------------------------------
+  // Shared by every line chart on this page (weight, score, volume,
+  // exercise history) — draw-in animation state tracked per <svg>
+  // element (not a single flag) since several independent charts all
+  // go through this one function. chartSnapshots also skips rebuilding
+  // a chart entirely when its data hasn't actually changed, so an
+  // unrelated re-render elsewhere on the page can't cancel a draw-in
+  // that's still in flight (same class of bug fixed on the home
+  // dashboard's net worth chart).
+  var chartAnimatedEls = new WeakSet();
+  var chartSnapshots = new WeakMap();
   function renderChart(svgEl, tooltipEl, items, opts) {
     opts = opts || {};
+    var snapshot = JSON.stringify(items) + '|' + (opts.color || '') + '|' + (opts.min) + '|' + (opts.max);
+    if (chartSnapshots.get(svgEl) === snapshot) return;
+    chartSnapshots.set(svgEl, snapshot);
     var valueFn = opts.valueFn || function (v) { return v; };
     var vb = svgEl.getAttribute('viewBox').split(' ').map(Number);
     var W = vb[2], H = opts.dateFn ? vb[3] - 16 : vb[3], pad = 4;
@@ -1432,12 +1468,34 @@ button { font-family: inherit; }
       '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
       '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.3"/><stop offset="100%" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs>' +
       '<path d="' + area + '" fill="url(#' + gradId + ')" stroke="none"></path>' +
-      '<path d="' + line + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
+      '<path class="chart-line-path" d="' + line + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
       dateLabels +
       '<line class="chart-hover-line" x1="0" y1="0" x2="0" y2="' + H + '" stroke="var(--border-strong)" stroke-width="1" hidden></line>' +
       '<circle class="chart-hover-dot" r="3.5" fill="' + color + '" stroke="var(--bg-card)" stroke-width="1.5" hidden></circle>' +
       '<circle cx="' + pts[pts.length - 1].x + '" cy="' + pts[pts.length - 1].y + '" r="3" fill="' + color + '"></circle>' +
       '<rect class="chart-hit" x="0" y="0" width="' + W + '" height="' + totalH + '" fill="transparent" style="cursor:pointer;touch-action:none"></rect>';
+
+    // Draw-in, only the first time this particular chart element ever
+    // renders — same robust technique as the home dashboard's net worth
+    // chart (force a paint of the "undrawn" state before transitioning,
+    // since a single requestAnimationFrame can still fire too early).
+    if (!chartAnimatedEls.has(svgEl)) {
+      chartAnimatedEls.add(svgEl);
+      var linePathEl = svgEl.querySelector('.chart-line-path');
+      if (linePathEl) {
+        var len = linePathEl.getTotalLength();
+        linePathEl.style.transition = 'none';
+        linePathEl.style.strokeDasharray = String(len);
+        linePathEl.style.strokeDashoffset = String(len);
+        linePathEl.getBoundingClientRect();
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            linePathEl.style.transition = 'stroke-dashoffset 2s cubic-bezier(.22,.7,.2,1)';
+            linePathEl.style.strokeDashoffset = '0';
+          });
+        });
+      }
+    }
 
     if (!tooltipEl) return;
     var hoverLine = svgEl.querySelector('.chart-hover-line'), hoverDot = svgEl.querySelector('.chart-hover-dot'), hit = svgEl.querySelector('.chart-hit');
