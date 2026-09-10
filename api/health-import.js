@@ -47,6 +47,11 @@ const NUTRITION_MATCHERS = [
   { key: 'fiberG', test: n => /fiber/i.test(n) },
 ];
 
+// Apple's "Walking + Running Distance" metric — kept in whatever unit the
+// phone reports (mi or km) rather than force-converted, since the units
+// string is stored alongside it for the frontend to label correctly.
+const DISTANCE_MATCH = n => /walking.*distance|running.*distance|distance.*walking/i.test(n);
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -83,11 +88,14 @@ export default async function handler(req, res) {
     const state = (Array.isArray(rows) && rows[0] && rows[0].data) || {};
     const steps = state['health:steps'] || {};
     const nutrition = state['health:nutrition'] || {};
+    const distance = state['health:distance'] || {};
 
     // 2) Sum this call's own entries per metric+date, then overwrite
     // (not add to) whatever was already stored for those dates.
     const stepsThisCall = {};
     const nutritionThisCall = {};
+    const distanceThisCall = {};
+    let distanceUnit = state['health:distanceUnit'] || 'mi';
 
     metrics.forEach(m => {
       if (!m || !m.name || !Array.isArray(m.data)) return;
@@ -98,6 +106,16 @@ export default async function handler(req, res) {
           if (!pt || pt.qty == null || !pt.date) return;
           const day = localDateKey(pt.date);
           stepsThisCall[day] = (stepsThisCall[day] || 0) + (Number(pt.qty) || 0);
+        });
+        return;
+      }
+
+      if (DISTANCE_MATCH(name)) {
+        if (m.units) distanceUnit = m.units;
+        m.data.forEach(pt => {
+          if (!pt || pt.qty == null || !pt.date) return;
+          const day = localDateKey(pt.date);
+          distanceThisCall[day] = (distanceThisCall[day] || 0) + (Number(pt.qty) || 0);
         });
         return;
       }
@@ -119,6 +137,7 @@ export default async function handler(req, res) {
     });
 
     Object.keys(stepsThisCall).forEach(day => { steps[day] = Math.round(stepsThisCall[day]); });
+    Object.keys(distanceThisCall).forEach(day => { distance[day] = Math.round(distanceThisCall[day] * 100) / 100; });
     Object.keys(nutritionThisCall).forEach(day => {
       nutrition[day] = Object.assign(
         { calories: 0, proteinG: 0, carbsG: 0, fatG: 0, sugarG: 0, sodiumG: 0, fiberG: 0 },
@@ -129,6 +148,8 @@ export default async function handler(req, res) {
 
     state['health:steps'] = steps;
     state['health:nutrition'] = nutrition;
+    state['health:distance'] = distance;
+    state['health:distanceUnit'] = distanceUnit;
 
     // 3) Upsert the merged state back.
     const putUrl = SUPABASE_URL + '/rest/v1/app_state?on_conflict=key';
