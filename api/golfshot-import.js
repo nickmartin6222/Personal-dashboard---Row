@@ -27,7 +27,7 @@ const ROUND_SCHEMA = {
   properties: {
     readable: { type: 'boolean', description: 'True if this email is a genuine Golfshot round-completion scorecard with a legible score.' },
     date: { type: 'string', description: 'The round date as YYYY-MM-DD, e.g. from "September 04, 2026".' },
-    course: { type: 'string', description: 'The golf course name, e.g. "Bundoora Park Golf Course".' },
+    course: { type: 'string', description: 'The FULL golf course name exactly as it appears in the email subject line or header (e.g. "Bundoora Park Golf Course", not a shortened "Bundoora") — Golfshot sometimes refers to the same course by a shorter name elsewhere in the email body; always prefer the fullest, most complete version of the name.' },
     holesPlayed: { type: 'integer', description: 'How many holes actually have a score recorded — 9 or 18. If only the back 9 (holes 10-18) or front 9 (1-9) have scores, this is 9.' },
     totalScore: { type: 'integer', description: 'The total strokes for the holes actually played (the IN or TOTAL score shown).' },
     totalPar: { type: 'integer', description: 'The par for the holes actually played (OUT par if only front 9, IN par if only back 9, TOTAL par if all 18).' },
@@ -64,6 +64,31 @@ const ROUND_SCHEMA = {
 function computeDifferential(score, par, slope) {
   if (!(score > 0) || !(par > 0)) return null;
   return Math.round(((score - par) * 113 / (slope > 0 ? slope : 113)) * 10) / 10;
+}
+
+// Golfshot names the same course inconsistently between emails — e.g.
+// "Bundoora" in one and "Bundoora Park Golf Course" in another for the
+// literal same course. Left unresolved, that fragments the course list
+// AND breaks dedup (a round can slip through as "new" under the other
+// spelling, which is exactly how an 18-hole/par-72 duplicate of a real
+// 9-hole/par-36 round got created). Treat two names as the same course
+// if one is a prefix of the other once normalized, and standardize on
+// whichever is longer/more complete.
+function normalizeForMatch(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+function resolveCourseName(rawName, rounds, courses) {
+  const norm = normalizeForMatch(rawName);
+  const allNames = new Set(rounds.map(r => r.course).filter(Boolean));
+  Object.values(courses).forEach(c => { if (c && c.name) allNames.add(c.name); });
+  for (const existing of allNames) {
+    const en = normalizeForMatch(existing);
+    if (en === norm) return existing;
+    if (en.startsWith(norm) || norm.startsWith(en)) {
+      return rawName.length > existing.length ? rawName : existing;
+    }
+  }
+  return rawName;
 }
 
 export default async function handler(req, res) {
@@ -138,6 +163,18 @@ export default async function handler(req, res) {
     const state = (Array.isArray(rows) && rows[0] && rows[0].data) || {};
     const rounds = state['golf:rounds'] || [];
     const courses = state['golf:courses'] || {};
+
+    // 2.5) Resolve this email's course name against whatever's already
+    // stored, and standardize any existing shorter-variant entries onto
+    // the canonical name too — self-heals prior fragmentation instead of
+    // just avoiding new fragmentation.
+    const canonicalCourse = resolveCourseName(extracted.course, rounds, courses);
+    rounds.forEach(r => { if (r.course && r.course !== canonicalCourse && normalizeForMatch(r.course) && normalizeForMatch(canonicalCourse).length && (normalizeForMatch(canonicalCourse).startsWith(normalizeForMatch(r.course)) || normalizeForMatch(r.course).startsWith(normalizeForMatch(canonicalCourse)))) r.course = canonicalCourse; });
+    Object.keys(courses).forEach(k => {
+      const c = courses[k];
+      if (c && c.name && c.name !== canonicalCourse && (normalizeForMatch(canonicalCourse).startsWith(normalizeForMatch(c.name)) || normalizeForMatch(c.name).startsWith(normalizeForMatch(canonicalCourse)))) c.name = canonicalCourse;
+    });
+    extracted.course = canonicalCourse;
 
     // 3) Dedup — same date+course+score already logged. If it's already there
     // but missing the per-hole breakdown (imported before that field existed)
