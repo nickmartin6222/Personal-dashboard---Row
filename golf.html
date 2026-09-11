@@ -102,15 +102,28 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
 /* ===== Pie chart ===== */
 .pie-wrap { display: flex; align-items: center; gap: 20px; }
-.pie-svg { width: 140px; height: 140px; flex-shrink: 0; }
+.pie-svg-box { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+.pie-svg { width: 100%; height: 100%; display: block; overflow: visible; }
 .pie-svg path { cursor: pointer; transition: opacity 0.15s; }
-.pie-svg:hover path { opacity: 0.45; }
-.pie-svg path:hover { opacity: 1 !important; }
 .pie-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
 .pie-leg-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .pie-leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .pie-leg-name { color: var(--text-secondary); flex: 1; }
 .pie-leg-val { font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); }
+
+/* ===== Pie hover callout — leader line from the slice out to a
+   floating name label, same idea across the main Hole Outcomes pie
+   and the course-detail one. ===== */
+.pie-leader-line { pointer-events: none; }
+.pie-leader-dot { pointer-events: none; }
+.pie-callout {
+  position: absolute; transform: translate(-50%, -50%); pointer-events: none;
+  background: var(--bg-sheet); border: 1.5px solid; border-radius: 999px;
+  padding: 4px 10px; font-size: 11px; font-weight: 800; white-space: nowrap;
+  display: none; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+.pie-callout b { font-weight: 800; }
+.pie-callout .pie-callout-n { opacity: 0.65; font-weight: 600; margin-left: 3px; }
 
 /* ===== Putting ===== */
 .putt-layout { display: flex; gap: 14px; }
@@ -260,7 +273,9 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .cd-outcome-count { font-family: var(--font-mono); font-weight: 800; color: var(--text-primary); font-size: 13px; }
 .cd-outcome-pct { font-family: var(--font-mono); color: var(--text-tertiary); font-size: 11px; margin-left: 6px; min-width: 34px; text-align: right; }
 .cd-outcome-pie-wrap { display: flex; justify-content: center; margin-top: 18px; }
-.cd-outcome-pie-svg { width: 150px; height: 150px; }
+.cd-outcome-pie-box { position: relative; width: 150px; height: 150px; }
+.cd-outcome-pie-svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.cd-outcome-pie-svg path { cursor: pointer; transition: opacity 0.15s; }
 
 .attribution { text-align: center; font-size: 11px; color: var(--text-quaternary); margin-top: 24px; }
 </style>
@@ -295,7 +310,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
   <div class="card">
     <div class="card-eyebrow">Hole Outcomes</div>
     <div class="pie-wrap">
-      <svg class="pie-svg" id="pieSvg" viewBox="0 0 100 100"></svg>
+      <div class="pie-svg-box"><svg class="pie-svg" id="pieSvg" viewBox="0 0 100 100"></svg></div>
       <div class="pie-legend" id="pieLegend"></div>
     </div>
   </div>
@@ -641,6 +656,69 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     return 'M' + x1o.toFixed(2) + ' ' + y1o.toFixed(2) + ' A' + rOuter + ' ' + rOuter + ' 0 ' + large + ' 1 ' + x2o.toFixed(2) + ' ' + y2o.toFixed(2)
       + ' L' + x1i.toFixed(2) + ' ' + y1i.toFixed(2) + ' A' + rInner + ' ' + rInner + ' 0 ' + large + ' 0 ' + x2i.toFixed(2) + ' ' + y2i.toFixed(2) + ' Z';
   }
+
+  // Hover/tap a slice -> a leader line from its outer edge out to a
+  // floating name+count callout, same interaction on any donut built
+  // with donutArcPath (the main Hole Outcomes pie and the course-detail
+  // one both use this). `svg` must sit inside a position:relative box
+  // sized to exactly match it (percentage math below assumes that).
+  function ensurePieCalloutEls(svg) {
+    const box = svg.parentElement;
+    box.style.position = box.style.position || 'relative';
+    let line = svg.querySelector('.pie-leader-line');
+    if (!line) {
+      line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('class', 'pie-leader-line');
+      line.setAttribute('stroke-width', '1.2');
+      line.setAttribute('opacity', '0');
+      svg.appendChild(line);
+    }
+    let dot = svg.querySelector('.pie-leader-dot');
+    if (!dot) {
+      dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('class', 'pie-leader-dot');
+      dot.setAttribute('r', '2.2');
+      dot.setAttribute('opacity', '0');
+      svg.appendChild(dot);
+    }
+    let label = box.querySelector('.pie-callout');
+    if (!label) {
+      label = document.createElement('div');
+      label.className = 'pie-callout';
+      box.appendChild(label);
+    }
+    return { line, dot, label };
+  }
+  function wirePieHover(svg, slices) {
+    // slices: [{ el, mid (radians), name, count, color }]
+    const { line, dot, label } = ensurePieCalloutEls(svg);
+    const cx = 50, cy = 50, rInner = 46, rOuter = 60;
+    function show(s) {
+      const x1 = cx + rInner * Math.cos(s.mid), y1 = cy + rInner * Math.sin(s.mid);
+      const x2 = cx + rOuter * Math.cos(s.mid), y2 = cy + rOuter * Math.sin(s.mid);
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', s.color); line.setAttribute('opacity', '0.9');
+      dot.setAttribute('cx', x1); dot.setAttribute('cy', y1);
+      dot.setAttribute('fill', s.color); dot.setAttribute('opacity', '1');
+      label.style.left = x2 + '%'; label.style.top = y2 + '%';
+      label.style.borderColor = s.color; label.style.color = s.color;
+      label.innerHTML = '<b>' + s.name + '</b><span class="pie-callout-n">' + s.count + '</span>';
+      label.style.display = 'block';
+      slices.forEach(o => { o.el.style.opacity = (o === s) ? '1' : '0.35'; });
+    }
+    function hide() {
+      line.setAttribute('opacity', '0'); dot.setAttribute('opacity', '0'); label.style.display = 'none';
+      slices.forEach(o => { o.el.style.opacity = '1'; });
+    }
+    slices.forEach(s => {
+      s.el.addEventListener('mouseenter', () => show(s));
+      s.el.addEventListener('touchstart', e => { e.preventDefault(); show(s); }, { passive: false });
+    });
+    svg.addEventListener('mouseleave', hide);
+    let hideTimer = null;
+    svg.addEventListener('touchend', () => { clearTimeout(hideTimer); hideTimer = setTimeout(hide, 1800); });
+  }
   let pieAnimatedIn = false;
   function renderPie() {
     const rounds = filteredByHoles(allGolfRounds());
@@ -657,22 +735,28 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     }
     let angle = -Math.PI / 2;
     let html = '';
+    const sliceMeta = [];
     OUTCOME_META.forEach((m, i) => {
       const v = totals[m.key];
       if (!v) return;
       const sliceAngle = (v / grand) * Math.PI * 2;
       const pad = 0.015;
       const a1 = angle + pad, a2 = angle + sliceAngle - pad;
-      if (a2 > a1) html += '<path class="pie-slice" data-i="' + i + '" d="' + donutArcPath(50, 50, 46, 30, a1, a2) + '" fill="' + m.color + '" style="transform-origin:50px 50px"><title>' + m.name + ': ' + v + '</title></path>';
+      const mid = angle + sliceAngle / 2;
+      if (a2 > a1) {
+        html += '<path class="pie-slice" data-i="' + i + '" d="' + donutArcPath(50, 50, 46, 30, a1, a2) + '" fill="' + m.color + '" style="transform-origin:50px 50px"></path>';
+        sliceMeta.push({ mid, name: m.name, count: v, color: m.color });
+      }
       angle += sliceAngle;
     });
     svg.innerHTML = html;
+    const pathEls = svg.querySelectorAll('.pie-slice');
+    wirePieHover(svg, sliceMeta.map((s, i) => Object.assign({ el: pathEls[i] }, s)));
     if (!pieAnimatedIn) {
       pieAnimatedIn = true;
-      const slices = svg.querySelectorAll('.pie-slice');
-      slices.forEach(el => { el.style.opacity = '0'; el.style.transform = 'scale(0.5)'; });
+      pathEls.forEach(el => { el.style.opacity = '0'; el.style.transform = 'scale(0.5)'; });
       requestAnimationFrame(() => {
-        slices.forEach((el, i) => {
+        pathEls.forEach((el, i) => {
           el.style.transition = 'opacity 0.7s ease ' + (i * 90) + 'ms, transform 0.7s cubic-bezier(.34,1.56,.64,1) ' + (i * 90) + 'ms';
           el.style.opacity = '1'; el.style.transform = 'scale(1)';
         });
@@ -1025,7 +1109,11 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     // Hole outcomes — a table (name/icon, count, %) with a donut chart
     // underneath summarizing the same breakdown, reusing the same
     // OUTCOME_META/donutArcPath the main Hole Outcomes card uses.
-    const breakdownIcons = { eagles: 'star', birdies: 'thumbs-up', pars: 'flag', bogeys: 'circle-minus', doubleBogeys: 'trending-down', triplePlus: 'circle-alert' };
+    // 'bird' (bigger, an eagle in flight) vs 'feather' (smaller, a birdie)
+    // gives the two best outcomes distinct bird-themed icons since lucide
+    // has no literal eagle glyph — the rest just need something recognizable.
+    const breakdownIcons = { eagles: 'bird', birdies: 'feather', pars: 'flag', bogeys: 'circle-minus', doubleBogeys: 'trending-down', triplePlus: 'circle-alert' };
+    const breakdownIconSize = { eagles: '19px', birdies: '13px' };
     const totalsByKey = {};
     OUTCOME_META.forEach(m => totalsByKey[m.key] = sumField(m.key));
     const grandTotal = Object.values(totalsByKey).reduce((a, b) => a + b, 0);
@@ -1035,25 +1123,34 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
       const rows = OUTCOME_META.map(m => {
         const v = totalsByKey[m.key];
         const pct = Math.round(v / grandTotal * 100);
-        return '<div class="cd-outcome-row"><i data-lucide="' + breakdownIcons[m.key] + '" class="cd-outcome-icon" style="color:' + m.color + '"></i>'
+        const size = breakdownIconSize[m.key];
+        return '<div class="cd-outcome-row"><i data-lucide="' + breakdownIcons[m.key] + '" class="cd-outcome-icon" style="color:' + m.color + (size ? ';width:' + size + ';height:' + size : '') + '"></i>'
           + '<div class="cd-outcome-name">' + m.name + '</div>'
           + '<div class="cd-outcome-count">' + v + '</div><div class="cd-outcome-pct">' + pct + '%</div></div>';
       }).join('');
 
       let angle = -Math.PI / 2, pieHtml = '';
+      const cdSliceMeta = [];
       OUTCOME_META.forEach(m => {
         const v = totalsByKey[m.key];
         if (!v) return;
         const sliceAngle = (v / grandTotal) * Math.PI * 2;
         const pad = 0.015;
         const a1 = angle + pad, a2 = angle + sliceAngle - pad;
-        if (a2 > a1) pieHtml += '<path d="' + donutArcPath(50, 50, 46, 30, a1, a2) + '" fill="' + m.color + '"><title>' + m.name + ': ' + v + '</title></path>';
+        const mid = angle + sliceAngle / 2;
+        if (a2 > a1) {
+          pieHtml += '<path class="pie-slice" d="' + donutArcPath(50, 50, 46, 30, a1, a2) + '" fill="' + m.color + '"></path>';
+          cdSliceMeta.push({ mid, name: m.name, count: v, color: m.color });
+        }
         angle += sliceAngle;
       });
 
       breakdownWrap.innerHTML = '<div class="cd-breakdown-eyebrow">Hole Outcomes</div>'
         + '<div class="cd-outcome-table">' + rows + '</div>'
-        + '<div class="cd-outcome-pie-wrap"><svg class="cd-outcome-pie-svg" viewBox="0 0 100 100">' + pieHtml + '</svg></div>';
+        + '<div class="cd-outcome-pie-wrap"><div class="cd-outcome-pie-box"><svg class="cd-outcome-pie-svg" viewBox="0 0 100 100">' + pieHtml + '</svg></div></div>';
+      const cdPieSvg = breakdownWrap.querySelector('.cd-outcome-pie-svg');
+      const cdPathEls = cdPieSvg.querySelectorAll('.pie-slice');
+      wirePieHover(cdPieSvg, cdSliceMeta.map((s, i) => Object.assign({ el: cdPathEls[i] }, s)));
     }
     if (typeof lucide !== 'undefined') lucide.createIcons();
     cdOverlay.hidden = false;
