@@ -317,16 +317,22 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
   function loadCourses() { const c = storeGet('golf:courses', {}); return (c && typeof c === 'object') ? c : {}; }
 
   // Expects rounds already scoped to one hole-count (9 or 18) — the
-  // handicap number and its trend now genuinely change with the top
-  // toggle instead of always blending both into one WHS-style figure
-  // (which is where "16.2" came from before — nowhere close to either
-  // your real ~8 for 9 holes or ~28 for 18).
+  // handicap number and its trend genuinely change with the top toggle
+  // instead of always blending both into one WHS-style figure.
+  //
+  // A handicap index is always meant to represent 18-hole-equivalent
+  // ability, even when it's built from 9-hole rounds — the standard
+  // convention (and what you'd get from a real WHS calc) is to double a
+  // 9-hole differential before averaging, so "9 Holes" mode isn't showing
+  // a smaller, not-comparable number just because half as many holes went
+  // into each round. 18-hole rounds need no scaling — their differential
+  // is already 18-hole-native.
   function computeHandicapIndex(rounds) {
     const withDiff = rounds.slice()
       .filter(r => typeof r.differential === 'number')
       .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
     if (withDiff.length < 3) return null;
-    const last20 = withDiff.slice(-20).map(r => r.differential);
+    const last20 = withDiff.slice(-20).map(r => (r.holes || 18) === 9 ? r.differential * 2 : r.differential);
     const best = last20.slice().sort((a, b) => a - b).slice(0, Math.min(8, last20.length));
     return Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
   }

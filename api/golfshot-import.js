@@ -58,7 +58,7 @@ const ROUND_SCHEMA = {
       }
     }
   },
-  required: ['readable', 'date', 'course', 'holesPlayed', 'totalScore', 'totalPar']
+  required: ['readable', 'date', 'course', 'holesPlayed', 'totalScore', 'totalPar', 'holes']
 };
 
 function computeDifferential(score, par, slope) {
@@ -122,9 +122,17 @@ export default async function handler(req, res) {
   try {
     const prompt = 'This is a Golfshot golf scorecard email (subject: "' + (body.subject || '') + '"). '
       + 'Read it and extract the round exactly as recorded — do not guess or invent figures that '
-      + "aren't shown, use 0 for any count not visible. Include the per-hole breakdown (par/score/"
-      + "putts/GIR for each hole actually played) in the holes array — that table is on every "
-      + "Golfshot scorecard. Email content:\n\n" + emailContent;
+      + "aren't shown, use 0 for any count not visible. "
+      + 'Every genuine Golfshot scorecard email contains a hole-by-hole table (columns like Hole, '
+      + 'Par, Score, Putts, GIR — often laid out as a row of numbered hole cells rather than a plain '
+      + 'HTML <table>, sometimes split into a "Front 9" block and a "Back 9" block, or styled with '
+      + 'colored score bubbles instead of plain digits). Search the ENTIRE email body for it before '
+      + 'concluding it is missing — check for repeated structural elements (divs/spans/table cells '
+      + 'that recur once per hole), not just literal "Hole" text. Populate the holes array with one '
+      + 'entry per hole actually played, reading the par and score printed inside or next to each '
+      + "hole's cell even if putts or GIR aren't shown for it (use 0 / false for those two only). "
+      + 'Only return an empty holes array if you have genuinely searched the whole email and no '
+      + 'per-hole table or hole-numbered score cells exist anywhere in it. Email content:\n\n' + emailContent;
     const geminiResp = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent',
       {
