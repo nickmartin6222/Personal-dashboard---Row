@@ -61,6 +61,19 @@ const ROUND_SCHEMA = {
   required: ['readable', 'date', 'course', 'holesPlayed', 'totalScore', 'totalPar', 'holes']
 };
 
+// Rounds the golfer has deliberately asked to keep out of the dashboard
+// (not a real stroke-play round — e.g. a scramble/best-ball event where
+// the score doesn't reflect individual play). Matched on date + course
+// so a re-run of the backfill (which resends every past email and thus
+// re-offers this one too) can't silently recreate it after a manual
+// delete, the way it did once already.
+const EXCLUDED_ROUNDS = [
+  { date: '2026-01-26', course: 'gosfordgolfclub' }
+];
+function isExcludedRound(date, course) {
+  return EXCLUDED_ROUNDS.some(x => x.date === date && x.course === normalizeForMatch(course));
+}
+
 function computeDifferential(score, par, slope) {
   if (!(score > 0) || !(par > 0)) return null;
   return Math.round(((score - par) * 113 / (slope > 0 ? slope : 113)) * 10) / 10;
@@ -159,6 +172,9 @@ export default async function handler(req, res) {
 
   if (!extracted.readable) {
     return res.status(200).json({ ok: false, skipped: 'not a readable Golfshot scorecard' });
+  }
+  if (isExcludedRound(extracted.date, extracted.course)) {
+    return res.status(200).json({ ok: false, skipped: 'round is on the permanent exclude list' });
   }
 
   const restHeaders = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
