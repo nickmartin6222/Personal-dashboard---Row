@@ -159,32 +159,53 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .view-more-btn { width: 100%; margin-top: 10px; padding: 10px; border-radius: 12px; border: 1px dashed var(--border-strong); background: none; color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px; font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 
 /* ===== Round detail modal ===== */
-.rd-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: flex-end; }
+.rd-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 18px; }
 .rd-overlay[hidden] { display: none; }
-.rd-sheet { background: #0d0d0e; border: 1px solid var(--border-strong); border-top-left-radius: 22px; border-top-right-radius: 22px; width: 100%; max-width: 640px; margin: 0 auto; padding: 20px 20px max(20px, env(safe-area-inset-bottom, 20px)); max-height: 86vh; overflow-y: auto; }
-.rd-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
-.rd-title { font-size: 17px; font-weight: 800; color: var(--text-primary); }
-.rd-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
-.rd-close { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-input); border: none; color: var(--text-secondary); font-size: 16px; cursor: pointer; flex-shrink: 0; }
-.rd-score-row { display: flex; gap: 18px; margin: 16px 0; }
-.rd-score-big { font-size: 30px; font-weight: 800; color: var(--text-primary); }
-.rd-score-sub { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); margin-top: 2px; }
-.rd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid var(--border); }
-.rd-table { border-collapse: collapse; font-family: var(--font-mono); font-size: 12px; width: 100%; }
-.rd-table th, .rd-table td { padding: 7px 8px; text-align: center; white-space: nowrap; }
+.rd-sheet { background: #0d0d0e; border: 1px solid var(--border-strong); border-radius: 24px; width: 100%; max-width: 640px; margin: 0 auto; padding: 24px; max-height: 88vh; overflow-y: auto; }
+.rd-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+.rd-title { font-size: 20px; font-weight: 800; color: var(--text-primary); }
+.rd-sub { font-size: 12.5px; color: var(--text-tertiary); margin-top: 3px; }
+.rd-close { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-input); border: none; color: var(--text-secondary); font-size: 17px; cursor: pointer; flex-shrink: 0; }
+.rd-score-row { display: flex; gap: 12px; margin: 18px 0; }
+.rd-score-tile { flex: 1; background: var(--bg-input); border-radius: 14px; padding: 14px 8px; text-align: center; }
+.rd-score-big { font-size: 30px; font-weight: 800; color: var(--text-primary); line-height: 1; }
+.rd-score-sub { font-size: 10.5px; color: var(--text-tertiary); font-family: var(--font-mono); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+.rd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 14px; border: 1px solid var(--border); }
+.rd-table { border-collapse: collapse; font-family: var(--font-mono); font-size: 13px; width: 100%; }
+.rd-table th, .rd-table td { padding: 9px 9px; text-align: center; white-space: nowrap; }
 .rd-table th { color: var(--text-tertiary); font-weight: 600; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
 .rd-table td:first-child, .rd-table th:first-child { text-align: left; color: var(--text-secondary); }
-.rd-cell-score { border-radius: 6px; font-weight: 700; color: var(--text-primary); display: inline-block; min-width: 20px; padding: 2px 0; }
+.rd-cell-score { border-radius: 8px; font-weight: 800; display: inline-block; min-width: 26px; padding: 4px 0; }
 .rd-cell-eagle { background: var(--eagle); color: #04202e; }
 .rd-cell-birdie { background: var(--birdie); color: #04140f; }
-.rd-cell-par { background: transparent; }
-.rd-cell-bogey { background: rgba(251,191,36,0.18); }
-.rd-cell-double { background: rgba(249,112,102,0.22); }
-.rd-cell-triple { background: rgba(196,54,107,0.28); }
-.rd-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 11px; color: var(--text-tertiary); }
+.rd-cell-par { background: rgba(255,255,255,0.09); color: var(--text-primary); }
+.rd-cell-bogey { background: var(--bogey); color: #2b1c02; }
+.rd-cell-double { background: var(--double); color: #2b0805; }
+.rd-cell-triple { background: var(--triple); color: #fff; }
+.rd-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; font-size: 11px; color: var(--text-tertiary); }
 .rd-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .rd-legend i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
 .rd-no-holes { padding: 20px; text-align: center; color: var(--text-tertiary); font-size: 13px; background: var(--bg-input); border-radius: 12px; }
+
+/* ===== Course detail modal ===== */
+.cd-banner { width: 100%; height: 120px; border-radius: 16px; object-fit: cover; margin-bottom: 14px; background: var(--bg-input); }
+.cd-stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 16px 0; }
+.cd-stat-tile { background: var(--bg-input); border-radius: 16px; padding: 16px 10px; text-align: center; }
+.cd-stat-tile-val { font-size: 26px; font-weight: 800; color: var(--text-primary); line-height: 1; }
+.cd-stat-tile-label { font-size: 10.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-top: 6px; }
+.cd-stat-tile.accent { background: linear-gradient(160deg, rgba(110,227,164,0.18), rgba(110,227,164,0.04)); box-shadow: 0 0 22px rgba(110,227,164,0.16); }
+.cd-stat-tile.accent .cd-stat-tile-val { color: var(--accent); }
+.cd-breakdown-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin: 18px 0 10px; }
+.cd-breakdown-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cd-b-tile { border-radius: 14px; padding: 12px 6px; text-align: center; }
+.cd-b-val { font-size: 20px; font-weight: 800; line-height: 1; }
+.cd-b-label { font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 5px; opacity: 0.85; }
+.cd-b-eagle { background: rgba(125,211,252,0.16); } .cd-b-eagle .cd-b-val { color: var(--eagle); }
+.cd-b-birdie { background: rgba(110,227,164,0.16); } .cd-b-birdie .cd-b-val { color: var(--birdie); }
+.cd-b-par { background: rgba(255,255,255,0.08); } .cd-b-par .cd-b-val { color: var(--text-primary); }
+.cd-b-bogey { background: rgba(251,191,36,0.16); } .cd-b-bogey .cd-b-val { color: var(--bogey); }
+.cd-b-double { background: rgba(249,112,102,0.16); } .cd-b-double .cd-b-val { color: var(--double); }
+.cd-b-triple { background: rgba(196,54,107,0.2); } .cd-b-triple .cd-b-val { color: var(--triple); }
 
 .attribution { text-align: center; font-size: 11px; color: var(--text-quaternary); margin-top: 24px; }
 </style>
@@ -290,11 +311,27 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
       <button class="rd-close" id="rdClose" type="button">×</button>
     </div>
     <div class="rd-score-row">
-      <div><div class="rd-score-big" id="rdScore">—</div><div class="rd-score-sub">SCORE</div></div>
-      <div><div class="rd-score-big" id="rdPutts">—</div><div class="rd-score-sub">PUTTS</div></div>
-      <div><div class="rd-score-big" id="rdDiff">—</div><div class="rd-score-sub">DIFFERENTIAL</div></div>
+      <div class="rd-score-tile"><div class="rd-score-big" id="rdScore">—</div><div class="rd-score-sub">Score</div></div>
+      <div class="rd-score-tile"><div class="rd-score-big" id="rdPutts">—</div><div class="rd-score-sub">Putts</div></div>
+      <div class="rd-score-tile"><div class="rd-score-big" id="rdDiff">—</div><div class="rd-score-sub">Differential</div></div>
     </div>
     <div id="rdTableWrap"></div>
+  </div>
+</div>
+
+<!-- Course detail sheet -->
+<div class="rd-overlay" id="courseDetailOverlay" hidden>
+  <div class="rd-sheet">
+    <div class="rd-head">
+      <div>
+        <div class="rd-title" id="cdTitle">—</div>
+        <div class="rd-sub" id="cdSub">—</div>
+      </div>
+      <button class="rd-close" id="cdClose" type="button">×</button>
+    </div>
+    <div id="cdBanner"></div>
+    <div class="cd-stat-grid" id="cdStatGrid"></div>
+    <div id="cdBreakdownWrap"></div>
   </div>
 </div>
 
@@ -674,7 +711,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     container.querySelectorAll('.course-card').forEach(card => {
       card.addEventListener('click', (e) => {
         if (e.target.closest('[data-fav]') || e.target.closest('[data-upload]')) return;
-        alert('Course detail page for "' + card.dataset.course + '" — placeholder for now, coming in a later pass.');
+        openCourseDetail(card.dataset.course);
       });
     });
     container.querySelectorAll('[data-fav]').forEach(btn => {
@@ -831,6 +868,58 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
   }
   document.getElementById('rdClose').addEventListener('click', () => { rdOverlay.hidden = true; });
   rdOverlay.addEventListener('click', (e) => { if (e.target === rdOverlay) rdOverlay.hidden = true; });
+
+  // ===== Course detail sheet =====
+  const cdOverlay = document.getElementById('courseDetailOverlay');
+  function openCourseDetail(courseName) {
+    const rounds = filteredByHoles(allGolfRounds()).filter(r => r.course === courseName);
+    document.getElementById('cdTitle').textContent = courseName;
+    document.getElementById('cdSub').textContent = rounds.length + ' ' + holesFilter + '-hole round' + (rounds.length === 1 ? '' : 's') + ' played';
+
+    const images = loadCourseImages();
+    const img = images[courseName.toLowerCase()];
+    document.getElementById('cdBanner').innerHTML = img ? '<img class="cd-banner" src="' + img + '" alt="">' : '';
+
+    const statGrid = document.getElementById('cdStatGrid');
+    const breakdownWrap = document.getElementById('cdBreakdownWrap');
+    if (!rounds.length) {
+      statGrid.innerHTML = '';
+      breakdownWrap.innerHTML = '<div class="rd-no-holes">No ' + holesFilter + '-hole rounds logged at this course yet — switch the toggle at the top to check the other hole count.</div>';
+      cdOverlay.hidden = false;
+      return;
+    }
+
+    const scores = rounds.map(r => r.score).filter(v => v != null);
+    const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 10) / 10 : null;
+    const bestScore = scores.length ? Math.min(...scores) : null;
+    const putts = rounds.map(r => r.putts).filter(v => v != null);
+    const avgPutts = putts.length ? Math.round(putts.reduce((a, b) => a + b, 0) / putts.length * 10) / 10 : null;
+    const sumField = k => rounds.reduce((a, r) => a + (r[k] || 0), 0);
+
+    statGrid.innerHTML =
+      '<div class="cd-stat-tile accent"><div class="cd-stat-tile-val">' + (avgScore != null ? avgScore : '—') + '</div><div class="cd-stat-tile-label">Avg Score</div></div>'
+      + '<div class="cd-stat-tile"><div class="cd-stat-tile-val">' + rounds.length + '</div><div class="cd-stat-tile-label">Times Played</div></div>'
+      + '<div class="cd-stat-tile"><div class="cd-stat-tile-val">' + (bestScore != null ? bestScore : '—') + '</div><div class="cd-stat-tile-label">Best Score</div></div>'
+      + '<div class="cd-stat-tile"><div class="cd-stat-tile-val">' + (avgPutts != null ? avgPutts : '—') + '</div><div class="cd-stat-tile-label">Avg Putts</div></div>';
+
+    const breakdown = [
+      ['eagle', 'Eagle+', sumField('eagles')],
+      ['birdie', 'Birdie', sumField('birdies')],
+      ['par', 'Par', sumField('pars')],
+      ['bogey', 'Bogey', sumField('bogeys')],
+      ['double', 'Double', sumField('doubleBogeys')],
+      ['triple', 'Triple+', sumField('triplePlus')]
+    ];
+    const hasBreakdown = breakdown.some(b => b[2] > 0);
+    breakdownWrap.innerHTML = hasBreakdown
+      ? '<div class="cd-breakdown-eyebrow">Hole Outcomes</div><div class="cd-breakdown-grid">'
+        + breakdown.map(b => '<div class="cd-b-tile cd-b-' + b[0] + '"><div class="cd-b-val">' + b[2] + '</div><div class="cd-b-label">' + b[1] + '</div></div>').join('')
+        + '</div>'
+      : '';
+    cdOverlay.hidden = false;
+  }
+  document.getElementById('cdClose').addEventListener('click', () => { cdOverlay.hidden = true; });
+  cdOverlay.addEventListener('click', (e) => { if (e.target === cdOverlay) cdOverlay.hidden = true; });
 
   // ===== Global toggle + render orchestration =====
   function renderHoleScopedSections() {
