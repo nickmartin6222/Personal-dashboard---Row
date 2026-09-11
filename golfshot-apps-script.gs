@@ -58,7 +58,24 @@ function sendMessage_(message) {
     payload: JSON.stringify(payload),
     muteHttpExceptions: true
   });
+  // muteHttpExceptions means a 401/500/etc never throws on its own — without
+  // this check, a message would get marked "processed" (and permanently
+  // skipped) even when the server actually rejected it, which is exactly
+  // what happened to the first 15 messages during setup (401 unauthorized,
+  // before the secret had taken effect on Vercel yet).
+  const code = response.getResponseCode();
+  if (code < 200 || code >= 300) throw new Error('HTTP ' + code + ': ' + response.getContentText());
   return response;
+}
+
+// One-off utility — run this manually (select it in the function dropdown,
+// Run) if you ever need to clear the "already sent" memory, e.g. after the
+// bug above wrongly marked some messages as done despite a 401. Safe to
+// run any time: it just means the next check/backfill re-sends everything
+// currently in the search window instead of skipping it.
+function resetProcessed() {
+  PropertiesService.getScriptProperties().deleteProperty(PROCESSED_KEY);
+  Logger.log('Cleared. Next run will re-send everything matching the search.');
 }
 
 // Ongoing watcher — checks only the last few days, meant to run on a
