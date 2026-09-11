@@ -90,21 +90,57 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .pie-leg-val { font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); }
 
 /* ===== Putting ===== */
-.putt-chart-svg { width: 100%; height: 90px; display: block; overflow: visible; margin-bottom: 12px; }
-.putt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.putt-tile { background: var(--bg-input); border-radius: 12px; padding: 10px; text-align: center; }
-.putt-tile-val { font-size: 17px; font-weight: 800; color: var(--text-primary); }
-.putt-tile-label { font-size: 10px; font-family: var(--font-mono); color: var(--text-tertiary); margin-top: 2px; }
+.putt-layout { display: flex; gap: 14px; }
+.putt-side-tile { flex: 0 0 76px; background: var(--bg-input); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px; text-align: center; }
+.putt-side-val { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+.putt-side-label { font-size: 9px; font-family: var(--font-mono); color: var(--text-tertiary); margin-top: 4px; line-height: 1.4; text-transform: uppercase; }
+.putt-main { flex: 1; min-width: 0; }
+.putt-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.putt-tabs button { flex: 1; font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 7px 0; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-tertiary); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.putt-tabs button.active { background: var(--eagle); border-color: var(--eagle); color: #04202e; }
+.putt-chart-svg { width: 100%; height: 90px; display: block; overflow: visible; }
+.putt-pct-row { text-align: center; margin-top: 6px; }
+.putt-pct { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+.putt-pct-label { font-size: 11px; color: var(--text-tertiary); margin-left: 5px; }
+.putt-note { font-size: 11px; color: var(--text-tertiary); margin-top: 10px; text-align: center; }
 
 /* ===== Course list (placeholder) ===== */
-.course-list { display: flex; flex-direction: column; gap: 8px; }
-.course-row { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg-input); border-radius: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.course-photo { width: 44px; height: 44px; border-radius: 10px; background: var(--bg-dark); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text-quaternary); overflow: hidden; }
-.course-photo img { width: 100%; height: 100%; object-fit: cover; }
-.course-row-body { flex: 1; min-width: 0; }
-.course-row-name { font-size: 14px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.course-row-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 1px; }
-.course-row-chevron { color: var(--text-quaternary); }
+.course-toolbar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.course-fav-toggle { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-tertiary); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.course-fav-toggle.active { background: rgba(251,191,36,0.16); border-color: rgba(251,191,36,0.4); color: #FBBF24; }
+
+.course-card {
+  position: relative; border-radius: 14px; overflow: hidden; background: var(--bg-dark);
+  height: 120px; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+}
+.course-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.course-card-noimg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-quaternary); background: var(--bg-input); flex-direction: column; gap: 4px; }
+.course-card-noimg span { font-size: 10px; font-family: var(--font-mono); }
+.course-card-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.75), transparent 60%); }
+.course-card-body { position: absolute; left: 10px; right: 10px; bottom: 8px; }
+.course-card-name { font-size: 12.5px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+.course-card-sub { font-size: 10.5px; color: rgba(255,255,255,0.75); margin-top: 1px; }
+.course-card-star { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.55); font-size: 14px; z-index: 2; }
+.course-card-star.active { color: #FBBF24; }
+.course-card-upload { position: absolute; top: 8px; left: 8px; width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.75); z-index: 2; }
+.course-card-upload input { display: none; }
+
+.course-carousel-mobile { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.course-carousel-mobile::-webkit-scrollbar { display: none; }
+.course-carousel-mobile .course-card { width: 31%; }
+.course-grid-desktop { display: none; }
+.view-more-courses-btn { grid-column: 1/-1; margin-top: 4px; padding: 10px; border-radius: 12px; border: 1px dashed var(--border-strong); background: none; color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px; font-weight: 700; cursor: pointer; }
+@media (min-width: 640px) {
+  .course-carousel-mobile { display: none; }
+  .course-grid-desktop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+}
+.course-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 110; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.course-modal-overlay[hidden] { display: none; }
+.course-modal { background: #0d0d0e; border: 1px solid var(--border-strong); border-radius: 18px; padding: 18px; max-width: 560px; width: 100%; max-height: 80vh; overflow-y: auto; }
+.course-modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.course-modal-title { font-size: 16px; font-weight: 800; color: var(--text-primary); }
+.course-modal-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+@media (min-width: 480px) { .course-modal-grid { grid-template-columns: repeat(3, 1fr); } }
 
 /* ===== Rounds list ===== */
 .filter-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
@@ -193,14 +229,32 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
   <!-- Putting -->
   <div class="card">
     <div class="card-eyebrow">Putting</div>
-    <svg class="putt-chart-svg" id="puttChartSvg" viewBox="0 0 600 90" preserveAspectRatio="none"></svg>
-    <div class="putt-grid" id="puttGrid"></div>
+    <div class="putt-layout">
+      <div class="putt-side-tile">
+        <div class="putt-side-val" id="puttAvgVal">—</div>
+        <div class="putt-side-label">AVG PUTTS<br><span id="puttAvgHolesLabel">/ 9H</span></div>
+      </div>
+      <div class="putt-main">
+        <div class="putt-tabs" id="puttTabs">
+          <button type="button" data-p="1" class="active">1-Putt</button>
+          <button type="button" data-p="2">2-Putt</button>
+          <button type="button" data-p="3">3-Putt+</button>
+        </div>
+        <svg class="putt-chart-svg" id="puttChartSvg" viewBox="0 0 600 90" preserveAspectRatio="none"></svg>
+        <div class="putt-pct-row"><span class="putt-pct" id="puttPct">—</span><span class="putt-pct-label" id="puttPctLabel">of holes</span></div>
+      </div>
+    </div>
+    <div class="putt-note" id="puttNote"></div>
   </div>
 
-  <!-- Courses (placeholder) -->
+  <!-- Courses -->
   <div class="card">
     <div class="card-eyebrow">Courses Played</div>
-    <div class="course-list" id="courseList"></div>
+    <div class="course-toolbar">
+      <button type="button" class="course-fav-toggle" id="courseFavToggle">★ Favorites only</button>
+    </div>
+    <div class="course-carousel-mobile" id="courseCarouselMobile"></div>
+    <div class="course-grid-desktop" id="courseGridDesktop"></div>
   </div>
 
   <!-- Rounds -->
@@ -213,6 +267,17 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
   <div class="attribution">draft demo · tap a round for the scorecard, tap a course for its stats</div>
 </main>
+
+<!-- Course "view more" modal (desktop) -->
+<div class="course-modal-overlay" id="courseModalOverlay" hidden>
+  <div class="course-modal">
+    <div class="course-modal-head">
+      <span class="course-modal-title">All Courses</span>
+      <button class="rd-close" id="courseModalClose" type="button">×</button>
+    </div>
+    <div class="course-modal-grid" id="courseModalGrid"></div>
+  </div>
+</div>
 
 <!-- Round detail sheet -->
 <div class="rd-overlay" id="rdOverlay" hidden>
@@ -251,16 +316,17 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
   function loadRounds() { const r = storeGet('golf:rounds', []); return Array.isArray(r) ? r : []; }
   function loadCourses() { const c = storeGet('golf:courses', {}); return (c && typeof c === 'object') ? c : {}; }
 
-  function comparableDifferential(r) {
-    if (typeof r.differential !== 'number') return null;
-    return r.holes === 9 ? r.differential * 2 : r.differential;
-  }
+  // Expects rounds already scoped to one hole-count (9 or 18) — the
+  // handicap number and its trend now genuinely change with the top
+  // toggle instead of always blending both into one WHS-style figure
+  // (which is where "16.2" came from before — nowhere close to either
+  // your real ~8 for 9 holes or ~28 for 18).
   function computeHandicapIndex(rounds) {
     const withDiff = rounds.slice()
+      .filter(r => typeof r.differential === 'number')
       .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
     if (withDiff.length < 3) return null;
-    const last20 = withDiff.slice(-20).map(comparableDifferential).filter(d => typeof d === 'number');
-    if (last20.length < 3) return null;
+    const last20 = withDiff.slice(-20).map(r => r.differential);
     const best = last20.slice().sort((a, b) => a - b).slice(0, Math.min(8, last20.length));
     return Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
   }
@@ -312,13 +378,32 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
   }
   const animatedOnce = {};
 
-  function renderTrendChart(svgId, points, color) {
+  // Tooltip element lives once per chart, created lazily and reused —
+  // absolutely positioned against the SVG's own wrapping .card.
+  function ensureTooltipEl(svg) {
+    let tip = svg.parentElement.querySelector('.chart-tip');
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.className = 'chart-tip';
+      tip.style.cssText = 'position:absolute;pointer-events:none;background:#0d0d0e;border:1px solid var(--border-strong);border-radius:8px;padding:6px 9px;font-size:11.5px;white-space:nowrap;transform:translate(-50%,-115%);z-index:5;display:none;box-shadow:0 6px 18px rgba(0,0,0,0.4)';
+      svg.parentElement.style.position = svg.parentElement.style.position || 'relative';
+      svg.parentElement.appendChild(tip);
+    }
+    return tip;
+  }
+  function fmtShortDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso + 'T12:00:00');
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getDate();
+  }
+
+  function renderTrendChart(svgId, points, color, valueLabel) {
     const svg = document.getElementById(svgId);
     if (points.length < 2) { svg.innerHTML = '<text x="300" y="45" fill="var(--text-tertiary)" font-size="12" text-anchor="middle">Not enough rounds yet</text>'; return; }
     const W = 600, H = 90, pad = 6;
     const vals = points.map(p => p.v);
     const min = Math.min(...vals), max = Math.max(...vals), range = Math.max(1, max - min);
-    const pts = points.map((p, i) => ({ x: pad + (i / (points.length - 1)) * (W - pad * 2), y: H - pad - ((p.v - min) / range) * (H - pad * 2) }));
+    const pts = points.map((p, i) => ({ x: pad + (i / (points.length - 1)) * (W - pad * 2), y: H - pad - ((p.v - min) / range) * (H - pad * 2), date: p.date, v: p.v }));
     const line = smoothPath(pts);
     const area = line + ' L' + pts[pts.length - 1].x + ',' + H + ' L' + pts[0].x + ',' + H + ' Z';
     const gradId = svgId + 'Grad';
@@ -327,8 +412,36 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
       + '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.35"/><stop offset="100%" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs>'
       + '<path d="' + area + '" fill="url(#' + gradId + ')" stroke="none"></path>'
       + '<path class="draw-line" d="' + line + '" fill="none" stroke="' + color + '" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 5px ' + color + ')"></path>'
-      + '<circle cx="' + pts[pts.length - 1].x + '" cy="' + pts[pts.length - 1].y + '" r="3" fill="' + color + '"></circle>';
+      + '<circle cx="' + pts[pts.length - 1].x + '" cy="' + pts[pts.length - 1].y + '" r="3" fill="' + color + '"></circle>'
+      + '<line class="hv-line" x1="0" y1="0" x2="0" y2="' + H + '" stroke="' + color + '" stroke-width="1" opacity="0.4" hidden></line>'
+      + '<circle class="hv-dot" r="3.5" fill="' + color + '" stroke="#0d0d0e" stroke-width="1.5" hidden></circle>'
+      + '<rect class="hv-hit" x="0" y="0" width="' + W + '" height="' + H + '" fill="transparent" style="cursor:pointer;touch-action:none"></rect>';
     animateLineDrawIn(svgId, animatedOnce);
+
+    // Hover/touch scrub — tap or drag along the line to see the exact
+    // date + value at that point, same interaction the rest of the app's
+    // charts already use.
+    const tip = ensureTooltipEl(svg);
+    const hvLine = svg.querySelector('.hv-line'), hvDot = svg.querySelector('.hv-dot'), hit = svg.querySelector('.hv-hit');
+    function nearest(mx) { let best = pts[0], bestD = Infinity; pts.forEach(p => { const d = Math.abs(p.x - mx); if (d < bestD) { bestD = d; best = p; } }); return best; }
+    function showAt(clientX) {
+      const rect = hit.getBoundingClientRect();
+      const mx = ((clientX - rect.left) / rect.width) * W;
+      const p = nearest(mx);
+      hvLine.setAttribute('x1', p.x); hvLine.setAttribute('x2', p.x); hvLine.hidden = false;
+      hvDot.setAttribute('cx', p.x); hvDot.setAttribute('cy', p.y); hvDot.hidden = false;
+      tip.style.left = (p.x / W * 100) + '%';
+      tip.style.top = (p.y / H * 100) + '%';
+      tip.innerHTML = '<strong>' + p.v + (valueLabel ? ' ' + valueLabel : '') + '</strong><div style="color:var(--text-tertiary);font-size:10px;margin-top:1px">' + fmtShortDate(p.date) + '</div>';
+      tip.style.display = 'block';
+    }
+    function hideTip() { hvLine.hidden = true; hvDot.hidden = true; tip.style.display = 'none'; }
+    hit.onmousemove = e => showAt(e.clientX);
+    hit.onmouseleave = hideTip;
+    let hideTimer = null;
+    hit.ontouchstart = e => { e.preventDefault(); showAt(e.touches[0].clientX); clearTimeout(hideTimer); };
+    hit.ontouchmove = e => { e.preventDefault(); showAt(e.touches[0].clientX); clearTimeout(hideTimer); };
+    hit.ontouchend = () => { hideTimer = setTimeout(hideTip, 1500); };
   }
 
   // ===== Handicap section =====
@@ -340,18 +453,18 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   function renderHandicapSection() {
-    const rounds = allGolfRounds();
+    const rounds = filteredByHoles(allGolfRounds());
     const h = computeHandicapIndex(rounds);
     document.getElementById('hcpNum').textContent = h == null ? '—' : h;
     const tierEl = document.getElementById('hcpTier');
     if (h == null) { tierEl.style.display = 'none'; } else { tierEl.style.display = 'inline-block'; tierEl.textContent = tierFor(h); }
     document.getElementById('hcpNote').textContent = h == null
-      ? (rounds.length) + '/3 rounds needed for an estimate.'
-      : 'Best 8 of your last 20 rounds (9-hole rounds roughly doubled to compare) — not an official WHS index.';
+      ? (rounds.length) + '/3 ' + holesFilter + '-hole rounds needed for an estimate.'
+      : 'Best 8 of your last 20 ' + holesFilter + '-hole rounds — not an official WHS index.';
 
     // Rolling handicap over time: recompute the index using only rounds
-    // known up to each point, so the chart shows genuine improvement
-    // rather than raw differential noise.
+    // known up to each point (within this hole-count), so the chart
+    // shows genuine improvement rather than raw differential noise.
     const chrono = rounds.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
     const start = rangeStartDate();
     const series = [];
@@ -361,7 +474,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
       if (idx != null) series.push({ date: chrono[i].date, v: idx });
     }
     const scoped = start ? series.filter(p => p.date >= start) : series;
-    renderTrendChart('hcpChartSvg', scoped, 'var(--accent)');
+    renderTrendChart('hcpChartSvg', scoped, 'var(--accent)', 'hcp');
   }
   document.getElementById('hcpRange').querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -458,58 +571,172 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
   }
 
   // ===== Putting =====
+  let puttTab = 1; // 1, 2, or 3 (3 means "3-putt or worse")
+  const PUTT_TAB_COLOR = { 1: 'var(--eagle)', 2: 'var(--birdie)', 3: 'var(--triple)' };
+  const PUTT_TAB_NAME = { 1: '1-putt', 2: '2-putt', 3: '3-putt+' };
+
   function renderPutting() {
     const rounds = filteredByHoles(allGolfRounds()).slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
-    const withPutts = rounds.filter(r => typeof r.putts === 'number');
-    renderTrendChart('puttChartSvg', withPutts.map(r => ({ date: r.date, v: r.putts })), 'var(--eagle)');
+
+    // Left tile — average putts per round, scoped to the current 9/18 toggle.
+    const puttsArr = rounds.map(r => r.putts).filter(n => typeof n === 'number');
+    document.getElementById('puttAvgVal').textContent = puttsArr.length ? (puttsArr.reduce((a, b) => a + b, 0) / puttsArr.length).toFixed(1) : '—';
+    document.getElementById('puttAvgHolesLabel').textContent = '/ ' + holesFilter + 'H';
 
     // 1/2/3-putt breakdown needs per-hole data (holeByHole) — only
-    // present on rounds the Golfshot import has enriched so far.
-    let one = 0, two = 0, three = 0, holesWithPutts = 0;
+    // present on rounds the Golfshot import has enriched so far. Builds
+    // one series per tab: each round's % of holes that were exactly
+    // that many putts, so the trend line is a per-round rate over time,
+    // switchable via the tabs above the chart.
+    let totalHoles = 0, totals = { 1: 0, 2: 0, 3: 0 };
+    const series = { 1: [], 2: [], 3: [] };
     rounds.forEach(r => {
-      (r.holeByHole || []).forEach(h => {
-        if (typeof h.putts !== 'number' || h.putts <= 0) return;
-        holesWithPutts++;
-        if (h.putts === 1) one++;
-        else if (h.putts === 2) two++;
-        else three++;
+      const hbh = (r.holeByHole || []).filter(h => typeof h.putts === 'number' && h.putts > 0);
+      if (!hbh.length) return;
+      const counts = { 1: 0, 2: 0, 3: 0 };
+      hbh.forEach(h => { counts[h.putts >= 3 ? 3 : h.putts]++; });
+      totalHoles += hbh.length;
+      [1, 2, 3].forEach(k => {
+        totals[k] += counts[k];
+        series[k].push({ date: r.date, v: Math.round(counts[k] / hbh.length * 100) });
       });
     });
-    const grid = document.getElementById('puttGrid');
-    if (!holesWithPutts) {
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-tertiary);font-size:12px;padding:8px">Per-hole putt detail is still backfilling — this fills in automatically.</div>';
-      return;
+
+    const note = document.getElementById('puttNote');
+    if (!totalHoles) {
+      note.textContent = 'Per-hole putt detail is still backfilling — this fills in automatically as it does.';
+    } else {
+      note.textContent = totalHoles + ' holes with putt detail so far.';
     }
-    const pct = n => Math.round(n / holesWithPutts * 100);
-    grid.innerHTML =
-      '<div class="putt-tile"><div class="putt-tile-val">' + one + ' <span style="font-size:11px;color:var(--text-tertiary)">(' + pct(one) + '%)</span></div><div class="putt-tile-label">1-PUTT</div></div>'
-      + '<div class="putt-tile"><div class="putt-tile-val">' + two + ' <span style="font-size:11px;color:var(--text-tertiary)">(' + pct(two) + '%)</span></div><div class="putt-tile-label">2-PUTT</div></div>'
-      + '<div class="putt-tile"><div class="putt-tile-val">' + three + ' <span style="font-size:11px;color:var(--text-tertiary)">(' + pct(three) + '%)</span></div><div class="putt-tile-label">3-PUTT+</div></div>';
+
+    renderTrendChart('puttChartSvg', series[puttTab], PUTT_TAB_COLOR[puttTab], '%');
+    document.getElementById('puttPct').textContent = totalHoles ? Math.round(totals[puttTab] / totalHoles * 100) + '%' : '—';
+    document.getElementById('puttPctLabel').textContent = 'of holes are ' + PUTT_TAB_NAME[puttTab];
   }
+  document.getElementById('puttTabs').querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      puttTab = +btn.dataset.p;
+      document.getElementById('puttTabs').querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      delete animatedOnce.puttChartSvg; // switching tabs is a genuinely new series — let it draw in again
+      renderPutting();
+    });
+  });
 
   // ===== Courses (placeholder list) =====
+  // ===== Courses: carousel/grid with images + favorites =====
+  function loadCourseImages() { return storeGet('golf:courseImages', {}); }
+  function saveCourseImages(o) { try { localStorage.setItem('golf:courseImages', JSON.stringify(o)); } catch (e) {} }
+  function loadFavoriteCourses() { const f = storeGet('golf:favoriteCourses', []); return Array.isArray(f) ? f : []; }
+  function saveFavoriteCourses(arr) { try { localStorage.setItem('golf:favoriteCourses', JSON.stringify(arr)); } catch (e) {} }
+  let showFavoritesOnly = false;
+
+  // Downscale + compress an uploaded photo before storing as a data URL —
+  // same reasoning as every other image-upload spot in this app: a raw
+  // phone photo is way bigger than localStorage should hold.
+  function downscaleImage(file, cb) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 480;
+        const scale = Math.min(1, maxW / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        cb(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function courseCardHtml(c, images, favs) {
+    const key = c.name.toLowerCase();
+    const img = images[key];
+    const isFav = favs.includes(key);
+    return '<div class="course-card" data-course="' + esc(c.name) + '">'
+      + (img ? '<img src="' + img + '" alt="">' : '<div class="course-card-noimg"><i data-lucide="image"></i><span>Add photo</span></div>')
+      + '<div class="course-card-shade"></div>'
+      + '<button type="button" class="course-card-star' + (isFav ? ' active' : '') + '" data-fav="' + esc(c.name) + '" aria-label="Favorite">★</button>'
+      + '<label class="course-card-upload" data-upload="' + esc(c.name) + '"><i data-lucide="camera"></i><input type="file" accept="image/*"></label>'
+      + '<div class="course-card-body"><div class="course-card-name">' + esc(c.name) + '</div><div class="course-card-sub">' + c.count + ' round' + (c.count === 1 ? '' : 's') + '</div></div>'
+      + '</div>';
+  }
+
+  function wireCourseCards(container) {
+    container.querySelectorAll('.course-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('[data-fav]') || e.target.closest('[data-upload]')) return;
+        alert('Course detail page for "' + card.dataset.course + '" — placeholder for now, coming in a later pass.');
+      });
+    });
+    container.querySelectorAll('[data-fav]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const key = btn.dataset.fav.toLowerCase();
+        let favs = loadFavoriteCourses();
+        favs = favs.includes(key) ? favs.filter(f => f !== key) : favs.concat(key);
+        saveFavoriteCourses(favs);
+        renderCourseList();
+      });
+    });
+    container.querySelectorAll('[data-upload]').forEach(label => {
+      const input = label.querySelector('input');
+      label.addEventListener('click', (e) => e.stopPropagation());
+      input.addEventListener('click', (e) => e.stopPropagation());
+      input.addEventListener('change', () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        downscaleImage(file, (dataUrl) => {
+          const images = loadCourseImages();
+          images[label.dataset.upload.toLowerCase()] = dataUrl;
+          saveCourseImages(images);
+          renderCourseList();
+        });
+      });
+    });
+  }
+
   function renderCourseList() {
     const rounds = allGolfRounds();
-    const courses = loadCourses();
+    const images = loadCourseImages();
+    const favs = loadFavoriteCourses();
     const byCourse = {};
     rounds.forEach(r => { const k = (r.course || 'Unknown').toLowerCase(); byCourse[k] = byCourse[k] || { name: r.course, count: 0 }; byCourse[k].count++; });
-    const list = Object.values(byCourse).sort((a, b) => b.count - a.count);
-    const el = document.getElementById('courseList');
-    if (!list.length) { el.innerHTML = '<div style="color:var(--text-tertiary);font-size:12px">No rounds logged yet.</div>'; return; }
-    el.innerHTML = list.map(c =>
-      '<div class="course-row" data-course="' + esc(c.name) + '">'
-      + '<div class="course-photo"><i data-lucide="image"></i></div>'
-      + '<div class="course-row-body"><div class="course-row-name">' + esc(c.name) + '</div><div class="course-row-sub">' + c.count + ' round' + (c.count === 1 ? '' : 's') + ' played</div></div>'
-      + '<span class="course-row-chevron">›</span>'
-      + '</div>'
-    ).join('');
-    el.querySelectorAll('.course-row').forEach(row => {
-      row.addEventListener('click', () => {
-        alert('Course detail page for "' + row.dataset.course + '" — placeholder for now, coming in a later pass.');
-      });
+    let list = Object.values(byCourse).sort((a, b) => b.count - a.count);
+    if (showFavoritesOnly) list = list.filter(c => favs.includes(c.name.toLowerCase()));
+
+    const mobileEl = document.getElementById('courseCarouselMobile');
+    const deskEl = document.getElementById('courseGridDesktop');
+    if (!list.length) {
+      const msg = '<div style="color:var(--text-tertiary);font-size:12px">' + (showFavoritesOnly ? 'No favorite courses yet — tap the star on a course to add one.' : 'No rounds logged yet.') + '</div>';
+      mobileEl.innerHTML = msg; deskEl.innerHTML = msg;
+      return;
+    }
+    mobileEl.innerHTML = list.map(c => courseCardHtml(c, images, favs)).join('');
+    const DESKTOP_LIMIT = 6;
+    const deskShown = list.slice(0, DESKTOP_LIMIT);
+    deskEl.innerHTML = deskShown.map(c => courseCardHtml(c, images, favs)).join('')
+      + (list.length > DESKTOP_LIMIT ? '<button type="button" class="view-more-courses-btn" id="viewMoreCoursesBtn">View all ' + list.length + ' courses</button>' : '');
+    wireCourseCards(mobileEl);
+    wireCourseCards(deskEl);
+    const viewMoreBtn = document.getElementById('viewMoreCoursesBtn');
+    if (viewMoreBtn) viewMoreBtn.addEventListener('click', () => {
+      document.getElementById('courseModalGrid').innerHTML = list.map(c => courseCardHtml(c, images, favs)).join('');
+      wireCourseCards(document.getElementById('courseModalGrid'));
+      document.getElementById('courseModalOverlay').hidden = false;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
     });
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
+  document.getElementById('courseFavToggle').addEventListener('click', function () {
+    showFavoritesOnly = !showFavoritesOnly;
+    this.classList.toggle('active', showFavoritesOnly);
+    renderCourseList();
+  });
+  document.getElementById('courseModalClose').addEventListener('click', () => { document.getElementById('courseModalOverlay').hidden = true; });
+  document.getElementById('courseModalOverlay').addEventListener('click', (e) => { if (e.target.id === 'courseModalOverlay') e.currentTarget.hidden = true; });
 
   // ===== Rounds list =====
   function scoreClass(r, score) {
@@ -601,12 +828,12 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
   // ===== Global toggle + render orchestration =====
   function renderHoleScopedSections() {
+    renderHandicapSection();
     renderStatTiles();
     renderPie();
     renderPutting();
   }
   function renderAll() {
-    renderHandicapSection();
     renderHoleScopedSections();
     renderCourseList();
     renderCourseFilterChips();
