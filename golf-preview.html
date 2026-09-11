@@ -188,8 +188,25 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .rd-no-holes { padding: 20px; text-align: center; color: var(--text-tertiary); font-size: 13px; background: var(--bg-input); border-radius: 12px; }
 
 /* ===== Course detail modal ===== */
-.cd-banner { width: 100%; height: 120px; border-radius: 16px; object-fit: cover; margin-bottom: 14px; background: var(--bg-input); }
-.cd-stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 16px 0; }
+.cd-sheet { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.cd-hero { position: relative; height: 200px; flex-shrink: 0; background: var(--bg-input); }
+.cd-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cd-hero-noimg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-quaternary); flex-direction: column; gap: 6px; font-family: var(--font-mono); font-size: 11px; }
+.cd-hero-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.05) 55%); }
+.cd-hero-close, .cd-hero-upload { position: absolute; top: 14px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); border: none; color: #fff; font-size: 17px; cursor: pointer; z-index: 2; display: flex; align-items: center; justify-content: center; }
+.cd-hero-close { right: 14px; }
+.cd-hero-upload { left: 14px; color: rgba(255,255,255,0.9); }
+.cd-hero-upload input { display: none; }
+.cd-hero-body { position: absolute; left: 20px; right: 20px; bottom: 16px; z-index: 1; }
+.cd-hero-name { font-size: 21px; font-weight: 800; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+.cd-hero-sub { font-size: 12.5px; color: rgba(255,255,255,0.82); margin-top: 3px; }
+.cd-content { padding: 18px 24px 24px; overflow-y: auto; flex: 1; min-height: 0; }
+.cd-facts-row { display: flex; margin-bottom: 16px; background: var(--bg-input); border-radius: 14px; padding: 12px 0; }
+.cd-fact { flex: 1; text-align: center; }
+.cd-fact + .cd-fact { border-left: 1px solid var(--border-strong); }
+.cd-fact-val { font-size: 17px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono); }
+.cd-fact-label { font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-top: 4px; }
+.cd-stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 0 0 16px; }
 .cd-stat-tile { background: var(--bg-input); border-radius: 16px; padding: 16px 10px; text-align: center; }
 .cd-stat-tile-val { font-size: 26px; font-weight: 800; color: var(--text-primary); line-height: 1; }
 .cd-stat-tile-label { font-size: 10.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-top: 6px; }
@@ -321,17 +338,21 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
 <!-- Course detail sheet -->
 <div class="rd-overlay" id="courseDetailOverlay" hidden>
-  <div class="rd-sheet">
-    <div class="rd-head">
-      <div>
-        <div class="rd-title" id="cdTitle">—</div>
-        <div class="rd-sub" id="cdSub">—</div>
+  <div class="rd-sheet cd-sheet">
+    <div class="cd-hero" id="cdHero">
+      <button class="cd-hero-close" id="cdClose" type="button">×</button>
+      <label class="cd-hero-upload" id="cdUploadLabel"><i data-lucide="camera"></i><input type="file" accept="image/*" id="cdUploadInput"></label>
+      <div class="cd-hero-shade"></div>
+      <div class="cd-hero-body">
+        <div class="cd-hero-name" id="cdTitle">—</div>
+        <div class="cd-hero-sub" id="cdSub">—</div>
       </div>
-      <button class="rd-close" id="cdClose" type="button">×</button>
     </div>
-    <div id="cdBanner"></div>
-    <div class="cd-stat-grid" id="cdStatGrid"></div>
-    <div id="cdBreakdownWrap"></div>
+    <div class="cd-content">
+      <div class="cd-facts-row" id="cdFactsRow"></div>
+      <div class="cd-stat-grid" id="cdStatGrid"></div>
+      <div id="cdBreakdownWrap"></div>
+    </div>
   </div>
 </div>
 
@@ -871,14 +892,45 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
   // ===== Course detail sheet =====
   const cdOverlay = document.getElementById('courseDetailOverlay');
+  function renderCdHero(courseName) {
+    const images = loadCourseImages();
+    const key = courseName.toLowerCase();
+    const img = images[key];
+    const hero = document.getElementById('cdHero');
+    const existing = hero.querySelector('img, .cd-hero-noimg');
+    if (existing) existing.remove();
+    const media = document.createElement(img ? 'img' : 'div');
+    if (img) { media.src = img; media.alt = ''; } else { media.className = 'cd-hero-noimg'; media.innerHTML = '<i data-lucide="image"></i><span>Tap the camera icon to add a photo</span>'; }
+    hero.insertBefore(media, hero.firstChild);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    const input = document.getElementById('cdUploadInput');
+    input.value = '';
+    input.onchange = () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      downscaleImage(file, (dataUrl) => {
+        const imgs = loadCourseImages();
+        imgs[key] = dataUrl;
+        saveCourseImages(imgs);
+        renderCdHero(courseName);
+        renderCourseList();
+      });
+    };
+  }
   function openCourseDetail(courseName) {
     const rounds = filteredByHoles(allGolfRounds()).filter(r => r.course === courseName);
     document.getElementById('cdTitle').textContent = courseName;
     document.getElementById('cdSub').textContent = rounds.length + ' ' + holesFilter + '-hole round' + (rounds.length === 1 ? '' : 's') + ' played';
+    renderCdHero(courseName);
 
-    const images = loadCourseImages();
-    const img = images[courseName.toLowerCase()];
-    document.getElementById('cdBanner').innerHTML = img ? '<img class="cd-banner" src="' + img + '" alt="">' : '';
+    const courses = loadCourses();
+    const courseInfo = courses[courseName.toLowerCase()] || {};
+    const par = holesFilter === 9 ? courseInfo.par9 : courseInfo.par18;
+    document.getElementById('cdFactsRow').innerHTML =
+      '<div class="cd-fact"><div class="cd-fact-val">' + (par != null ? par : '—') + '</div><div class="cd-fact-label">Par</div></div>'
+      + '<div class="cd-fact"><div class="cd-fact-val">' + (courseInfo.slope != null ? courseInfo.slope : '—') + '</div><div class="cd-fact-label">Slope</div></div>'
+      + '<div class="cd-fact"><div class="cd-fact-val">' + holesFilter + '</div><div class="cd-fact-label">Holes</div></div>';
 
     const statGrid = document.getElementById('cdStatGrid');
     const breakdownWrap = document.getElementById('cdBreakdownWrap');
