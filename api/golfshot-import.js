@@ -41,7 +41,22 @@ const ROUND_SCHEMA = {
     pars: { type: 'integer', description: 'Count of holes scored exactly par.' },
     bogeys: { type: 'integer', description: 'Count of holes scored 1 over par.' },
     doubleBogeys: { type: 'integer', description: 'Count of holes scored 2 over par.' },
-    triplePlus: { type: 'integer', description: 'Count of holes scored 3+ over par.' }
+    triplePlus: { type: 'integer', description: 'Count of holes scored 3+ over par.' },
+    holes: {
+      type: 'array',
+      description: 'One entry per hole actually played, in the order played (hole 1 first, or hole 10 first if this is a back-9-only round). Needed for the per-round scorecard view. Omit entries you genuinely cannot read rather than guessing.',
+      items: {
+        type: 'object',
+        properties: {
+          hole: { type: 'integer', description: 'Hole number as shown on the card (1-18).' },
+          par: { type: 'integer' },
+          score: { type: 'integer' },
+          putts: { type: 'integer', description: '0 if not shown for this hole.' },
+          gir: { type: 'boolean', description: 'True if this hole was a green in regulation (the GIR row shows hit for this hole).' }
+        },
+        required: ['hole', 'par', 'score']
+      }
+    }
   },
   required: ['readable', 'date', 'course', 'holesPlayed', 'totalScore', 'totalPar']
 };
@@ -82,7 +97,9 @@ export default async function handler(req, res) {
   try {
     const prompt = 'This is a Golfshot golf scorecard email (subject: "' + (body.subject || '') + '"). '
       + 'Read it and extract the round exactly as recorded — do not guess or invent figures that '
-      + "aren't shown, use 0 for any count not visible. Email content:\n\n" + emailContent;
+      + "aren't shown, use 0 for any count not visible. Include the per-hole breakdown (par/score/"
+      + "putts/GIR for each hole actually played) in the holes array — that table is on every "
+      + "Golfshot scorecard. Email content:\n\n" + emailContent;
     const geminiResp = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent',
       {
@@ -122,38 +139,56 @@ export default async function handler(req, res) {
     const rounds = state['golf:rounds'] || [];
     const courses = state['golf:courses'] || {};
 
-    // 3) Dedup — same date+course+score already logged.
-    const dup = rounds.some(r => r.date === extracted.date && r.course === extracted.course && r.score === extracted.totalScore);
-    if (dup) {
-      return res.status(200).json({ ok: false, skipped: 'duplicate round already logged', extracted });
-    }
-
-    // 4) Build the round, same shape golf.html's own manual-entry saves.
+    // 3) Dedup — same date+course+score already logged. If it's already there
+    // but missing the per-hole breakdown (imported before that field existed)
+    // and this pass found one, enrich it in place instead of skipping — lets
+    // re-running the backfill fill in hole-by-hole data for old rounds
+    // without creating duplicates.
+    const holeByHole = Array.isArray(extracted.holes) ? extracted.holes : [];
     const holes = extracted.holesPlayed === 9 ? 9 : 18;
-    const round = {
-      id: 'r' + Date.now() + Math.random().toString(36).slice(2, 7),
-      date: extracted.date,
-      holes,
-      course: extracted.course,
-      score: extracted.totalScore,
-      par: extracted.totalPar,
-      slope: extracted.slope > 0 ? extracted.slope : null,
-      differential: computeDifferential(extracted.totalScore, extracted.totalPar, extracted.slope),
-      fairways: (extracted.fairwaysTotal > 0) ? (extracted.fairwaysHit + '/' + extracted.fairwaysTotal) : '',
-      putts: extracted.putts > 0 ? extracted.putts : null,
-      ts: Date.now(),
-      source: 'golfshot',
-      // Not read by golf.html today, but kept for a future stats view —
-      // raw inputs, so nothing here is lost if that view's math changes later.
-      rating: extracted.courseRating > 0 ? extracted.courseRating : null,
-      eagles: extracted.eagles || 0,
-      birdies: extracted.birdies || 0,
-      pars: extracted.pars || 0,
-      bogeys: extracted.bogeys || 0,
-      doubleBogeys: extracted.doubleBogeys || 0,
-      triplePlus: extracted.triplePlus || 0
-    };
-    rounds.push(round);
+    const dupIndex = rounds.findIndex(r => r.date === extracted.date && r.course === extracted.course && r.score === extracted.totalScore);
+    let round;
+    let enriched = false;
+    if (dupIndex !== -1) {
+      const existing = rounds[dupIndex];
+      const alreadyHasHoles = Array.isArray(existing.holeByHole) && existing.holeByHole.length > 0;
+      if (holeByHole.length && !alreadyHasHoles) {
+        existing.holeByHole = holeByHole;
+        round = existing;
+        enriched = true;
+      } else {
+        return res.status(200).json({ ok: false, skipped: 'duplicate round already logged', extracted });
+      }
+    } else {
+      // 4) Build the round, same shape golf.html's own manual-entry saves.
+      round = {
+        id: 'r' + Date.now() + Math.random().toString(36).slice(2, 7),
+        date: extracted.date,
+        holes,
+        course: extracted.course,
+        score: extracted.totalScore,
+        par: extracted.totalPar,
+        slope: extracted.slope > 0 ? extracted.slope : null,
+        differential: computeDifferential(extracted.totalScore, extracted.totalPar, extracted.slope),
+        fairways: (extracted.fairwaysTotal > 0) ? (extracted.fairwaysHit + '/' + extracted.fairwaysTotal) : '',
+        putts: extracted.putts > 0 ? extracted.putts : null,
+        ts: Date.now(),
+        source: 'golfshot',
+        // Not read by golf.html today, but kept for a future stats view —
+        // raw inputs, so nothing here is lost if that view's math changes later.
+        rating: extracted.courseRating > 0 ? extracted.courseRating : null,
+        eagles: extracted.eagles || 0,
+        birdies: extracted.birdies || 0,
+        pars: extracted.pars || 0,
+        bogeys: extracted.bogeys || 0,
+        doubleBogeys: extracted.doubleBogeys || 0,
+        triplePlus: extracted.triplePlus || 0,
+        // Per-hole { hole, par, score, putts, gir } — powers the round-detail
+        // scorecard view. May be empty if Gemini couldn't read the table.
+        holeByHole
+      };
+      rounds.push(round);
+    }
 
     // 5) Keep the course list in sync too, same as a manual save would.
     const key = extracted.course.toLowerCase();
@@ -178,7 +213,7 @@ export default async function handler(req, res) {
     }
 
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({ ok: true, round });
+    return res.status(200).json({ ok: true, enriched, round });
   } catch (e) {
     return res.status(502).json({ error: 'import failed: ' + (e && e.message ? e.message : String(e)) });
   }
