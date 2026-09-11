@@ -6,7 +6,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
-<meta name="color-scheme" content="dark">
 <title>Golf Stats — Preview</title>
 <script src="topbar.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -17,6 +16,7 @@
   --bg: #050506;
   --bg-card: rgba(255, 255, 255, 0.04);
   --bg-dark: #0c0c0d;
+  --bg-sheet: #0d0d0e;
   --bg-input: rgba(0, 0, 0, 0.28);
   --border: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.12);
@@ -34,6 +34,29 @@
   --triple: #C4366B;
   --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #EDEEE9;
+  --bg-card: #FFFFFF;
+  --bg-dark: #0c0c0d;
+  --bg-sheet: #FFFFFF;
+  --bg-input: rgba(28,30,27,0.045);
+  --border: rgba(28,30,27,0.08);
+  --border-strong: rgba(28,30,27,0.14);
+  --text-primary: #1C1E1B;
+  --text-secondary: #63675F;
+  --text-tertiary: #9A9E93;
+  --text-quaternary: #C3C6BD;
+  --accent: #2F9C6A;
+  --accent-glow: rgba(47,156,106,0.25);
+  --eagle: #2E8FC0;
+  --birdie: #2F9C6A;
+  --par: #6B6F66;
+  --bogey: #B8860E;
+  --double: #C0473A;
+  --triple: #A03368;
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-secondary); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
@@ -51,6 +74,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .hole-toggle { display: flex; gap: 6px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 18px; }
 .hole-toggle button { flex: 1; border: none; background: none; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 13px; font-weight: 700; padding: 9px 0; border-radius: 9px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .hole-toggle button.active { background: var(--accent); color: #04140f; }
+[data-theme="light"] .hole-toggle button.active { color: #fff; }
 
 .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 14px; position: relative; }
 .card-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 10px; }
@@ -63,6 +87,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .hcp-range { display: flex; gap: 6px; margin-bottom: 12px; }
 .hcp-range button { font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-tertiary); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .hcp-range button.active { background: var(--accent); border-color: var(--accent); color: #04140f; }
+[data-theme="light"] .hcp-range button.active { color: #fff; }
 .hcp-chart-svg { width: 100%; height: 90px; display: block; overflow: visible; }
 
 /* ===== Stat tiles ===== */
@@ -98,6 +123,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .putt-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
 .putt-tabs button { flex: 1; font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 7px 0; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-tertiary); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .putt-tabs button.active { background: var(--eagle); border-color: var(--eagle); color: #04202e; }
+[data-theme="light"] .putt-tabs button.active { color: #fff; }
 .putt-chart-svg { width: 100%; height: 90px; display: block; overflow: visible; }
 .putt-pct-row { text-align: center; margin-top: 6px; }
 .putt-pct { font-size: 22px; font-weight: 800; color: var(--text-primary); }
@@ -136,7 +162,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 }
 .course-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 110; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .course-modal-overlay[hidden] { display: none; }
-.course-modal { background: #0d0d0e; border: 1px solid var(--border-strong); border-radius: 18px; padding: 18px; max-width: 560px; width: 100%; max-height: 80vh; overflow-y: auto; }
+.course-modal { background: var(--bg-sheet); border: 1px solid var(--border-strong); border-radius: 18px; padding: 18px; max-width: 560px; width: 100%; max-height: 80vh; overflow-y: auto; }
 .course-modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .course-modal-title { font-size: 16px; font-weight: 800; color: var(--text-primary); }
 .course-modal-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -147,9 +173,11 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .filter-chips::-webkit-scrollbar { display: none; }
 .filter-chip { flex-shrink: 0; font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-tertiary); cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
 .filter-chip.active { background: var(--accent); border-color: var(--accent); color: #04140f; }
+[data-theme="light"] .filter-chip.active { color: #fff; }
 
 .round-row { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .round-row:active { background: rgba(255,255,255,0.04); }
+[data-theme="light"] .round-row:active { background: rgba(28,30,27,0.04); }
 .round-row + .round-row { border-top: 1px solid var(--border); }
 .round-score-box { width: 40px; height: 40px; border-radius: 10px; background: var(--bg-input); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--text-primary); flex-shrink: 0; }
 .round-body { flex: 1; min-width: 0; }
@@ -161,7 +189,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 /* ===== Round detail modal ===== */
 .rd-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 18px; }
 .rd-overlay[hidden] { display: none; }
-.rd-sheet { background: #0d0d0e; border: 1px solid var(--border-strong); border-radius: 24px; width: 100%; max-width: 640px; margin: 0 auto; padding: 24px; max-height: 88vh; overflow-y: auto; }
+.rd-sheet { background: var(--bg-sheet); border: 1px solid var(--border-strong); border-radius: 24px; width: 100%; max-width: 640px; margin: 0 auto; padding: 24px; max-height: 88vh; overflow-y: auto; }
 .rd-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
 .rd-title { font-size: 20px; font-weight: 800; color: var(--text-primary); }
 .rd-sub { font-size: 12.5px; color: var(--text-tertiary); margin-top: 3px; }
@@ -188,6 +216,8 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .rd-cell-par { background: rgba(255,255,255,0.09); color: var(--text-primary); }
 .rd-cell-bogey { background: var(--bogey); color: #2b1c02; }
 .rd-cell-double { background: var(--double); color: #2b0805; }
+[data-theme="light"] .rd-cell-eagle, [data-theme="light"] .rd-cell-birdie, [data-theme="light"] .rd-cell-bogey, [data-theme="light"] .rd-cell-double { color: #fff; }
+[data-theme="light"] .rd-cell-par { background: rgba(28,30,27,0.06); }
 .rd-cell-triple { background: var(--triple); color: #fff; }
 .rd-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; font-size: 11px; color: var(--text-tertiary); }
 .rd-legend span { display: inline-flex; align-items: center; gap: 5px; }
@@ -227,6 +257,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .cd-b-eagle { background: rgba(125,211,252,0.16); } .cd-b-eagle .cd-b-val { color: var(--eagle); }
 .cd-b-birdie { background: rgba(110,227,164,0.16); } .cd-b-birdie .cd-b-val { color: var(--birdie); }
 .cd-b-par { background: rgba(255,255,255,0.08); } .cd-b-par .cd-b-val { color: var(--text-primary); }
+[data-theme="light"] .cd-b-par { background: rgba(28,30,27,0.06); }
 .cd-b-bogey { background: rgba(251,191,36,0.16); } .cd-b-bogey .cd-b-val { color: var(--bogey); }
 .cd-b-double { background: rgba(249,112,102,0.16); } .cd-b-double .cd-b-val { color: var(--double); }
 .cd-b-triple { background: rgba(196,54,107,0.2); } .cd-b-triple .cd-b-val { color: var(--triple); }
@@ -252,9 +283,9 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     <div class="hcp-num-row"><span class="hcp-num" id="hcpNum">—</span><span class="hcp-tier" id="hcpTier"></span></div>
     <div class="hcp-note" id="hcpNote"></div>
     <div class="hcp-range" id="hcpRange">
-      <button type="button" data-r="all" class="active">All time</button>
-      <button type="button" data-r="6m">Last 6mo</button>
       <button type="button" data-r="1m">Last month</button>
+      <button type="button" data-r="6m">Last 6mo</button>
+      <button type="button" data-r="all" class="active">All time</button>
     </div>
     <svg class="hcp-chart-svg" id="hcpChartSvg" viewBox="0 0 600 90" preserveAspectRatio="none"></svg>
   </div>
@@ -467,8 +498,13 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     const d = new Date(iso + 'T12:00:00');
     return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()] + ' ' + d.getDate();
   }
+  function fmtMonthLabel(ym) {
+    if (!ym) return '';
+    const [y, m] = ym.split('-').map(Number);
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m - 1] + ' ' + y;
+  }
 
-  function renderTrendChart(svgId, points, color, valueLabel) {
+  function renderTrendChart(svgId, points, color, valueLabel, labelFn) {
     const svg = document.getElementById(svgId);
     if (points.length < 2) { svg.innerHTML = '<text x="300" y="45" fill="var(--text-tertiary)" font-size="12" text-anchor="middle">Not enough rounds yet</text>'; return; }
     const W = 600, H = 90, pad = 6;
@@ -503,7 +539,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
       hvDot.setAttribute('cx', p.x); hvDot.setAttribute('cy', p.y); hvDot.hidden = false;
       tip.style.left = (p.x / W * 100) + '%';
       tip.style.top = (p.y / H * 100) + '%';
-      tip.innerHTML = '<strong>' + p.v + (valueLabel ? ' ' + valueLabel : '') + '</strong><div style="color:var(--text-tertiary);font-size:10px;margin-top:1px">' + fmtShortDate(p.date) + '</div>';
+      tip.innerHTML = '<strong>' + p.v + (valueLabel ? ' ' + valueLabel : '') + '</strong><div style="color:var(--text-tertiary);font-size:10px;margin-top:1px">' + (labelFn ? labelFn(p.date) : fmtShortDate(p.date)) + '</div>';
       tip.style.display = 'block';
     }
     function hideTip() { hvLine.hidden = true; hvDot.hidden = true; tip.style.display = 'none'; }
@@ -655,32 +691,37 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     document.getElementById('puttAvgHolesLabel').textContent = '/ ' + holesFilter + 'H';
 
     // 1/2/3-putt breakdown needs per-hole data (holeByHole) — only
-    // present on rounds the Golfshot import has enriched so far. Builds
-    // one series per tab: each round's % of holes that were exactly
-    // that many putts, so the trend line is a per-round rate over time,
-    // switchable via the tabs above the chart.
-    let totalHoles = 0, totals = { 1: 0, 2: 0, 3: 0 };
-    const series = { 1: [], 2: [], 3: [] };
+    // present on rounds the Golfshot import has enriched so far. Grouped
+    // by month rather than by round — a point per round made the line
+    // too noisy/spiky to read as a trend, monthly rates show the real
+    // improvement over time instead.
+    let totalHoles = 0;
+    const totals = { 1: 0, 2: 0, 3: 0 };
+    const byMonth = {};
     rounds.forEach(r => {
       const hbh = (r.holeByHole || []).filter(h => typeof h.putts === 'number' && h.putts > 0);
-      if (!hbh.length) return;
-      const counts = { 1: 0, 2: 0, 3: 0 };
-      hbh.forEach(h => { counts[h.putts >= 3 ? 3 : h.putts]++; });
+      if (!hbh.length || !r.date) return;
+      const ym = r.date.slice(0, 7);
+      const bucket = byMonth[ym] || (byMonth[ym] = { holes: 0, counts: { 1: 0, 2: 0, 3: 0 } });
+      hbh.forEach(h => { const k = h.putts >= 3 ? 3 : h.putts; bucket.counts[k]++; totals[k]++; });
+      bucket.holes += hbh.length;
       totalHoles += hbh.length;
-      [1, 2, 3].forEach(k => {
-        totals[k] += counts[k];
-        series[k].push({ date: r.date, v: Math.round(counts[k] / hbh.length * 100) });
-      });
+    });
+    const months = Object.keys(byMonth).sort();
+    const series = { 1: [], 2: [], 3: [] };
+    months.forEach(ym => {
+      const b = byMonth[ym];
+      [1, 2, 3].forEach(k => { series[k].push({ date: ym, v: Math.round(b.counts[k] / b.holes * 100) }); });
     });
 
     const note = document.getElementById('puttNote');
     if (!totalHoles) {
       note.textContent = 'Per-hole putt detail is still backfilling — this fills in automatically as it does.';
     } else {
-      note.textContent = totalHoles + ' holes with putt detail so far.';
+      note.textContent = totalHoles + ' holes with putt detail across ' + months.length + ' month' + (months.length === 1 ? '' : 's') + '.';
     }
 
-    renderTrendChart('puttChartSvg', series[puttTab], PUTT_TAB_COLOR[puttTab], '%');
+    renderTrendChart('puttChartSvg', series[puttTab], PUTT_TAB_COLOR[puttTab], '%', fmtMonthLabel);
     document.getElementById('puttPct').textContent = totalHoles ? Math.round(totals[puttTab] / totalHoles * 100) + '%' : '—';
     document.getElementById('puttPctLabel').textContent = 'of holes are ' + PUTT_TAB_NAME[puttTab];
   }
