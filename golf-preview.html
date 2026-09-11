@@ -7,6 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
 <title>Golf Stats — Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="topbar.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="sync.js" defer></script>
@@ -32,7 +35,7 @@
   --bogey: #FBBF24;
   --double: #F97066;
   --triple: #C4366B;
-  --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: dark;
 }
@@ -146,6 +149,8 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .course-card-body { position: absolute; left: 10px; right: 10px; bottom: 8px; }
 .course-card-name { font-size: 12.5px; font-weight: 700; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
 .course-card-sub { font-size: 10.5px; color: rgba(255,255,255,0.75); margin-top: 1px; }
+.course-carousel-mobile .course-card-name { font-size: 15.5px; }
+.course-carousel-mobile .course-card-sub { font-size: 12px; }
 .course-card-star { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,0.45); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.55); font-size: 14px; z-index: 2; }
 .course-card-star.active { color: #FBBF24; }
 .course-card-upload { position: absolute; top: 8px; left: 8px; width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.75); z-index: 2; }
@@ -153,7 +158,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
 .course-carousel-mobile { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
 .course-carousel-mobile::-webkit-scrollbar { display: none; }
-.course-carousel-mobile .course-card { width: 31%; }
+.course-carousel-mobile .course-card { width: 66%; height: 190px; }
 .course-grid-desktop { display: none; }
 .view-more-courses-btn { grid-column: 1/-1; margin-top: 4px; padding: 10px; border-radius: 12px; border: 1px dashed var(--border-strong); background: none; color: var(--text-secondary); font-family: var(--font-mono); font-size: 12px; font-weight: 700; cursor: pointer; }
 @media (min-width: 640px) {
@@ -226,7 +231,7 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
 /* ===== Course detail modal ===== */
 .cd-sheet { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
-.cd-hero { position: relative; height: 200px; flex-shrink: 0; background: var(--bg-input); }
+.cd-hero { position: relative; height: 280px; flex-shrink: 0; background: var(--bg-input); }
 .cd-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cd-hero-noimg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--text-quaternary); flex-direction: column; gap: 6px; font-family: var(--font-mono); font-size: 11px; }
 .cd-hero-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.05) 55%); }
@@ -237,30 +242,30 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .cd-hero-body { position: absolute; left: 20px; right: 20px; bottom: 16px; z-index: 1; }
 .cd-hero-name { font-size: 21px; font-weight: 800; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
 .cd-hero-sub { font-size: 12.5px; color: rgba(255,255,255,0.82); margin-top: 3px; }
-.cd-content { padding: 18px 24px 24px; overflow-y: auto; flex: 1; min-height: 0; }
-.cd-facts-row { display: flex; margin-bottom: 16px; background: var(--bg-input); border-radius: 14px; padding: 12px 0; }
+.cd-content { padding: 22px 24px 28px; overflow-y: auto; flex: 1; min-height: 0; }
+.cd-facts-row { display: flex; margin-bottom: 22px; background: var(--bg-input); border-radius: 14px; padding: 14px 0; }
 .cd-fact { flex: 1; text-align: center; }
 .cd-fact + .cd-fact { border-left: 1px solid var(--border-strong); }
 .cd-fact-val { font-size: 17px; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono); }
 .cd-fact-label { font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-top: 4px; }
-.cd-stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 0 0 16px; }
-.cd-stat-tile { background: var(--bg-input); border-radius: 16px; padding: 16px 10px; text-align: center; }
-.cd-stat-tile-val { font-size: 26px; font-weight: 800; color: var(--text-primary); line-height: 1; }
-.cd-stat-tile-label { font-size: 10.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-top: 6px; }
-.cd-stat-tile.accent { background: linear-gradient(160deg, rgba(110,227,164,0.18), rgba(110,227,164,0.04)); box-shadow: 0 0 22px rgba(110,227,164,0.16); }
-.cd-stat-tile.accent .cd-stat-tile-val { color: var(--accent); }
-.cd-breakdown-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin: 18px 0 10px; }
-.cd-breakdown-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.cd-b-tile { border-radius: 14px; padding: 12px 6px; text-align: center; }
-.cd-b-val { font-size: 20px; font-weight: 800; line-height: 1; }
-.cd-b-label { font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 5px; opacity: 0.85; }
-.cd-b-eagle { background: rgba(125,211,252,0.16); } .cd-b-eagle .cd-b-val { color: var(--eagle); }
-.cd-b-birdie { background: rgba(110,227,164,0.16); } .cd-b-birdie .cd-b-val { color: var(--birdie); }
-.cd-b-par { background: rgba(255,255,255,0.08); } .cd-b-par .cd-b-val { color: var(--text-primary); }
-[data-theme="light"] .cd-b-par { background: rgba(28,30,27,0.06); }
-.cd-b-bogey { background: rgba(251,191,36,0.16); } .cd-b-bogey .cd-b-val { color: var(--bogey); }
-.cd-b-double { background: rgba(249,112,102,0.16); } .cd-b-double .cd-b-val { color: var(--double); }
-.cd-b-triple { background: rgba(196,54,107,0.2); } .cd-b-triple .cd-b-val { color: var(--triple); }
+.cd-section-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin: 0 0 12px; }
+.cd-avg-num { font-size: 34px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; line-height: 1; }
+.cd-avg-note { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; margin-bottom: 12px; }
+.cd-avg-chart-svg { width: 100%; height: 76px; display: block; overflow: visible; margin-bottom: 24px; }
+.cd-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 0 24px; }
+.cd-stat-tile { background: var(--bg-input); border-radius: 16px; padding: 14px 6px; text-align: center; }
+.cd-stat-tile-val { font-size: 18px; font-weight: 800; color: var(--text-primary); line-height: 1; }
+.cd-stat-tile-label { font-size: 10.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-top: 8px; }
+.cd-breakdown-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin: 24px 0 12px; padding-top: 22px; border-top: 1px solid var(--border); }
+.cd-outcome-table { display: flex; flex-direction: column; }
+.cd-outcome-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+.cd-outcome-row + .cd-outcome-row { border-top: 1px solid var(--border); }
+.cd-outcome-icon { width: 15px; height: 15px; flex-shrink: 0; }
+.cd-outcome-name { flex: 1; font-size: 13px; color: var(--text-secondary); }
+.cd-outcome-count { font-family: var(--font-mono); font-weight: 800; color: var(--text-primary); font-size: 13px; }
+.cd-outcome-pct { font-family: var(--font-mono); color: var(--text-tertiary); font-size: 11px; margin-left: 6px; min-width: 34px; text-align: right; }
+.cd-outcome-pie-wrap { display: flex; justify-content: center; margin-top: 18px; }
+.cd-outcome-pie-svg { width: 150px; height: 150px; }
 
 .attribution { text-align: center; font-size: 11px; color: var(--text-quaternary); margin-top: 24px; }
 </style>
@@ -388,7 +393,17 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     </div>
     <div class="cd-content">
       <div class="cd-facts-row" id="cdFactsRow"></div>
+
+      <div class="cd-section-label" id="cdAvgLabel" hidden>Average Score</div>
+      <div id="cdAvgWrap" hidden>
+        <div class="cd-avg-num" id="cdAvgNum">—</div>
+        <div class="cd-avg-note" id="cdAvgNote"></div>
+        <svg class="cd-avg-chart-svg" id="cdAvgChartSvg"></svg>
+      </div>
+
+      <div class="cd-section-label" id="cdStatLabel" hidden>Other Stats</div>
       <div class="cd-stat-grid" id="cdStatGrid"></div>
+
       <div id="cdBreakdownWrap"></div>
     </div>
   </div>
@@ -982,13 +997,18 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
     const statGrid = document.getElementById('cdStatGrid');
     const breakdownWrap = document.getElementById('cdBreakdownWrap');
+    const avgLabel = document.getElementById('cdAvgLabel');
+    const avgWrap = document.getElementById('cdAvgWrap');
     if (!rounds.length) {
+      document.getElementById('cdStatLabel').style.display = 'none';
+      avgLabel.hidden = true; avgWrap.hidden = true;
       statGrid.innerHTML = '';
       breakdownWrap.innerHTML = '<div class="rd-no-holes">No ' + holesFilter + '-hole rounds logged at this course yet — switch the toggle at the top to check the other hole count.</div>';
       cdOverlay.hidden = false;
       return;
     }
 
+    const chronoRounds = rounds.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
     const scores = rounds.map(r => r.score).filter(v => v != null);
     const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 10) / 10 : null;
     const bestScore = scores.length ? Math.min(...scores) : null;
@@ -996,26 +1016,53 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     const avgPutts = putts.length ? Math.round(putts.reduce((a, b) => a + b, 0) / putts.length * 10) / 10 : null;
     const sumField = k => rounds.reduce((a, r) => a + (r[k] || 0), 0);
 
+    // Average score, with a rolling trend line the same way the
+    // Handicap Index card works — under the Par/Slope/Holes facts row.
+    avgLabel.hidden = false; avgWrap.hidden = false;
+    document.getElementById('cdAvgNum').textContent = avgScore != null ? avgScore : '—';
+    document.getElementById('cdAvgNote').textContent = (bestScore != null ? 'Best ' + bestScore + ' · ' : '') + rounds.length + ' round' + (rounds.length === 1 ? '' : 's');
+    renderTrendChart('cdAvgChartSvg', chronoRounds.filter(r => r.score != null).map(r => ({ date: r.date, v: r.score })), 'var(--accent)', '');
+
+    document.getElementById('cdStatLabel').style.display = '';
     statGrid.innerHTML =
-      '<div class="cd-stat-tile accent"><div class="cd-stat-tile-val">' + (avgScore != null ? avgScore : '—') + '</div><div class="cd-stat-tile-label">Avg Score</div></div>'
-      + '<div class="cd-stat-tile"><div class="cd-stat-tile-val">' + rounds.length + '</div><div class="cd-stat-tile-label">Times Played</div></div>'
+      '<div class="cd-stat-tile"><div class="cd-stat-tile-val">' + rounds.length + '</div><div class="cd-stat-tile-label">Times Played</div></div>'
       + '<div class="cd-stat-tile"><div class="cd-stat-tile-val">' + (bestScore != null ? bestScore : '—') + '</div><div class="cd-stat-tile-label">Best Score</div></div>'
       + '<div class="cd-stat-tile"><div class="cd-stat-tile-val">' + (avgPutts != null ? avgPutts : '—') + '</div><div class="cd-stat-tile-label">Avg Putts</div></div>';
 
-    const breakdown = [
-      ['eagle', 'Eagle+', sumField('eagles')],
-      ['birdie', 'Birdie', sumField('birdies')],
-      ['par', 'Par', sumField('pars')],
-      ['bogey', 'Bogey', sumField('bogeys')],
-      ['double', 'Double', sumField('doubleBogeys')],
-      ['triple', 'Triple+', sumField('triplePlus')]
-    ];
-    const hasBreakdown = breakdown.some(b => b[2] > 0);
-    breakdownWrap.innerHTML = hasBreakdown
-      ? '<div class="cd-breakdown-eyebrow">Hole Outcomes</div><div class="cd-breakdown-grid">'
-        + breakdown.map(b => '<div class="cd-b-tile cd-b-' + b[0] + '"><div class="cd-b-val">' + b[2] + '</div><div class="cd-b-label">' + b[1] + '</div></div>').join('')
-        + '</div>'
-      : '';
+    // Hole outcomes — a table (name/icon, count, %) with a donut chart
+    // underneath summarizing the same breakdown, reusing the same
+    // OUTCOME_META/donutArcPath the main Hole Outcomes card uses.
+    const breakdownIcons = { eagles: 'star', birdies: 'thumbs-up', pars: 'flag', bogeys: 'circle-minus', doubleBogeys: 'trending-down', triplePlus: 'circle-alert' };
+    const totalsByKey = {};
+    OUTCOME_META.forEach(m => totalsByKey[m.key] = sumField(m.key));
+    const grandTotal = Object.values(totalsByKey).reduce((a, b) => a + b, 0);
+    if (!grandTotal) {
+      breakdownWrap.innerHTML = '';
+    } else {
+      const rows = OUTCOME_META.map(m => {
+        const v = totalsByKey[m.key];
+        const pct = Math.round(v / grandTotal * 100);
+        return '<div class="cd-outcome-row"><i data-lucide="' + breakdownIcons[m.key] + '" class="cd-outcome-icon" style="color:' + m.color + '"></i>'
+          + '<div class="cd-outcome-name">' + m.name + '</div>'
+          + '<div class="cd-outcome-count">' + v + '</div><div class="cd-outcome-pct">' + pct + '%</div></div>';
+      }).join('');
+
+      let angle = -Math.PI / 2, pieHtml = '';
+      OUTCOME_META.forEach(m => {
+        const v = totalsByKey[m.key];
+        if (!v) return;
+        const sliceAngle = (v / grandTotal) * Math.PI * 2;
+        const pad = 0.015;
+        const a1 = angle + pad, a2 = angle + sliceAngle - pad;
+        if (a2 > a1) pieHtml += '<path d="' + donutArcPath(50, 50, 46, 30, a1, a2) + '" fill="' + m.color + '"><title>' + m.name + ': ' + v + '</title></path>';
+        angle += sliceAngle;
+      });
+
+      breakdownWrap.innerHTML = '<div class="cd-breakdown-eyebrow">Hole Outcomes</div>'
+        + '<div class="cd-outcome-table">' + rows + '</div>'
+        + '<div class="cd-outcome-pie-wrap"><svg class="cd-outcome-pie-svg" viewBox="0 0 100 100">' + pieHtml + '</svg></div>';
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
     cdOverlay.hidden = false;
   }
   document.getElementById('cdClose').addEventListener('click', () => { cdOverlay.hidden = true; });
