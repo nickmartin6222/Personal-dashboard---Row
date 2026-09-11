@@ -117,16 +117,24 @@ function checkGolfshotEmails() {
 // already-sent messages are skipped via the same processed-id tracking.
 // Keep re-running until the log says "sent 0" — that means it's caught up.
 const BACKFILL_BATCH = 15;
+// Gemini's free tier caps at 20 requests/minute (the "429/502 quota
+// exceeded" errors during the first backfill run were exactly this) —
+// pacing every attempt this far apart keeps well under that instead of
+// blasting through it and wasting the rest of the run on failures.
+const BACKFILL_DELAY_MS = 4000;
 function backfillAllGolfshotEmails() {
   const processed = loadProcessed_();
   const threads = GmailApp.search(GOLFSHOT_SEARCH);
   let sent = 0;
+  let attempted = 0;
 
   outer:
   for (const thread of threads) {
     for (const message of thread.getMessages()) {
       const id = message.getId();
       if (processed.has(id)) continue;
+      if (attempted > 0) Utilities.sleep(BACKFILL_DELAY_MS);
+      attempted++;
       try {
         const response = sendMessage_(message);
         Logger.log('Message ' + id + ' -> ' + response.getResponseCode() + ': ' + response.getContentText());
