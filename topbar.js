@@ -244,6 +244,10 @@ body.topbar-modal-open {
     <span class="bottombar-tab-icon"><i data-lucide="flag"></i></span>
     <span>Golf</span>
   </a>
+  <a href="health.html" class="bottombar-tab" data-page="health">
+    <span class="bottombar-tab-icon"><i data-lucide="heart-pulse"></i></span>
+    <span>Health</span>
+  </a>
   <a href="FROK-finance-standalone.html#net" class="bottombar-tab" data-page="finance">
     <span class="bottombar-tab-icon"><i data-lucide="wallet"></i></span>
     <span>Finance</span>
@@ -268,13 +272,12 @@ body.topbar-modal-open {
     const p = (window.location.pathname || '').toLowerCase();
     if (p.endsWith('gym.html') || p.endsWith('gym-preview.html')) return 'fitness';
     if (p.endsWith('golf.html')) return 'golf';
+    if (p.endsWith('health.html')) return 'health';
     // Finance suppresses this bottombar entirely (its own internal tabs
     // take over instead), so this branch never actually lights up
     // anything today — kept for consistency/future-proofing.
     if (p.endsWith('frok-finance-standalone.html')) return 'finance';
-    // health.html has no bottombar tab of its own (hidden from nav for now) —
-    // falls back to 'main' so at least Home lights up if someone lands there.
-    return 'main'; // index.html, health.html, /, or anything else falls back to main
+    return 'main'; // index.html, /, or anything else falls back to main
   }
 
   // topbar.js runs on pages that may not have Lucide in their own <head>
