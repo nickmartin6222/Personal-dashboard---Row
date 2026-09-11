@@ -74,6 +74,45 @@ function isExcludedRound(date, course) {
   return EXCLUDED_ROUNDS.some(x => x.date === date && x.course === normalizeForMatch(course));
 }
 
+// Gemini has occasionally misread a back-9-only (or front-9-only) email
+// as a full 18-hole round, inventing the missing half as 9 holes that
+// each exactly match par with 0 putts and no GIR — a pattern a real
+// scorecard never produces (you always putt, and rarely par every hole
+// of a half). When that pattern shows up, trust only the real half and
+// downgrade the round to a genuine 9-holer instead of writing a fake
+// 18-hole score built from half real, half invented data.
+function stripFabricatedHalf(extracted) {
+  const holes = Array.isArray(extracted.holes) ? extracted.holes : [];
+  if (extracted.holesPlayed !== 18 || holes.length < 18) return;
+  const isFabricated = half => half.length === 9 && half.every(h => (h.putts || 0) === 0 && h.score === h.par && !h.gir);
+  const front = holes.filter(h => h.hole <= 9);
+  const back = holes.filter(h => h.hole > 9);
+  let real = null;
+  if (isFabricated(front) && !isFabricated(back)) real = back;
+  else if (isFabricated(back) && !isFabricated(front)) real = front;
+  if (!real) return;
+  const tally = { eagles: 0, birdies: 0, pars: 0, bogeys: 0, doubleBogeys: 0, triplePlus: 0 };
+  real.forEach(h => {
+    const d = h.score - h.par;
+    if (d <= -2) tally.eagles++;
+    else if (d === -1) tally.birdies++;
+    else if (d === 0) tally.pars++;
+    else if (d === 1) tally.bogeys++;
+    else if (d === 2) tally.doubleBogeys++;
+    else tally.triplePlus++;
+  });
+  extracted.holes = real;
+  extracted.holesPlayed = 9;
+  extracted.totalScore = real.reduce((a, h) => a + h.score, 0);
+  extracted.totalPar = real.reduce((a, h) => a + h.par, 0);
+  extracted.putts = real.reduce((a, h) => a + (h.putts || 0), 0);
+  Object.assign(extracted, tally);
+  // Fairway counts were read against the assumed 18-hole scorecard —
+  // no longer trustworthy once half the round turns out to be invented.
+  extracted.fairwaysHit = 0;
+  extracted.fairwaysTotal = 0;
+}
+
 function computeDifferential(score, par, slope) {
   if (!(score > 0) || !(par > 0)) return null;
   return Math.round(((score - par) * 113 / (slope > 0 ? slope : 113)) * 10) / 10;
@@ -145,7 +184,12 @@ export default async function handler(req, res) {
       + 'entry per hole actually played, reading the par and score printed inside or next to each '
       + "hole's cell even if putts or GIR aren't shown for it (use 0 / false for those two only). "
       + 'Only return an empty holes array if you have genuinely searched the whole email and no '
-      + 'per-hole table or hole-numbered score cells exist anywhere in it. Email content:\n\n' + emailContent;
+      + 'per-hole table or hole-numbered score cells exist anywhere in it. '
+      + 'Some rounds only cover the front 9 (holes 1-9) or only the back 9 (holes 10-18) — that is '
+      + "normal, not an error. If that's what this email shows, set holesPlayed to 9 and put ONLY "
+      + "those 9 real holes in the holes array. NEVER pad the holes array out to 18 by inventing the "
+      + 'other 9 — a fabricated hole (guessing its score equals its par, with 0 putts and no GIR) is '
+      + 'worse than leaving it out entirely. Email content:\n\n' + emailContent;
     const geminiResp = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent',
       {
@@ -166,6 +210,7 @@ export default async function handler(req, res) {
     const text = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;
     if (!text) return res.status(502).json({ error: 'Gemini returned no extraction' });
     extracted = JSON.parse(text);
+    stripFabricatedHalf(extracted);
   } catch (e) {
     return res.status(502).json({ error: 'extraction failed: ' + (e && e.message ? e.message : String(e)) });
   }
