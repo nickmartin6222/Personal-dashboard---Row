@@ -1181,12 +1181,38 @@ main { max-width: 640px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
   renderAll();
   window.addEventListener('storage', renderAll);
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
     if (typeof lucide !== 'undefined') lucide.createIcons();
     if (typeof initCloudSync !== 'function') return;
+
+    // golf:courseImages / golf:favoriteCourses used to be local-only —
+    // not synced — so any photos/favorites already saved on THIS device
+    // only exist here. Push them to Supabase now, before the sync's own
+    // initial pull runs below, so a remote snapshot that predates this
+    // fix can't prune them back out. Safe to leave in permanently: once
+    // everything's actually in sync this is just a harmless no-op merge.
+    try {
+      const legacyImages = localStorage.getItem('golf:courseImages');
+      const legacyFavs = localStorage.getItem('golf:favoriteCourses');
+      if ((legacyImages && legacyImages !== '{}') || (legacyFavs && legacyFavs !== '[]')) {
+        const url = window.DASH_SUPABASE_URL || 'https://srajryooffirbroltjmg.supabase.co';
+        const key = window.DASH_SUPABASE_KEY || 'sb_publishable_5142ZwTLF_DkSVRzciNuRA_bHwRAu4c';
+        const headers = { apikey: key, Authorization: 'Bearer ' + key };
+        const rows = await fetch(url + '/rest/v1/app_state?key=eq.golf&select=data', { headers }).then(r => r.json()).catch(() => []);
+        const remote = (rows && rows[0] && rows[0].data) || {};
+        if (legacyImages) remote['golf:courseImages'] = JSON.parse(legacyImages);
+        if (legacyFavs) remote['golf:favoriteCourses'] = JSON.parse(legacyFavs);
+        await fetch(url + '/rest/v1/app_state?on_conflict=key', {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }, headers),
+          body: JSON.stringify({ key: 'golf', data: remote, updated_at: new Date().toISOString() })
+        }).catch(() => {});
+      }
+    } catch (e) {}
+
     initCloudSync({
       appKey: 'golf',
-      syncedKeys: ['golf:rounds', 'golf:courses'],
+      syncedKeys: ['golf:rounds', 'golf:courses', 'golf:courseImages', 'golf:favoriteCourses'],
       onApplied: function () { window.dispatchEvent(new Event('storage')); }
     });
   });
