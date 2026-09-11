@@ -27,9 +27,13 @@
 const ENDPOINT_URL = 'https://life-dashboard-ten-tau.vercel.app/api/golfshot-import';
 const SHARED_SECRET = 'PASTE-THE-SAME-SECRET-YOU-PUT-IN-VERCEL-HERE';
 
-// Adjust the sender if Golfshot's real address turns out different — check
-// an actual email's "Show original" in Gmail to confirm.
-const GOLFSHOT_SENDER = 'from:support@golfshot.com';
+// Confirmed real sender: support@golfshot.com (mailed via Amazon SES,
+// signed by golfshot.com). Golfshot also sends plenty of promo/marketing
+// emails from the same address ("Get 4 Extra Months of Pro", etc.) — the
+// subject filter keeps this to only the actual round scorecards, which
+// all have "Scorecard" in the subject (e.g. "Bundoora Park Golf Course -
+// Bundoora - Scorecard").
+const GOLFSHOT_SEARCH = 'from:support@golfshot.com subject:Scorecard';
 
 // Remembers which message IDs have already been sent, so a rolling search
 // window can't resend the same email as it drifts back into view — the
@@ -66,7 +70,7 @@ function sendMessage_(message) {
 // enough that the difference is never actually noticeable.)
 function checkGolfshotEmails() {
   const processed = loadProcessed_();
-  const threads = GmailApp.search(GOLFSHOT_SENDER + ' newer_than:3d');
+  const threads = GmailApp.search(GOLFSHOT_SEARCH + ' newer_than:3d');
   let sent = 0;
 
   threads.forEach(thread => {
@@ -98,7 +102,7 @@ function checkGolfshotEmails() {
 const BACKFILL_BATCH = 15;
 function backfillAllGolfshotEmails() {
   const processed = loadProcessed_();
-  const threads = GmailApp.search(GOLFSHOT_SENDER);
+  const threads = GmailApp.search(GOLFSHOT_SEARCH);
   let sent = 0;
 
   outer:
