@@ -1153,6 +1153,26 @@ button { font-family: inherit; }
   function findAreaForExercise(day, name) {
     return (DAY_META[day].areas || []).find(function (a) { return a.options.some(function (o) { return o.name === name; }); });
   }
+  // What's actually been logged TODAY for this exercise — used by the
+  // checklist to show real sets/reps/weight once crossed off, instead
+  // of continuing to show the target placeholder. This was called but
+  // never defined, which meant renderChecklist() threw a ReferenceError
+  // the instant any exercise was already marked done, aborting before
+  // the exercise list ever got written — the checklist (and everything
+  // that rendered after it) would silently vanish as a result.
+  function todaySetsForName(name) {
+    var found = [];
+    if (currentSession) {
+      currentSession.sets.forEach(function (s) { if (s.name === name) found.push(s); });
+    }
+    if (found.length) return found;
+    var tk = wtDateKey(new Date());
+    SESSIONS.forEach(function (s) {
+      if (s.dateKey !== tk) return;
+      s.sets.forEach(function (st) { if (st.name === name) found.push(st); });
+    });
+    return found;
+  }
 
   // ------------------------------------------------------------------
   // getRx — ported verbatim from gym.html's prescription engine.
@@ -1848,7 +1868,12 @@ button { font-family: inherit; }
       cancelBtn.hidden = true;
       return;
     }
-    cancelBtn.hidden = false; // something exists to discard, timed or not
+    // Cancel is for discarding an actual in-progress workout — it only
+    // makes sense once Start Workout has been tapped. Quick-logging via
+    // the checklist's checkboxes alone (without ever tapping Start)
+    // shouldn't surface it; unchecking a box is already how you undo
+    // that on its own, one at a time.
+    cancelBtn.hidden = !currentSession.everStarted;
     if (currentSession.segmentStart) {
       startBtn.classList.add('is-active');
       pauseBtn.hidden = false;
