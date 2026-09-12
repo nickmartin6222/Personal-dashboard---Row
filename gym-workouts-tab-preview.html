@@ -155,9 +155,7 @@ button { font-family: inherit; }
 .hero-tag { display: inline-block; font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; color: var(--lime-ink); }
 .hero-title { font-family: var(--font-heading); font-size: 28px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); letter-spacing: -0.005em; }
 .hero-sub { font-size: 12.5px; color: rgba(255,255,255,0.85); margin-top: 3px; }
-.hero-muscles { display: flex; gap: 14px; margin-top: 8px; }
-.hero-muscle { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: rgba(255,255,255,0.9); font-weight: 600; }
-.hero-muscle i { width: 14px; height: 14px; flex-shrink: 0; }
+.hero-muscles { font-size: 12.5px; color: rgba(255,255,255,0.85); margin-top: 3px; }
 .hero-tap-hint { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); color: #fff; font-size: 10.5px; font-family: var(--font-mono); padding: 6px 11px; border-radius: 999px; display: flex; align-items: center; gap: 5px; }
 
 /* ---------- warm-up ---------- */
@@ -497,9 +495,7 @@ button { font-family: inherit; }
     document.getElementById('heroTag').textContent = DAY_TAG_TEXT[activeDay];
     document.getElementById('heroTag').style.background = 'var(' + meta.accent + ')';
     document.getElementById('heroTitle').textContent = activeDay;
-    document.getElementById('heroMuscles').innerHTML = meta.muscles.map(function (m) {
-      return '<span class="hero-muscle"><i data-lucide="' + (MUSCLE_ICON[m] || 'dumbbell') + '"></i>' + m + '</span>';
-    }).join('');
+    document.getElementById('heroMuscles').textContent = meta.muscles.join(' · ');
     document.documentElement.style.setProperty('--hero-accent', 'var(' + meta.accent + ')');
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
