@@ -150,11 +150,15 @@ button { font-family: inherit; }
     linear-gradient(100deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.12) 42%, transparent 62%),
     linear-gradient(155deg, var(--hero-accent, var(--lime)) 0%, color-mix(in srgb, var(--hero-accent, var(--lime)) 55%, #000) 100%);
 }
-/* Concentric ring texture, same device the reference card uses to keep
-   a flat color from reading as plain — pure CSS, no extra asset. */
+/* Faint swirling contour-line texture (topographic-map style), same
+   device the reference card uses to keep a flat gradient from reading
+   as plain — inline SVG, no extra asset. */
 .hero-pattern {
-  position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
-  background-image: repeating-radial-gradient(circle at 82% 28%, rgba(255,255,255,0.16) 0px, rgba(255,255,255,0.16) 1.5px, transparent 1.5px, transparent 15px);
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.4;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.1' stroke-linecap='round'%3E%3Cpath d='M-30,340 C60,300 90,260 60,220 C30,180 80,150 160,160 C240,170 260,210 220,240 C180,270 200,300 260,300 C320,300 340,260 320,220' opacity='0.55'/%3E%3Cpath d='M-30,300 C50,265 75,230 50,195 C25,160 70,135 145,145 C220,155 245,190 210,220 C175,250 195,280 255,282 C320,284 350,245 335,200 C325,170 340,150 370,150' opacity='0.65'/%3E%3Cpath d='M-30,258 C40,228 60,198 40,168 C20,138 60,118 130,128 C200,138 222,168 192,196 C162,224 182,252 238,256 C300,260 336,224 328,180 C322,150 340,128 375,124 C420,118 445,140 440,170' opacity='0.75'/%3E%3Cpath d='M-30,214 C30,190 46,164 30,138 C14,112 48,96 112,106 C176,116 196,142 170,168 C144,194 162,220 212,226 C270,232 308,200 302,160 C298,132 316,108 352,100 C398,90 430,112 432,148' opacity='0.85'/%3E%3Cpath d='M-30,170 C20,152 34,130 22,110 C10,90 38,78 92,86 C146,94 164,116 142,138 C120,160 136,182 178,188 C228,194 262,168 258,134 C255,110 272,88 304,80 C348,68 380,88 384,120' opacity='0.7'/%3E%3Cpath d='M-30,126 C10,114 22,96 14,80 C6,64 28,54 70,60 C112,66 126,84 108,102 C90,120 102,138 136,142 C176,146 204,124 200,96 C198,76 212,58 238,52 C274,44 300,60 304,86' opacity='0.5'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 145% 145%;
+  background-position: 65% 25%;
+  background-repeat: no-repeat;
 }
 .hero-cutout { position: absolute; right: -4%; bottom: -3%; height: 108%; width: auto; max-width: 62%; object-fit: contain; object-position: bottom right; filter: drop-shadow(0 16px 22px rgba(0,0,0,0.4)); transition: opacity 0.3s ease; }
 .hero-body { position: absolute; left: 20px; right: 46%; bottom: 18px; }
@@ -330,7 +334,7 @@ button { font-family: inherit; }
   var DAY_META = {
     'Push': {
       accent: '--day-push', accentDim: '--day-push-dim',
-      img: 'assets/bench-press-cutout.png',
+      img: 'assets/shoulder-press-cutout.png',
       muscles: ['Chest', 'Shoulders', 'Triceps'],
       warmup: ['5 min bike or rower', 'Band pull-aparts × 15'],
       areas: [
@@ -344,7 +348,7 @@ button { font-family: inherit; }
     },
     'Pull': {
       accent: '--day-pull', accentDim: '--day-pull-dim',
-      img: 'assets/lat-pulldown-cutout.png',
+      img: 'assets/lat-pulldown-cutout-v2.png',
       muscles: ['Back', 'Biceps', 'Rear Delts'],
       warmup: ['5 min row machine or bike', 'Band pull-aparts × 15'],
       areas: [
@@ -356,7 +360,7 @@ button { font-family: inherit; }
     },
     'Lower A': {
       accent: '--day-lowera', accentDim: '--day-lowera-dim',
-      img: 'assets/rdl-cutout.png',
+      img: 'assets/rdl-cutout-v2.png',
       muscles: ['Hamstrings', 'Glutes', 'Adductors'],
       warmup: ['5 min bike or brisk walk', 'Leg swings — 10/side'],
       areas: [
@@ -368,7 +372,7 @@ button { font-family: inherit; }
     },
     'Lower B': {
       accent: '--day-lowerb', accentDim: '--day-lowerb-dim',
-      img: 'assets/squat-cutout.png',
+      img: 'assets/squat-cutout-v2.png',
       muscles: ['Quads', 'Hamstrings', 'Calves'],
       warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10'],
       areas: [
