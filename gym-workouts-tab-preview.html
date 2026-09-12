@@ -48,6 +48,27 @@
   --day-lowerb: #A78BFA; --day-lowerb-dim: rgba(167,139,250,0.16);
   --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SF Mono, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #EDEEE9;
+  --bg-card: #FFFFFF;
+  --bg-raised: rgba(28,30,27,0.045);
+  --bg-input: rgba(28,30,27,0.06);
+  --border: rgba(28,30,27,0.08);
+  --border-strong: rgba(28,30,27,0.16);
+  --text-1: #1C1E1B;
+  --text-2: #63675F;
+  --text-3: #9A9E93;
+  --text-4: #C3C6BD;
+  --lime: #4C7A5B;
+  --lime-dim: rgba(76,122,91,0.12);
+  --lime-ink: #ffffff;
+  --day-push: #C99A44; --day-push-dim: rgba(201,154,68,0.12);
+  --day-pull: #4F7FBF; --day-pull-dim: rgba(79,127,191,0.12);
+  --day-lowera: #4C7A5B; --day-lowera-dim: rgba(76,122,91,0.12);
+  --day-lowerb: #8A6BB5; --day-lowerb-dim: rgba(138,107,181,0.12);
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-1); font-family: var(--font); -webkit-font-smoothing: antialiased; min-height: 100vh; }
@@ -60,20 +81,30 @@ button { font-family: inherit; }
   font-size: 11.5px; padding: 8px 12px; border-radius: 10px; margin-bottom: 14px; font-family: var(--font-mono); line-height: 1.5;
 }
 
-/* ---------- top bar: home + day pills ---------- */
-.top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.home-btn {
-  width: 38px; height: 38px; border-radius: 12px; background: var(--bg-raised); border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center; color: var(--text-2); text-decoration: none; flex-shrink: 0;
+/* ---------- header: day/date/name + theme toggle + home ---------- */
+.header-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 10px; }
+.header-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+.header-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin-top: 3px; }
+.header-sub { font-size: 12.5px; color: var(--text-3); margin-top: 3px; }
+.header-actions { display: flex; gap: 8px; flex-shrink: 0; margin-top: 2px; }
+.icon-btn {
+  width: 36px; height: 36px; border-radius: 11px; background: var(--bg-raised); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; color: var(--text-2); text-decoration: none; flex-shrink: 0; cursor: pointer;
 }
-.day-pills { display: flex; gap: 6px; flex: 1; margin-left: 12px; overflow-x: auto; }
+.icon-btn i, .icon-btn svg { width: 17px; height: 17px; }
+
+/* ---------- day-type pills: a soft wash over the pill, not a hard
+   color block — the earlier solid-fill version read as a harsh
+   "paint stroke"; this is the same idea as the reference's understated
+   mint "Full Body" pill instead. ---------- */
+.day-pills { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
 .day-pills::-webkit-scrollbar { display: none; }
 .day-pill {
-  font-family: var(--font-mono); font-size: 11.5px; font-weight: 800; letter-spacing: 0.02em;
-  padding: 9px 13px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--bg-raised);
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em;
+  padding: 9px 14px; border-radius: 999px; border: 1px solid transparent; background: var(--bg-raised);
   color: var(--text-2); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s;
 }
-.day-pill.active { color: var(--lime-ink); box-shadow: 0 0 18px 0 var(--pill-glow, transparent); }
+.day-pill.active { background: var(--pill-wash, var(--lime-dim)); border-color: var(--pill-accent, var(--lime)); color: var(--text-1); font-weight: 800; }
 
 /* ---------- calendar strip ---------- */
 .cal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; }
@@ -93,8 +124,14 @@ button { font-family: inherit; }
   position: relative; height: 220px; border-radius: 22px; overflow: hidden; cursor: pointer;
   margin-bottom: 14px; background: var(--bg-card); -webkit-tap-highlight-color: transparent;
 }
-.hero-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity 0.35s ease; }
-.hero-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.05) 100%); }
+.hero-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 68% 30%; filter: grayscale(0.35) contrast(1.08); transition: opacity 0.35s ease; }
+/* Tints every photo with the current day's accent color so three
+   different photographers/lighting setups still read as one
+   consistent, "designed" set rather than a grab-bag of stock photos —
+   the "colors background with gradient" look, applied over real
+   photography instead of swapping in flat illustration. */
+.hero-duotone { position: absolute; inset: 0; background: linear-gradient(135deg, var(--hero-accent, var(--lime)) 0%, transparent 65%); mix-blend-mode: color; opacity: 0.85; }
+.hero-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.1) 55%, rgba(0,0,0,0.05) 100%); }
 .hero-glow { position: absolute; inset: 0; box-shadow: inset 0 0 0 2px var(--hero-accent, var(--lime)); opacity: 0.55; border-radius: 22px; pointer-events: none; }
 .hero-body { position: absolute; left: 20px; right: 20px; bottom: 18px; }
 .hero-tag { display: inline-block; font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; color: var(--lime-ink); }
@@ -170,9 +207,16 @@ button { font-family: inherit; }
 <div class="shell">
   <div class="demo-flag">DESIGN PROTOTYPE — built from your annotated PDF. Real exercise data + real progressive-overload suggestions, but logging here writes to a separate local key, not your actual training history. Nothing here is wired into navigation.</div>
 
-  <div class="top-row">
-    <a class="home-btn" href="gym-preview.html" aria-label="Back"><i data-lucide="home"></i></a>
-    <div class="day-pills" id="dayPills"></div>
+  <div class="header-row">
+    <div>
+      <div class="header-eyebrow" id="hdrDow">—</div>
+      <div class="header-title" id="hdrName">—</div>
+      <div class="header-sub" id="hdrMuscles">—</div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="icon-btn" id="themeBtn" aria-label="Toggle light/dark"><i data-lucide="sun-moon"></i></button>
+      <a class="icon-btn" href="gym-preview.html" aria-label="Back to Fitness"><i data-lucide="home"></i></a>
+    </div>
   </div>
 
   <div class="cal-card">
@@ -183,8 +227,11 @@ button { font-family: inherit; }
     <div class="cal-week" id="calWeek"></div>
   </div>
 
+  <div class="day-pills" id="dayPills"></div>
+
   <div class="hero-tile" id="heroTile">
     <img id="heroImg" src="" alt="">
+    <div class="hero-duotone" id="heroDuotone"></div>
     <div class="hero-shade"></div>
     <div class="hero-glow" id="heroGlow"></div>
     <div class="hero-tap-hint"><i data-lucide="pencil" style="width:12px;height:12px"></i>Tap to pick exercises</div>
@@ -344,12 +391,23 @@ button { font-family: inherit; }
     wrap.innerHTML = DAY_ORDER.map(function (d) {
       var meta = DAY_META[d];
       var active = d === activeDay;
-      var style = active ? 'background:var(' + meta.accent + ');border-color:var(' + meta.accent + ');--pill-glow:var(' + meta.accent + ')' : '';
+      var style = active ? '--pill-accent:var(' + meta.accent + ');--pill-wash:var(' + meta.accentDim + ')' : '';
       return '<button type="button" class="day-pill' + (active ? ' active' : '') + '" data-day="' + d + '" style="' + style + '">' + d + '</button>';
     }).join('');
     wrap.querySelectorAll('.day-pill').forEach(function (btn) {
       btn.addEventListener('click', function () { activeDay = btn.dataset.day; renderAll(); });
     });
+  }
+
+  // ---------- header: day/date + workout name ----------
+  var DAY_FULL_NAME = { 'Push': 'Push Day', 'Pull': 'Pull Day', 'Lower A': 'Lower Body — A', 'Lower B': 'Lower Body — B' };
+  function renderHeader() {
+    var meta = DAY_META[activeDay];
+    var today = new Date();
+    document.getElementById('hdrDow').textContent = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    document.getElementById('hdrName').textContent = DAY_FULL_NAME[activeDay];
+    document.getElementById('hdrName').style.color = 'var(' + meta.accent + ')';
+    document.getElementById('hdrMuscles').textContent = meta.muscles;
   }
 
   // ---------- calendar strip ----------
@@ -436,7 +494,23 @@ button { font-family: inherit; }
     });
   }
 
-  function renderAll() { renderPills(); renderHero(); renderWarmup(); renderChecklist(); }
+  function renderAll() { renderHeader(); renderPills(); renderHero(); renderWarmup(); renderChecklist(); }
+
+  // ---------- theme toggle — same key topbar.js's shared toggle uses
+  // elsewhere in the app ('sage' = light), so flipping it here stays
+  // consistent if you land on another page afterward. ----------
+  var THEME_KEY = 'dash:colorTheme';
+  function applyStoredTheme() {
+    var v = null; try { v = localStorage.getItem(THEME_KEY); } catch (e) {}
+    if (v === 'sage') document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  applyStoredTheme();
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    try { localStorage.setItem(THEME_KEY, isLight ? 'mint' : 'sage'); } catch (e) {}
+    applyStoredTheme();
+  });
 
   // ---------- picker modal ----------
   function openPicker() {
@@ -526,6 +600,7 @@ button { font-family: inherit; }
   });
 
   renderAll();
+  renderCalendar();
   if (typeof lucide !== 'undefined') lucide.createIcons();
   document.addEventListener('DOMContentLoaded', function () { if (typeof lucide !== 'undefined') lucide.createIcons(); });
 })();
