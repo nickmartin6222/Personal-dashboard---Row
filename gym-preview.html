@@ -945,7 +945,7 @@ button { font-family: inherit; }
   var DAY_META = {
     'Lower A': {
       muscles: 'Hamstrings · Glutes · Adductors',
-      warmup: ['5 min bike or brisk walk', 'Leg swings — front-back & side-side, 10/side', 'Bodyweight squats × 10', 'Glute bridges × 10'],
+      warmup: ['5 min bike or brisk walk', 'Leg swings — front-back & side-side, 10/side'],
       areas: [
         { area: 'RDL', sets: 4, options: [{ name: 'Barbell RDL', muscle: 'Hamstrings', repMin: 6, repMax: 10, step: 5, startWeight: 60 }] },
         { area: 'Hip Thrust', sets: 4, options: [{ name: 'Single-Leg Machine Hip Thrust', muscle: 'Glutes', repMin: 8, repMax: 12, step: 5, startWeight: 40 }] },
@@ -968,7 +968,7 @@ button { font-family: inherit; }
     },
     'Push': {
       muscles: 'Chest · Shoulders · Triceps',
-      warmup: ['5 min bike or rower', 'Arm circles, 10/direction', 'Band pull-aparts × 15', 'Light push-ups × 10'],
+      warmup: ['5 min bike or rower', 'Band pull-aparts × 15'],
       areas: [
         { area: 'Horizontal Press', sets: 4, options: [{ name: 'Barbell Bench Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 2.5, startWeight: 60 }] },
         { area: 'Incline Press', sets: 4, options: [{ name: 'Incline Barbell Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 2.5, startWeight: 45 }] },
@@ -1007,9 +1007,12 @@ button { font-family: inherit; }
     },
     'Lower B': {
       muscles: 'Quads · Hamstrings · Calves',
-      warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10', 'Walking lunges × 10/side', 'Calf raises × 15'],
+      warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10'],
       areas: [
-        { area: 'Squat', sets: 4, options: [{ name: 'Goblet / Front Squat', muscle: 'Quads', repMin: 6, repMax: 10, step: 2.5, startWeight: 20 }] },
+        { area: 'Squat', sets: 4, options: [
+          { name: 'Goblet / Front Squat', muscle: 'Quads', repMin: 6, repMax: 10, step: 2.5, startWeight: 20 },
+          { name: 'Hack Squat', muscle: 'Quads', repMin: 6, repMax: 10, step: 10, startWeight: 80 }
+        ]},
         { area: 'Split Squat', sets: 4, options: [{ name: 'Bulgarian Split Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true }] },
         { area: 'Hip Abduction', sets: 3, options: [{ name: 'Hip Abduction', muscle: 'Hips', repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true }] },
         { area: 'Leg Extension', sets: 3, options: [{ name: 'Leg Extension', muscle: 'Quads', repMin: 10, repMax: 15, step: 5, startWeight: 30 }] },
@@ -1033,7 +1036,7 @@ button { font-family: inherit; }
     },
     'Pull': {
       muscles: 'Back · Biceps · Rear delts',
-      warmup: ['5 min row machine or bike', 'Band pull-aparts × 15', 'Scapular pull-ups × 10', 'Light lat pulldown × 10'],
+      warmup: ['5 min row machine or bike', 'Band pull-aparts × 15'],
       areas: [
         { area: 'Vertical Pull', sets: 4, options: [{ name: 'Lat Pulldown', muscle: 'Back', repMin: 6, repMax: 10, step: 5, startWeight: 50 }] },
         { area: 'Pull-Up', sets: 4, options: [{ name: 'Pull-Ups', muscle: 'Back', repMin: 4, repMax: 10, step: 1, startWeight: 0, bw: true }] },
@@ -1069,19 +1072,39 @@ button { font-family: inherit; }
   };
 
   // Persist any custom days/exercises across reloads.
-  // Bumped to v3 so catalog changes made directly in code (renamed
-  // exercises, added warm-up steps) actually take effect — this key
-  // caches a full DAY_META/DAY_ORDER snapshot and overrides the in-code
-  // defaults entirely once it exists, so a v2 snapshot from before
-  // today's changes would otherwise silently keep showing stale names.
-  var PROGRAM_KEY = 'po_preview_program_v3';
+  //
+  // IMPORTANT: stays on v2 — a version bump here discards the user's
+  // ENTIRE cached DAY_META/DAY_ORDER wholesale and falls back to the
+  // fresh in-code defaults, which silently breaks anyone who's ever
+  // used "+ Day" / "+ Add exercise": their saved picks (po_preview_
+  // picks_v5) are indexed positionally by area, so a reset catalog
+  // whose areas no longer line up with those old indices can produce
+  // an empty (or outright broken) checklist after confirming picks —
+  // exactly what a v2->v3 bump caused. Renamed defaults and the new
+  // warm-up lists are patched into any existing cached snapshot below
+  // instead, in place, leaving everything else about a custom setup
+  // (including custom days/exercises) untouched.
+  var PROGRAM_KEY = 'po_preview_program_v2';
+  var FRESH_DAY_META = DAY_META; // in-code defaults, captured before loadProgram can replace DAY_META
   function saveProgram() { try { localStorage.setItem(PROGRAM_KEY, JSON.stringify({ DAY_META: DAY_META, DAY_ORDER: DAY_ORDER })); } catch (e) {} }
   (function loadProgram() {
     try {
       var raw = localStorage.getItem(PROGRAM_KEY);
       if (!raw) return;
       var obj = JSON.parse(raw);
-      if (obj && obj.DAY_META && obj.DAY_ORDER) { DAY_META = obj.DAY_META; DAY_ORDER = obj.DAY_ORDER; }
+      if (obj && obj.DAY_META && obj.DAY_ORDER) {
+        DAY_META = obj.DAY_META; DAY_ORDER = obj.DAY_ORDER;
+        var RENAME_MAP = { 'Hip External Rotation': 'Hip Abduction', 'Seated Leg Curl': 'Seated Hamstring Curl' };
+        Object.keys(DAY_META).forEach(function (day) {
+          (DAY_META[day].areas || []).forEach(function (a) {
+            if (RENAME_MAP[a.area]) a.area = RENAME_MAP[a.area];
+            (a.options || []).forEach(function (o) { if (RENAME_MAP[o.name]) o.name = RENAME_MAP[o.name]; });
+          });
+          if (!Array.isArray(DAY_META[day].warmup) && FRESH_DAY_META[day] && Array.isArray(FRESH_DAY_META[day].warmup)) {
+            DAY_META[day].warmup = FRESH_DAY_META[day].warmup;
+          }
+        });
+      }
     } catch (e) {}
   })();
 
@@ -1523,7 +1546,23 @@ button { font-family: inherit; }
   var pickerOpen = false;
   var currentSession = null; // { day, startTime, sets: [{name,setsCount,reps,weight}] }
 
-  try { var rawPicks = localStorage.getItem(PICKS_KEY); if (rawPicks) picks = JSON.parse(rawPicks); } catch (e) {}
+  try {
+    var rawPicks = localStorage.getItem(PICKS_KEY);
+    if (rawPicks) picks = JSON.parse(rawPicks);
+    // A picked exercise saved under a name that's since been renamed
+    // (Hip External Rotation -> Hip Abduction, Seated Leg Curl ->
+    // Seated Hamstring Curl) would otherwise silently vanish from the
+    // checklist — getPicksForDay filters out any picked name that no
+    // longer matches a real option. Patch old names in place instead.
+    var PICKS_RENAME_MAP = { 'Hip External Rotation': 'Hip Abduction', 'Seated Leg Curl': 'Seated Hamstring Curl' };
+    Object.keys(picks).forEach(function (day) {
+      Object.keys(picks[day] || {}).forEach(function (i) {
+        if (Array.isArray(picks[day][i])) {
+          picks[day][i] = picks[day][i].map(function (n) { return PICKS_RENAME_MAP[n] || n; });
+        }
+      });
+    });
+  } catch (e) {}
 
   function getPicksForDay(day) {
     if (!picks[day]) picks[day] = {};
@@ -1706,11 +1745,16 @@ button { font-family: inherit; }
     // actually disappear everywhere it was counted, not just from the
     // checklist — otherwise it silently keeps contributing to today's
     // sets/kg tally even though it no longer shows as part of the plan.
-    var validNames = {};
-    todaysExerciseList(confirmedDay).forEach(function (ex) { validNames[ex.name] = true; });
-    if (currentSession) { currentSession.sets = currentSession.sets.filter(function (s) { return validNames[s.name]; }); saveCurrentSession(); }
-    Object.keys(doneState).forEach(function (name) { if (!validNames[name]) doneState[name] = false; });
-    saveDoneToday();
+    // Wrapped defensively so a problem reconciling one thing can't stop
+    // renderChecklist() below from ever running — Confirm must always
+    // leave the checklist visible, even in a partial-failure case.
+    try {
+      var validNames = {};
+      todaysExerciseList(confirmedDay).forEach(function (ex) { validNames[ex.name] = true; });
+      if (currentSession) { currentSession.sets = currentSession.sets.filter(function (s) { return validNames[s.name]; }); saveCurrentSession(); }
+      Object.keys(doneState).forEach(function (name) { if (!validNames[name]) doneState[name] = false; });
+      saveDoneToday();
+    } catch (e) {}
     renderChecklist();
     renderAnatomy();
     renderWorkoutSummary();
@@ -2725,15 +2769,25 @@ button { font-family: inherit; }
   restoreCurrentSession();
   restoreDoneToday();
   updateSessionButtonsUI();
-  renderHeader(confirmedDay);
-  renderDateStrip();
-  renderWeight();
-  renderStrength();
-  renderChecklist();
-  renderActivity();
-  renderWorkoutSummary();
-  renderLibrary();
-  renderAnatomy();
+  // Each section renders independently — if one throws (a stale
+  // reference, bad cached data, anything), it must not take every
+  // section after it down too. Previously these ran as one plain
+  // sequence: a single uncaught exception in, say, renderChecklist()
+  // silently skipped renderActivity()/renderWorkoutSummary()/
+  // renderLibrary()/renderAnatomy() as well, since JS doesn't
+  // continue past a throw — which is exactly what "the checklist AND
+  // Recent Activity are both just missing" looks like from the
+  // outside, with no error visible anywhere on the page itself.
+  function safeBoot(fn) { try { fn(); } catch (e) { try { console.error('[gym] boot render failed:', fn.name || fn, e); } catch (e2) {} } }
+  safeBoot(function () { renderHeader(confirmedDay); });
+  safeBoot(renderDateStrip);
+  safeBoot(renderWeight);
+  safeBoot(renderStrength);
+  safeBoot(renderChecklist);
+  safeBoot(renderActivity);
+  safeBoot(renderWorkoutSummary);
+  safeBoot(renderLibrary);
+  safeBoot(renderAnatomy);
 
   // ------------------------------------------------------------------
   // CLOUD SYNC via Supabase — ported verbatim from gym.html's own
