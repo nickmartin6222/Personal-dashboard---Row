@@ -139,24 +139,30 @@ button { font-family: inherit; }
 .cal-day-num { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: var(--text-2); }
 .cal-day.is-today .cal-day-num { color: var(--lime-ink); font-weight: 800; }
 
-/* ---------- hero image tile ---------- */
+/* ---------- hero tile: gradient background + transparent-cutout
+   athlete on the right, name/tag on the left where the text already
+   sat — same idea as the reference card (colored gradient, ring
+   pattern texture, cutout bleeding off the right edge). ---------- */
 .hero-tile {
-  position: relative; height: 220px; border-radius: 22px; overflow: hidden; cursor: pointer;
-  margin-bottom: 14px; background: var(--bg-card); -webkit-tap-highlight-color: transparent;
+  position: relative; height: 230px; border-radius: 22px; overflow: hidden; cursor: pointer;
+  margin-bottom: 14px; -webkit-tap-highlight-color: transparent;
+  background:
+    linear-gradient(100deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.12) 42%, transparent 62%),
+    linear-gradient(155deg, var(--hero-accent, var(--lime)) 0%, color-mix(in srgb, var(--hero-accent, var(--lime)) 55%, #000) 100%);
 }
-/* No hue/duotone tint anymore — real photo color, boosted rather than
-   muted, since a color wash + desaturation was reading dark/muddy
-   instead of vibrant. Consistency across the three different photos
-   now comes from a shared filter + shared bottom-shade treatment
-   instead of a color overlay. */
-.hero-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: var(--hero-img-pos, 68% 30%); filter: saturate(1.3) contrast(1.06) brightness(1.04); transition: opacity 0.35s ease; }
-.hero-shade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.06) 55%, rgba(0,0,0,0) 75%); }
-.hero-body { position: absolute; left: 20px; right: 20px; bottom: 18px; }
-.hero-tag { display: inline-block; font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; color: var(--lime-ink); }
-.hero-title { font-family: var(--font-heading); font-size: 28px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); letter-spacing: -0.005em; }
+/* Concentric ring texture, same device the reference card uses to keep
+   a flat color from reading as plain — pure CSS, no extra asset. */
+.hero-pattern {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+  background-image: repeating-radial-gradient(circle at 82% 28%, rgba(255,255,255,0.16) 0px, rgba(255,255,255,0.16) 1.5px, transparent 1.5px, transparent 15px);
+}
+.hero-cutout { position: absolute; right: -4%; bottom: -3%; height: 108%; width: auto; max-width: 62%; object-fit: contain; object-position: bottom right; filter: drop-shadow(0 16px 22px rgba(0,0,0,0.4)); transition: opacity 0.3s ease; }
+.hero-body { position: absolute; left: 20px; right: 46%; bottom: 18px; }
+.hero-tag { display: inline-block; font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; background: rgba(255,255,255,0.22); color: #fff; }
+.hero-title { font-family: var(--font-heading); font-size: 27px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.35); letter-spacing: -0.005em; }
 .hero-sub { font-size: 12.5px; color: rgba(255,255,255,0.85); margin-top: 3px; }
 .hero-muscles { font-size: 12.5px; color: rgba(255,255,255,0.85); margin-top: 3px; }
-.hero-tap-hint { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); color: #fff; font-size: 10.5px; font-family: var(--font-mono); padding: 6px 11px; border-radius: 999px; display: flex; align-items: center; gap: 5px; }
+.hero-tap-hint { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.4); backdrop-filter: blur(3px); color: #fff; font-size: 10.5px; font-family: var(--font-mono); padding: 6px 11px; border-radius: 999px; display: flex; align-items: center; gap: 5px; z-index: 2; }
 
 /* ---------- warm-up ---------- */
 .warmup-row { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -260,8 +266,8 @@ button { font-family: inherit; }
   <div class="day-pills" id="dayPills"></div>
 
   <div class="hero-tile" id="heroTile">
-    <img id="heroImg" src="" alt="">
-    <div class="hero-shade"></div>
+    <div class="hero-pattern"></div>
+    <img class="hero-cutout" id="heroImg" src="" alt="">
     <div class="hero-tap-hint"><i data-lucide="pencil" style="width:12px;height:12px"></i>Tap to pick exercises</div>
     <div class="hero-body">
       <span class="hero-tag" id="heroTag">—</span>
@@ -314,7 +320,6 @@ button { font-family: inherit; }
   </div>
 </div>
 
-<div class="attribution">Photos via Unsplash — Lisa Marie Theck, Jakub Klucký, Ivan Pergasi, Scott Webb</div>
 
 <script>
 (function () {
@@ -325,7 +330,7 @@ button { font-family: inherit; }
   var DAY_META = {
     'Push': {
       accent: '--day-push', accentDim: '--day-push-dim',
-      img: 'https://images.unsplash.com/photo-1733517301178-312a6f694f2d?fm=jpg&q=80&w=1200&auto=format&fit=crop',
+      img: 'assets/bench-press-cutout.png',
       muscles: ['Chest', 'Shoulders', 'Triceps'],
       warmup: ['5 min bike or rower', 'Band pull-aparts × 15'],
       areas: [
@@ -339,7 +344,7 @@ button { font-family: inherit; }
     },
     'Pull': {
       accent: '--day-pull', accentDim: '--day-pull-dim',
-      img: 'https://images.unsplash.com/photo-1745329532611-03818982ed31?fm=jpg&q=80&w=1200&auto=format&fit=crop',
+      img: 'assets/lat-pulldown-cutout.png',
       muscles: ['Back', 'Biceps', 'Rear Delts'],
       warmup: ['5 min row machine or bike', 'Band pull-aparts × 15'],
       areas: [
@@ -351,8 +356,7 @@ button { font-family: inherit; }
     },
     'Lower A': {
       accent: '--day-lowera', accentDim: '--day-lowera-dim',
-      img: 'https://images.unsplash.com/photo-1570440828762-ab7a993dbde8?fm=jpg&q=80&w=1200&auto=format&fit=crop',
-      imgPos: '50% 42%',
+      img: 'assets/rdl-cutout.png',
       muscles: ['Hamstrings', 'Glutes', 'Adductors'],
       warmup: ['5 min bike or brisk walk', 'Leg swings — 10/side'],
       areas: [
@@ -364,7 +368,7 @@ button { font-family: inherit; }
     },
     'Lower B': {
       accent: '--day-lowerb', accentDim: '--day-lowerb-dim',
-      img: 'https://images.unsplash.com/photo-1434608519344-49d77a699e1d?fm=jpg&q=80&w=1200&auto=format&fit=crop',
+      img: 'assets/squat-cutout.png',
       muscles: ['Quads', 'Hamstrings', 'Calves'],
       warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10'],
       areas: [
@@ -490,10 +494,8 @@ button { font-family: inherit; }
     var meta = DAY_META[activeDay];
     var img = document.getElementById('heroImg');
     img.style.opacity = '0';
-    img.style.setProperty('--hero-img-pos', meta.imgPos || '68% 30%');
     setTimeout(function () { img.src = meta.img; img.style.opacity = '1'; }, 120);
     document.getElementById('heroTag').textContent = DAY_TAG_TEXT[activeDay];
-    document.getElementById('heroTag').style.background = 'var(' + meta.accent + ')';
     document.getElementById('heroTitle').textContent = activeDay;
     document.getElementById('heroMuscles').textContent = meta.muscles.join(' · ');
     document.documentElement.style.setProperty('--hero-accent', 'var(' + meta.accent + ')');
