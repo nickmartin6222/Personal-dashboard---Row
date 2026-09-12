@@ -942,27 +942,32 @@ button { font-family: inherit; }
   // live. Primaries and rehab exercises are single-option areas (still
   // toggleable, per the "no forced-fixed" decision); accessory slots
   // keep their real 2-4 option alternatives.
+  // equipmentClass/barWeight added per the Gym Coach Spec (section 6) —
+  // classifies every exercise onto a real ladder so prescribed loads
+  // always exist on the gym floor. A few (marked with a comment) are
+  // a best guess on equipment type at Revo Fitness specifically and
+  // worth confirming; everything else follows directly from the
+  // exercise itself.
   var DAY_META = {
     'Lower A': {
       muscles: 'Hamstrings · Glutes · Adductors',
       warmup: ['5 min bike or brisk walk', 'Leg swings — front-back & side-side, 10/side'],
       areas: [
-        { area: 'RDL', sets: 4, options: [{ name: 'Barbell RDL', muscle: 'Hamstrings', repMin: 6, repMax: 10, step: 5, startWeight: 60 }] },
-        { area: 'Hip Thrust', sets: 4, options: [{ name: 'Single-Leg Machine Hip Thrust', muscle: 'Glutes', repMin: 8, repMax: 12, step: 5, startWeight: 40 }] },
-        { area: 'Hip Adductor', sets: 3, options: [{ name: 'Machine Hip Adductor', muscle: 'Adductors', repMin: 10, repMax: 15, step: 2.5, startWeight: 30 }] },
-        { area: 'Hip Abduction', sets: 3, options: [{ name: 'Machine Hip Abduction', muscle: 'Hips', repMin: 10, repMax: 15, step: 2.5, startWeight: 20 }] },
-        { area: 'Back Extension', sets: 3, options: [{ name: 'Back Extensions', muscle: 'Lower Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 10 }] },
-        { area: 'Copenhagen Plank', sets: 3, options: [{ name: 'Copenhagen Plank', muscle: 'Adductors', repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true }] },
-        { area: 'Lower A Accessory', sets: 3, options: [
-          { name: 'Leg Press', muscle: 'Quads', repMin: 8, repMax: 12, step: 10, startWeight: 120 },
-          { name: 'Hack Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 10, startWeight: 80 },
-          { name: 'Walking Lunge', muscle: 'Glutes', repMin: 10, repMax: 14, step: 2.5, startWeight: 20 }
+        { area: 'RDL', sets: 4, tier: 1, options: [{ name: 'Barbell RDL', muscle: 'Hamstrings', repMin: 6, repMax: 10, step: 5, startWeight: 60, equipmentClass: 'barbell', barWeight: 20 }] },
+        { area: 'Hip Thrust', sets: 4, tier: 1, options: [{ name: 'Machine Hip Thrust', muscle: 'Glutes', repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'pin' }] },
+        { area: 'Copenhagen Plank', sets: 3, tier: 1, options: [{ name: 'Copenhagen Plank', muscle: 'Adductors', repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight', progressionType: 'ladder' }] },
+        { area: 'Hip Adductor', sets: 3, tier: 2, options: [{ name: 'Machine Hip Adductor', muscle: 'Adductors', repMin: 10, repMax: 15, step: 2.5, startWeight: 30, equipmentClass: 'cable' }] },
+        { area: 'Hip Abduction', sets: 3, tier: 2, options: [{ name: 'Machine Hip Abduction', muscle: 'Hips', repMin: 10, repMax: 15, step: 2.5, startWeight: 20, equipmentClass: 'cable' }] },
+        { area: 'Back Extension', sets: 3, tier: 3, options: [{ name: 'Back Extensions', muscle: 'Lower Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 10, equipmentClass: 'bodyweightLoaded' }] },
+        { area: 'Lower A Accessory', sets: 3, tier: 2, options: [
+          { name: 'Leg Press', muscle: 'Quads', repMin: 8, repMax: 12, step: 5, startWeight: 120, equipmentClass: 'plateLoaded' /* leg press: pin or plate-loaded at Revo? assumed plateLoaded, confirm */ },
+          { name: 'Hack Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 5, startWeight: 80, equipmentClass: 'plateLoaded' },
+          { name: 'Walking Lunge', muscle: 'Glutes', repMin: 10, repMax: 14, step: 2.5, startWeight: 20, equipmentClass: 'dumbbell' }
         ]},
-        { area: 'Lower A Core', sets: 3, options: [
-          { name: 'Pallof Press', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
-          { name: 'Hanging Leg Raise', muscle: 'Core', repMin: 8, repMax: 15, step: 1, startWeight: 0, bw: true },
-          { name: 'Plank', muscle: 'Core', repMin: 30, repMax: 60, step: 5, startWeight: 0, bw: true, holdSeconds: true },
-          { name: 'Ab Crunch Machine', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 25 }
+        { area: 'Lower A Core', sets: 3, tier: 3, options: [
+          { name: 'Pallof Press', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 10, equipmentClass: 'cable' },
+          { name: 'Hanging Leg Raise', muscle: 'Core', repMin: 8, repMax: 15, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' },
+          { name: 'Plank', muscle: 'Core', repMin: 30, repMax: 60, step: 5, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' }
         ]}
       ]
     },
@@ -970,38 +975,37 @@ button { font-family: inherit; }
       muscles: 'Chest · Shoulders · Triceps',
       warmup: ['5 min bike or rower', 'Band pull-aparts × 15'],
       areas: [
-        { area: 'Horizontal Press', sets: 4, options: [{ name: 'Barbell Bench Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 2.5, startWeight: 60 }] },
-        { area: 'Incline Press', sets: 4, options: [{ name: 'Incline Barbell Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 2.5, startWeight: 45 }] },
-        { area: 'Push Fly', sets: 3, options: [
-          { name: 'Cable Fly', muscle: 'Chest', repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
-          { name: 'Pec Deck', muscle: 'Chest', repMin: 10, repMax: 15, step: 5, startWeight: 40 },
-          { name: 'Incline Cable Fly', muscle: 'Chest', repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 }
+        { area: 'Horizontal Press', sets: 4, tier: 1, options: [{ name: 'Barbell Bench Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 5, startWeight: 50, equipmentClass: 'barbell', barWeight: 20 }] },
+        { area: 'Incline Press', sets: 3, tier: 1, options: [{ name: 'Incline Barbell Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }] },
+        { area: 'Push Lateral Raise', sets: 3, tier: 1, options: [
+          { name: 'Machine Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 20, step: 5, startWeight: 20, equipmentClass: 'pin' },
+          { name: 'Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 20, step: 1, startWeight: 7.5, perSide: true, equipmentClass: 'dumbbell' },
+          { name: 'Cable Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 20, step: 2.5, startWeight: 7.5, perSide: true, equipmentClass: 'cable' }
         ]},
-        { area: 'Push Shoulder Press', sets: 3, options: [
-          { name: 'DB Shoulder Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 2.5, startWeight: 17.5, perSide: true },
-          { name: 'Arnold Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true },
-          { name: 'Landmine Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 5, startWeight: 20, perSide: true }
+        { area: 'Push Fly', sets: 3, tier: 2, options: [
+          { name: 'Cable Fly', muscle: 'Chest', repMin: 10, repMax: 15, step: 2.5, startWeight: 15, equipmentClass: 'cable' },
+          { name: 'Pec Deck', muscle: 'Chest', repMin: 10, repMax: 15, step: 5, startWeight: 40, equipmentClass: 'pin' },
+          { name: 'Incline Cable Fly', muscle: 'Chest', repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5, equipmentClass: 'cable' }
         ]},
-        { area: 'Push Lateral Raise', sets: 3, options: [
-          { name: 'Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 1.25, startWeight: 7.5, perSide: true },
-          { name: 'Cable Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 2.5, startWeight: 7.5, perSide: true },
-          { name: 'Machine Lateral Raise', muscle: 'Shoulders', repMin: 12, repMax: 15, step: 5, startWeight: 20 }
+        { area: 'Push Shoulder Press', sets: 3, tier: 2, options: [
+          { name: 'DB Shoulder Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 2.5, startWeight: 17.5, perSide: true, equipmentClass: 'dumbbell' },
+          { name: 'Arnold Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' },
+          { name: 'Landmine Press', muscle: 'Shoulders', repMin: 8, repMax: 12, step: 5, startWeight: 20, perSide: true, equipmentClass: 'plateLoaded' }
         ]},
-        { area: 'Push Pushdown', sets: 3, options: [
-          { name: 'Cable Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 25 },
-          { name: 'Rope Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5 },
-          { name: 'Single-Arm Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 1.25, startWeight: 12.5, perSide: true }
+        { area: 'Push Pushdown', sets: 3, tier: 3, options: [
+          { name: 'Cable Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 25, equipmentClass: 'cable' },
+          { name: 'Rope Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5, equipmentClass: 'cable' },
+          { name: 'Single-Arm Pushdown', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'cable' }
         ]},
-        { area: 'Push Triceps Extension', sets: 3, options: [
-          { name: 'Overhead DB Extension', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 15 },
-          { name: 'Skull Crusher', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 20 },
-          { name: 'Close-Grip Bench or Dip', muscle: 'Triceps', repMin: 8, repMax: 12, step: 2.5, startWeight: 40 }
+        { area: 'Push Triceps Extension', sets: 3, tier: 3, options: [
+          { name: 'Overhead DB Extension', muscle: 'Triceps', repMin: 10, repMax: 15, step: 2.5, startWeight: 15, equipmentClass: 'dumbbell' },
+          { name: 'Skull Crusher', muscle: 'Triceps', repMin: 10, repMax: 15, step: 5, startWeight: 20, equipmentClass: 'ezbar', barWeight: 10 },
+          { name: 'Close-Grip Bench or Dip', muscle: 'Triceps', repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }
         ]},
-        { area: 'Push Core', sets: 3, options: [
-          { name: 'Cable Crunch', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 20 },
-          { name: 'Ab Wheel Rollout', muscle: 'Core', repMin: 6, repMax: 12, step: 1, startWeight: 0, bw: true },
-          { name: 'Weighted Sit-Up', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 5 },
-          { name: 'Ab Crunch Machine', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 25 }
+        { area: 'Push Core', sets: 3, tier: 3, options: [
+          { name: 'Cable Crunch', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 20, equipmentClass: 'cable' },
+          { name: 'Ab Wheel Rollout', muscle: 'Core', repMin: 6, repMax: 12, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' },
+          { name: 'Weighted Sit-Up', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 5, equipmentClass: 'dumbbell' }
         ]}
       ]
     },
@@ -1009,28 +1013,28 @@ button { font-family: inherit; }
       muscles: 'Quads · Hamstrings · Calves',
       warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10'],
       areas: [
-        { area: 'Squat', sets: 4, options: [
-          { name: 'Goblet / Front Squat', muscle: 'Quads', repMin: 6, repMax: 10, step: 2.5, startWeight: 20 },
-          { name: 'Hack Squat', muscle: 'Quads', repMin: 6, repMax: 10, step: 10, startWeight: 80 }
+        { area: 'Squat', sets: 4, tier: 1, options: [
+          { name: 'Hack Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 5, startWeight: 80, equipmentClass: 'plateLoaded' },
+          { name: 'Goblet / Front Squat', muscle: 'Quads', repMin: 6, repMax: 10, step: 2.5, startWeight: 20, equipmentClass: 'dumbbell' }
         ]},
-        { area: 'Split Squat', sets: 4, options: [{ name: 'Bulgarian Split Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true }] },
-        { area: 'Hip Abduction', sets: 3, options: [{ name: 'Hip Abduction', muscle: 'Hips', repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true }] },
-        { area: 'Leg Extension', sets: 3, options: [{ name: 'Leg Extension', muscle: 'Quads', repMin: 10, repMax: 15, step: 5, startWeight: 30 }] },
-        { area: 'Lower B Leg Curl', sets: 3, options: [
-          { name: 'Seated Hamstring Curl', muscle: 'Hamstrings', repMin: 10, repMax: 15, step: 5, startWeight: 30 },
-          { name: 'Lying Leg Curl', muscle: 'Hamstrings', repMin: 10, repMax: 15, step: 5, startWeight: 25 },
-          { name: 'Nordic Curl or GHR', muscle: 'Hamstrings', repMin: 5, repMax: 10, step: 1, startWeight: 0, bw: true }
+        { area: 'Split Squat', sets: 4, tier: 1, options: [{ name: 'Bulgarian Split Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }] },
+        { area: 'Copenhagen Plank', sets: 3, tier: 1, options: [{ name: 'Copenhagen Plank', muscle: 'Adductors', repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight', progressionType: 'ladder' }] },
+        { area: 'Leg Press', sets: 3, tier: 2, options: [{ name: 'Leg Press', muscle: 'Quads', repMin: 10, repMax: 15, step: 5, startWeight: 100, equipmentClass: 'plateLoaded' }] },
+        { area: 'Hip Abduction', sets: 3, tier: 2, options: [{ name: 'Hip Abduction', muscle: 'Hips', repMin: 12, repMax: 20, step: 2.5, startWeight: 0, equipmentClass: 'cable' /* was bodyweight-only; log the real stack weight going forward */ }] },
+        { area: 'Leg Extension', sets: 3, tier: 3, options: [{ name: 'Leg Extension', muscle: 'Quads', repMin: 10, repMax: 15, step: 5, startWeight: 30, equipmentClass: 'pin' }] },
+        { area: 'Lower B Leg Curl', sets: 3, tier: 2, options: [
+          { name: 'Seated Hamstring Curl', muscle: 'Hamstrings', repMin: 10, repMax: 15, step: 5, startWeight: 30, equipmentClass: 'pin' },
+          { name: 'Lying Leg Curl', muscle: 'Hamstrings', repMin: 10, repMax: 15, step: 5, startWeight: 25, equipmentClass: 'pin' },
+          { name: 'Nordic Curl or GHR', muscle: 'Hamstrings', repMin: 5, repMax: 10, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }
         ]},
-        { area: 'Lower B Calf', sets: 3, options: [
-          { name: 'Standing Calf Raise', muscle: 'Calves', repMin: 12, repMax: 18, step: 5, startWeight: 60 },
-          { name: 'Seated Calf Raise', muscle: 'Calves', repMin: 12, repMax: 18, step: 5, startWeight: 40 },
-          { name: 'Calf Press on Leg Press', muscle: 'Calves', repMin: 12, repMax: 18, step: 10, startWeight: 80 }
+        { area: 'Lower B Calf', sets: 3, tier: 3, options: [
+          { name: 'Seated Calf Raise', muscle: 'Calves', repMin: 12, repMax: 20, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' },
+          { name: 'Calf Press on Leg Press', muscle: 'Calves', repMin: 12, repMax: 20, step: 5, startWeight: 80, equipmentClass: 'plateLoaded' }
         ]},
-        { area: 'Lower B Core', sets: 3, options: [
-          { name: 'Dead Bug', muscle: 'Core', repMin: 8, repMax: 15, step: 1, startWeight: 0, bw: true },
-          { name: 'Side Plank', muscle: 'Core', repMin: 20, repMax: 45, step: 5, startWeight: 0, bw: true, holdSeconds: true },
-          { name: 'Russian Twist', muscle: 'Core', repMin: 10, repMax: 20, step: 2.5, startWeight: 5 },
-          { name: 'Ab Crunch Machine', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 25 }
+        { area: 'Lower B Core', sets: 3, tier: 3, options: [
+          { name: 'Dead Bug', muscle: 'Core', repMin: 8, repMax: 15, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' },
+          { name: 'Side Plank', muscle: 'Core', repMin: 20, repMax: 45, step: 5, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' },
+          { name: 'Russian Twist', muscle: 'Core', repMin: 10, repMax: 20, step: 2.5, startWeight: 5, equipmentClass: 'dumbbell' }
         ]}
       ]
     },
@@ -1038,34 +1042,36 @@ button { font-family: inherit; }
       muscles: 'Back · Biceps · Rear delts',
       warmup: ['5 min row machine or bike', 'Band pull-aparts × 15'],
       areas: [
-        { area: 'Vertical Pull', sets: 4, options: [{ name: 'Lat Pulldown', muscle: 'Back', repMin: 6, repMax: 10, step: 5, startWeight: 50 }] },
-        { area: 'Pull-Up', sets: 4, options: [{ name: 'Pull-Ups', muscle: 'Back', repMin: 4, repMax: 10, step: 1, startWeight: 0, bw: true }] },
-        { area: 'Chest-Supported Row', sets: 4, options: [{ name: 'Chest-Supported T-Bar Row', muscle: 'Back', repMin: 6, repMax: 10, step: 5, startWeight: 40 }] },
-        { area: 'Pull Row Variation', sets: 3, options: [
-          { name: 'Single-Arm Cable Row', muscle: 'Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 20, perSide: true },
-          { name: 'T-Bar / Chest-Supported Single-Arm Row', muscle: 'Back', repMin: 10, repMax: 15, step: 5, startWeight: 20, perSide: true },
-          { name: 'Kroc Row', muscle: 'Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5, perSide: true }
+        { area: 'Vertical Pull', sets: 4, tier: 1, options: [
+          { name: 'Lat Pulldown', muscle: 'Back', repMin: 8, repMax: 12, step: 5, startWeight: 50, equipmentClass: 'pin' },
+          { name: 'Pull-Ups', muscle: 'Back', repMin: 4, repMax: 10, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }
         ]},
-        { area: 'Pull Rear Delt', sets: 3, options: [
-          { name: 'Face Pulls', muscle: 'Rear Delts', repMin: 12, repMax: 15, step: 2.5, startWeight: 15 },
-          { name: 'Cable Rear Delt Fly', muscle: 'Rear Delts', repMin: 12, repMax: 15, step: 2.5, startWeight: 10 },
-          { name: 'Reverse Pec Deck', muscle: 'Rear Delts', repMin: 12, repMax: 15, step: 5, startWeight: 25 }
+        { area: 'Horizontal Row', sets: 4, tier: 1, options: [{ name: 'Chest-Supported T-Bar Row', muscle: 'Back', repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' /* no barbell row option, by design — lumbar-neutral only */ }] },
+        { area: 'Pull Rear Delt', sets: 3, tier: 1, options: [
+          { name: 'Reverse Pec Deck', muscle: 'Rear Delts', repMin: 12, repMax: 20, step: 5, startWeight: 25, equipmentClass: 'pin' },
+          { name: 'Face Pulls', muscle: 'Rear Delts', repMin: 12, repMax: 20, step: 2.5, startWeight: 15, equipmentClass: 'cable' },
+          { name: 'Cable Rear Delt Fly', muscle: 'Rear Delts', repMin: 12, repMax: 20, step: 2.5, startWeight: 10, equipmentClass: 'cable' }
         ]},
-        { area: 'Pull Curl 1', sets: 3, options: [
-          { name: 'DB Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5, perSide: true },
-          { name: 'Cable Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 2.5, startWeight: 20 },
-          { name: 'Preacher Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 2.5, startWeight: 20 }
+        { area: 'Pull Curl 1', sets: 3, tier: 2, options: [
+          { name: 'DB Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' },
+          { name: 'Cable Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 2.5, startWeight: 20, equipmentClass: 'cable' },
+          { name: 'Preacher Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 5, startWeight: 20, equipmentClass: 'ezbar', barWeight: 10 }
         ]},
-        { area: 'Pull Curl 2', sets: 3, options: [
-          { name: 'Hammer Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5, perSide: true },
-          { name: 'Incline DB Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 10, perSide: true },
-          { name: 'Cross-Body Hammer Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1.25, startWeight: 12.5, perSide: true }
+        { area: 'Face Pull', sets: 3, tier: 2, options: [{ name: 'Rope Face Pull', muscle: 'Rear Delts', repMin: 12, repMax: 20, step: 2.5, startWeight: 12.5, equipmentClass: 'cable' }] },
+        { area: 'Secondary Row', sets: 3, tier: 3, options: [
+          { name: 'Single-Arm Cable Row', muscle: 'Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 20, perSide: true, equipmentClass: 'cable' },
+          { name: 'T-Bar / Chest-Supported Single-Arm Row', muscle: 'Back', repMin: 10, repMax: 15, step: 5, startWeight: 20, perSide: true, equipmentClass: 'plateLoaded' },
+          { name: 'Kroc Row', muscle: 'Back', repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5, perSide: true, equipmentClass: 'dumbbell' }
         ]},
-        { area: 'Pull Core', sets: 3, options: [
-          { name: 'Hanging Knee Raise', muscle: 'Core', repMin: 8, repMax: 15, step: 1, startWeight: 0, bw: true },
-          { name: 'Pallof Press', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 10 },
-          { name: 'Cable Woodchop', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5 },
-          { name: 'Ab Crunch Machine', muscle: 'Core', repMin: 10, repMax: 15, step: 5, startWeight: 25 }
+        { area: 'Pull Curl 2', sets: 3, tier: 3, options: [
+          { name: 'Hammer Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' },
+          { name: 'Incline DB Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1, startWeight: 10, perSide: true, equipmentClass: 'dumbbell' },
+          { name: 'Cross-Body Hammer Curl', muscle: 'Biceps', repMin: 8, repMax: 12, step: 1, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }
+        ]},
+        { area: 'Pull Core', sets: 3, tier: 3, options: [
+          { name: 'Hanging Knee Raise', muscle: 'Core', repMin: 8, repMax: 15, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' },
+          { name: 'Pallof Press', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 10, equipmentClass: 'cable' },
+          { name: 'Cable Woodchop', muscle: 'Core', repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5, equipmentClass: 'cable' }
         ]}
       ]
     }
@@ -1094,7 +1100,7 @@ button { font-family: inherit; }
       var obj = JSON.parse(raw);
       if (obj && obj.DAY_META && obj.DAY_ORDER) {
         DAY_META = obj.DAY_META; DAY_ORDER = obj.DAY_ORDER;
-        var RENAME_MAP = { 'Hip External Rotation': 'Hip Abduction', 'Seated Leg Curl': 'Seated Hamstring Curl' };
+        var RENAME_MAP = { 'Hip External Rotation': 'Hip Abduction', 'Seated Leg Curl': 'Seated Hamstring Curl', 'Single-Leg Machine Hip Thrust': 'Machine Hip Thrust' };
         Object.keys(DAY_META).forEach(function (day) {
           (DAY_META[day].areas || []).forEach(function (a) {
             if (RENAME_MAP[a.area]) a.area = RENAME_MAP[a.area];
@@ -1175,30 +1181,101 @@ button { font-family: inherit; }
   }
 
   // ------------------------------------------------------------------
-  // getRx — ported verbatim from gym.html's prescription engine.
+  // PROGRESSIVE OVERLOAD ENGINE — per the Gym Coach Spec, section 10,
+  // simplified for this phase: stiffness/pain/escalate/nutrition gates
+  // are structurally ready for later (they'd slot in above the
+  // completion check) but have no data sources yet, so they're skipped
+  // rather than guessed at. What's live now: equipment-realistic load
+  // steps (section 6), the strict completion/stall/jump-sizing order,
+  // and a genuine 2-session-stall-before-deload rule instead of 3.
   // ------------------------------------------------------------------
-  var UPGRADE_AT_REPS = 8;
-  function getRx(ex, logs) {
-    if (!logs.length) return null;
-    var last = logs[logs.length - 1];
-    var weight = last.weight, reps = last.reps;
-    var repMin = ex.repMin, repMax = ex.repMax, step = ex.step, bw = ex.bw;
-    var unitWord = ex.holdSeconds ? 'seconds' : 'reps';
-    var upgradeAt = Math.min(UPGRADE_AT_REPS, repMax);
-    var stuck = 0;
-    for (var i = logs.length - 1; i >= 0; i--) { if (logs[i].weight === weight) stuck++; else break; }
-    if (bw) {
-      if (reps >= upgradeAt) return { type: 'up', weight: 0, reps: reps + 1, tag: 'Push for more', reason: reps + ' ' + unitWord + ' — strong. Push for ' + (reps + 1) + ' next time.' };
-      if (reps >= repMin) return { type: 'hold', weight: 0, reps: reps + 1, tag: 'Add a rep', reason: reps + ' ' + unitWord + '. Push for ' + (reps + 1) + ' next session.' };
-      return { type: 'hold', weight: 0, reps: repMin, tag: 'Repeat', reason: reps + ' ' + unitWord + ' fell short. Repeat until you hit ' + repMin + '+.' };
+
+  // Section 6's ladder — every load this ever prescribes has to exist
+  // on the gym floor. Verified against the spec's own test cases:
+  // dumbbell 9->10, 10->12.5, barbell 50->55, cable 30->32.5.
+  function nextLoad(equipmentClass, load) {
+    switch (equipmentClass) {
+      case 'barbell': case 'ezbar': case 'pin': case 'plateLoaded': case 'bodyweightLoaded': return load + 5;
+      case 'cable': return load + 2.5;
+      case 'dumbbell': return load < 10 ? load + 1 : load + 2.5;
+      default: return load; // bodyweight — reps only
     }
-    if (stuck >= 3 && reps < repMin) {
-      var dl = roundToStep(weight * 0.9, step);
-      return { type: 'down', weight: dl, reps: repMax, tag: 'Deload', reason: 'Stuck at ' + weight + unit() + ' for ' + stuck + ' sessions. Drop 10%, reset, build back cleaner.' };
+  }
+  function prevLoad(equipmentClass, load, floor) {
+    var f = floor || 0;
+    var step;
+    switch (equipmentClass) {
+      case 'barbell': case 'ezbar': case 'pin': case 'plateLoaded': case 'bodyweightLoaded': step = 5; break;
+      case 'cable': step = 2.5; break;
+      case 'dumbbell': step = load <= 10 ? 1 : 2.5; break;
+      default: return load;
     }
-    if (reps >= upgradeAt) return { type: 'up', weight: weight + step, reps: repMin, tag: 'Add weight', reason: 'You hit ' + reps + ' reps — time to add ' + step + unit() + '. Expect ' + repMin + '-' + (repMin + 1) + ' next session.' };
-    if (reps >= repMin && reps < upgradeAt) return { type: 'hold', weight: weight, reps: reps + 1, tag: 'Add a rep', reason: reps + ' reps in target. Stay at ' + weight + unit() + ', push for ' + (reps + 1) + '.' };
-    return { type: 'hold', weight: weight, reps: repMin, tag: 'Repeat', reason: reps + ' reps short of ' + repMin + '-' + upgradeAt + '. Repeat ' + weight + unit() + ' until you hit ' + repMin + '+ clean.' };
+    return Math.max(f, load - step);
+  }
+  // Nearest achievable load at or below 90% — walks the real ladder
+  // down rather than returning a theoretical percentage.
+  function deloadTarget(equipmentClass, currentLoad, floor) {
+    var ceiling = currentLoad * 0.9, load = currentLoad, f = floor || 0, guard = 0;
+    while (load > ceiling && load > f && guard++ < 100) load = prevLoad(equipmentClass, load, f);
+    return load;
+  }
+
+  // realEx: the exercise's REAL record (po_coach_v1.exercises entry) —
+  // carries equipmentClass/barWeight/currentLoad/currentRepTarget/
+  // sessionsAtCurrentLoad/maxedStreak. lastSessionSets: every set from
+  // the most recent NON-deload session for this exercise, [{weight,reps}].
+  // Returns the next prescription plus a plain-English note — never
+  // mutates realEx directly, caller decides when to persist.
+  function computeNextRx(realEx, lastSessionSets) {
+    var repMin = realEx.repMin, repMax = realEx.repMax;
+    var eqClass = realEx.equipmentClass || (realEx.bw ? 'bodyweight' : 'cable');
+    var floor = realEx.barWeight || 0;
+    var curLoad = realEx.currentLoad != null ? realEx.currentLoad : (realEx.bw ? 0 : (realEx.startWeight || 0));
+    var curRepTarget = realEx.currentRepTarget != null ? realEx.currentRepTarget : repMin;
+    var stall = realEx.sessionsAtCurrentLoad || 0;
+    var maxedStreak = realEx.maxedStreak || 0;
+    var unitWord = realEx.holdSeconds ? 's' : 'reps';
+
+    if (!lastSessionSets || !lastSessionSets.length) {
+      return { currentLoad: curLoad, currentRepTarget: curRepTarget, sessionsAtCurrentLoad: stall, maxedStreak: maxedStreak, tag: 'Starting point', reason: 'Log your first set to get a real suggestion.', type: 'hold' };
+    }
+    var allAtMax = lastSessionSets.every(function (s) { return s.reps >= repMax; });
+    var anyShort = lastSessionSets.some(function (s) { return s.reps < repMin; });
+    var lastReps = lastSessionSets[lastSessionSets.length - 1].reps;
+
+    if (realEx.bw) {
+      if (allAtMax) return { currentLoad: 0, currentRepTarget: lastReps + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Push for more', reason: lastReps + ' ' + unitWord + ' — strong. Push for ' + (lastReps + 1) + ' next time.' };
+      if (anyShort) {
+        if (stall >= 1) return { currentLoad: 0, currentRepTarget: repMin, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'down', tag: 'Reset target', reason: 'Short two sessions running. Resetting the target to ' + repMin + '.' };
+        return { currentLoad: 0, currentRepTarget: repMin, sessionsAtCurrentLoad: stall + 1, maxedStreak: 0, type: 'hold', tag: 'Repeat', reason: lastReps + ' ' + unitWord + ' fell short. Repeat until you hit ' + repMin + '+.' };
+      }
+      return { currentLoad: 0, currentRepTarget: lastReps + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Add a rep', reason: lastReps + ' ' + unitWord + '. Push for ' + (lastReps + 1) + ' next session.' };
+    }
+
+    if (anyShort) {
+      if (stall >= 1) {
+        var dl = deloadTarget(eqClass, curLoad, floor);
+        return { currentLoad: dl, currentRepTarget: repMax, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'down', tag: 'Deload', reason: 'Stuck at ' + curLoad + unit() + ' for 2 sessions. Dropped to ' + dl + unit() + ', reset, build back cleaner.' };
+      }
+      return { currentLoad: curLoad, currentRepTarget: repMin, sessionsAtCurrentLoad: stall + 1, maxedStreak: 0, type: 'hold', tag: 'Repeat', reason: lastReps + ' reps short of ' + repMin + '. Repeat ' + curLoad + unit() + ' until you hit it clean.' };
+    }
+
+    if (allAtMax) {
+      var nl = nextLoad(eqClass, curLoad);
+      var jump = curLoad > 0 ? (nl / curLoad - 1) : 1;
+      if (jump <= 0.08) {
+        return { currentLoad: nl, currentRepTarget: repMin, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Add weight', reason: 'You hit ' + repMax + ' — time to add ' + (nl - curLoad) + unit() + '. Expect ' + repMin + '-' + (repMin + 1) + ' next session.' };
+      }
+      if (jump <= 0.20) {
+        if (maxedStreak >= 1) {
+          return { currentLoad: nl, currentRepTarget: repMin, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Add weight', reason: 'Maxed out twice running — up to ' + nl + unit() + '.' };
+        }
+        return { currentLoad: curLoad, currentRepTarget: repMax, sessionsAtCurrentLoad: 0, maxedStreak: maxedStreak + 1, type: 'hold', tag: 'Confirm once more', reason: 'Maxed at ' + repMax + ' — next jump is ' + Math.round(jump * 100) + '%, on the larger side. One more clean max-out before adding it.' };
+      }
+      return { currentLoad: curLoad, currentRepTarget: repMax + 4, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Chase reps instead', reason: 'Next jump is ' + Math.round(jump * 100) + '% — too big to load in one step. Chasing reps instead: aim for ' + (repMax + 4) + '.' };
+    }
+
+    return { currentLoad: curLoad, currentRepTarget: lastReps + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Add a rep', reason: lastReps + ' reps in target. Stay at ' + curLoad + unit() + ', push for ' + (lastReps + 1) + '.' };
   }
 
   // ------------------------------------------------------------------
@@ -1574,7 +1651,7 @@ button { font-family: inherit; }
     // Seated Hamstring Curl) would otherwise silently vanish from the
     // checklist — getPicksForDay filters out any picked name that no
     // longer matches a real option. Patch old names in place instead.
-    var PICKS_RENAME_MAP = { 'Hip External Rotation': 'Hip Abduction', 'Seated Leg Curl': 'Seated Hamstring Curl' };
+    var PICKS_RENAME_MAP = { 'Hip External Rotation': 'Hip Abduction', 'Seated Leg Curl': 'Seated Hamstring Curl', 'Single-Leg Machine Hip Thrust': 'Machine Hip Thrust' };
     Object.keys(picks).forEach(function (day) {
       Object.keys(picks[day] || {}).forEach(function (i) {
         if (Array.isArray(picks[day][i])) {
@@ -1727,9 +1804,29 @@ button { font-family: inherit; }
         var already = currentSession.sets.some(function (s) { return s.name === name; });
         if (!already) {
           var ex = EX_INDEX[name] || { bw: false, startWeight: 0, repMax: 12 };
-          var last = lastLogFor(ex);
           var areaDef = findAreaForExercise(confirmedDay, name);
-          currentSession.sets.push({ name: name, setsCount: areaDef ? areaDef.sets : 3, reps: last.reps, weight: ex.bw ? 0 : (last.weight || ex.startWeight || 0) });
+          // Prefer the engine's real prescription (currentLoad/
+          // currentRepTarget on the real exercise record) — falls back
+          // to last-time-repeated only for an exercise that's never
+          // been logged through the engine yet. This is the actual fix:
+          // one-tap quick-log now applies real progression instead of
+          // silently repeating history forever.
+          var rxWeight = null, rxReps = null;
+          try {
+            var liveNow = loadLiveState();
+            if (liveNow) {
+              var realExNow = liveNow.exercises.find(function (e) { return e.name === name; });
+              if (realExNow && realExNow.currentLoad != null && realExNow.currentRepTarget != null) {
+                rxWeight = realExNow.currentLoad; rxReps = realExNow.currentRepTarget;
+              }
+            }
+          } catch (e) {}
+          if (rxWeight == null || rxReps == null) {
+            var last = lastLogFor(ex);
+            rxWeight = ex.bw ? 0 : (last.weight || ex.startWeight || 0);
+            rxReps = last.reps;
+          }
+          currentSession.sets.push({ name: name, setsCount: areaDef ? areaDef.sets : 3, reps: rxReps, weight: ex.bw ? 0 : rxWeight });
         }
         saveCurrentSession();
       } else {
@@ -2008,7 +2105,7 @@ button { font-family: inherit; }
 
   // ------------------------------------------------------------------
   // Exercise logging modal — real weight/reps/sets input + the real
-  // getRx() "Next session" suggestion, matching gym.html's structure.
+  // computeNextRx() "Next session" suggestion, matching gym.html's structure.
   // ------------------------------------------------------------------
   var modalEx = null, modalWeight = 0, modalReps = 8, modalSets = 1;
   function openExerciseModal(name) {
@@ -2043,13 +2140,27 @@ button { font-family: inherit; }
     bindModalControls();
     openModal('exModalBg');
   }
+  // Shows the REAL prescription — whatever quick-log will actually use
+  // next time this exercise is checked off — not a separately-computed
+  // guess, so the modal and the checkbox can never contradict each
+  // other. Falls back to computing fresh (without persisting) for an
+  // exercise that's never been logged through the engine yet.
   function renderRx() {
-    var rx = getRx(modalEx, [lastLogFor(modalEx)]);
     var box = document.getElementById('rxBox');
-    if (!rx) { box.dataset.type = ''; document.getElementById('rxTag').textContent = '—'; document.getElementById('rxReason').textContent = 'Log your first set to get a suggestion.'; return; }
-    box.dataset.type = rx.type;
     var rxUnit = modalEx.perSide ? UNITS + '/side' : UNITS;
-    document.getElementById('rxTag').textContent = rx.tag + (rx.weight ? ' — ' + rx.weight + rxUnit + ' × ' + rx.reps : ' — ' + rx.reps + ' reps');
+    var realEx = null, rx = null;
+    try {
+      var live = loadLiveState();
+      realEx = live && live.exercises.find(function (e) { return e.name === modalEx.name; });
+    } catch (e) {}
+    if (realEx && realEx.lastRx && realEx.currentLoad !== undefined) {
+      rx = Object.assign({ currentLoad: realEx.currentLoad, currentRepTarget: realEx.currentRepTarget }, realEx.lastRx);
+    } else {
+      var seed = realEx || { repMin: modalEx.repMin, repMax: modalEx.repMax, bw: modalEx.bw, equipmentClass: modalEx.equipmentClass, barWeight: modalEx.barWeight, startWeight: modalEx.startWeight, currentLoad: null, currentRepTarget: null, sessionsAtCurrentLoad: 0, maxedStreak: 0 };
+      rx = computeNextRx(seed, []);
+    }
+    box.dataset.type = rx.type || '';
+    document.getElementById('rxTag').textContent = rx.tag + (modalEx.bw ? ' — ' + rx.currentRepTarget + ' reps' : ' — ' + rx.currentLoad + rxUnit + ' × ' + rx.currentRepTarget);
     document.getElementById('rxReason').textContent = rx.reason;
   }
   function bindModalControls() {
@@ -2131,16 +2242,42 @@ button { font-family: inherit; }
   // exercise" would, so the write below always has somewhere real to go.
   function findOrCreateRealExercise(live, name, dayName) {
     var ex = live.exercises.find(function (e) { return e.name === name; });
-    if (ex) return ex;
+    if (ex) {
+      // Backfill the new engine fields onto pre-existing records the
+      // first time they're touched, so nothing that logged before this
+      // change is left without an equipment class to progress on.
+      var meta2 = EX_INDEX[name] || {};
+      if (ex.equipmentClass === undefined) ex.equipmentClass = meta2.equipmentClass || (ex.bw ? 'bodyweight' : 'cable');
+      if (ex.barWeight === undefined) ex.barWeight = meta2.barWeight != null ? meta2.barWeight : null;
+      if (ex.currentLoad === undefined) ex.currentLoad = null;
+      if (ex.currentRepTarget === undefined) ex.currentRepTarget = null;
+      if (ex.sessionsAtCurrentLoad === undefined) ex.sessionsAtCurrentLoad = 0;
+      if (ex.maxedStreak === undefined) ex.maxedStreak = 0;
+      return ex;
+    }
     var meta = EX_INDEX[name] || {};
     var newEx = {
       id: 'gympreview_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
       name: name, gym: 'comm', day: REAL_NAME_TO_DAY_ID[dayName] || 'push', tag: 'accessory',
       muscle: meta.muscle || '', repMin: meta.repMin || 8, repMax: meta.repMax || 12,
-      step: meta.step || 2.5, startWeight: meta.startWeight || 20, bw: !!meta.bw, holdSeconds: !!meta.holdSeconds
+      step: meta.step || 2.5, startWeight: meta.startWeight || 20, bw: !!meta.bw, holdSeconds: !!meta.holdSeconds,
+      equipmentClass: meta.equipmentClass || (meta.bw ? 'bodyweight' : 'cable'),
+      barWeight: meta.barWeight != null ? meta.barWeight : null,
+      currentLoad: null, currentRepTarget: null, sessionsAtCurrentLoad: 0, maxedStreak: 0
     };
     live.exercises.push(newEx);
     return newEx;
+  }
+  // Every set from the most recent NON-deload session for this real
+  // exercise id — what the engine evaluates against. Deload sessions
+  // are logged and counted for adherence but must never look like a
+  // real working weight to the progression engine (see the deload
+  // trigger below), so they're skipped here even once that exists.
+  function lastRealSessionSets(live, exId) {
+    var arr = ((live.logs || {})[exId] || []).filter(function (l) { return !l.deload; });
+    if (!arr.length) return [];
+    var lastDate = (arr[arr.length - 1].date || '').slice(0, 10);
+    return arr.filter(function (l) { return (l.date || '').slice(0, 10) === lastDate; }).map(function (l) { return { weight: l.weight, reps: l.reps }; });
   }
   // Writes a finished session's sets into your REAL, cloud-synced log
   // (po_coach_v1) — the exact same store and format gym.html itself
@@ -2165,6 +2302,18 @@ button { font-family: inherit; }
           arr.push({ weight: s.weight, reps: s.reps, date: localTimestampFor(new Date(now + gi * 1000 + i)) });
         }
         live.logs[ex.id] = arr;
+        // Recompute and persist the NEXT prescription right now, off
+        // exactly what was just logged — this is what lets one-tap
+        // quick-log read a real prescription next time instead of just
+        // repeating today's numbers forever.
+        var justLogged = [];
+        for (var j = 0; j < s.setsCount; j++) justLogged.push({ weight: s.weight, reps: s.reps });
+        var rx = computeNextRx(ex, justLogged);
+        ex.currentLoad = rx.currentLoad;
+        ex.currentRepTarget = rx.currentRepTarget;
+        ex.sessionsAtCurrentLoad = rx.sessionsAtCurrentLoad;
+        ex.maxedStreak = rx.maxedStreak;
+        ex.lastRx = { type: rx.type, tag: rx.tag, reason: rx.reason }; // for the modal's "next session" display
       });
       localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
     } catch (e) {}
