@@ -220,6 +220,11 @@ button { font-family: inherit; }
 .progress-track { height: 8px; border-radius: 999px; background: var(--bg-raised); overflow: hidden; margin: 9px 0 12px; }
 .progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lime), #4FCFA0); transition: width 0.4s ease; }
 .scard-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.deload-start-btn { width: 100%; margin-top: 10px; padding: 10px; border-radius: var(--r-sm); border: 1px dashed var(--border-strong); background: none; color: var(--text-3); font-size: 12px; font-weight: 700; cursor: pointer; }
+.deload-banner { margin-top: 10px; padding: 12px; border-radius: var(--r-sm); background: rgba(242,192,99,0.12); border: 1px solid rgba(242,192,99,0.3); }
+.deload-banner-title { font-size: 12.5px; font-weight: 800; color: var(--warn); }
+.deload-banner-sub { font-size: 11.5px; color: var(--text-2); margin-top: 3px; }
+.deload-end-btn { margin-top: 8px; width: 100%; padding: 9px; border-radius: 10px; border: none; background: var(--warn); color: #1a1200; font-size: 12px; font-weight: 800; cursor: pointer; }
 .stat-tile { background: var(--bg-raised); border-radius: var(--r-md); padding: 10px 11px; border: 1px solid transparent; min-width: 0; }
 .stat-tile.clickable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .stat-tile.clickable:hover { border-color: var(--border-strong); }
@@ -665,6 +670,7 @@ button { font-family: inherit; }
           </div>
         </div>
       </div>
+      <div id="deloadRow"></div>
     </section>
   </div>
 
@@ -1220,6 +1226,40 @@ button { font-family: inherit; }
     return load;
   }
 
+  // PHASE 2 — nutrition gate. Reads Health's real per-day data
+  // (health:nutrition, same store health.html itself writes, synced
+  // from Health Auto Export). Simplified from the spec: no lastEntryTime
+  // disambiguation, since Auto Export logs periodically with no per-
+  // entry timestamps to check — a day is just complete, ambiguous, or
+  // partial off protein/calorie totals alone. Ambiguous and partial
+  // both count as "not counted" (a lower bound, never assumed).
+  function classifyNutritionDay(day, proteinTarget, kcalTarget) {
+    if (!day) return 'none';
+    if ((day.proteinG || 0) >= proteinTarget) return 'complete'; // lower bound: more food can only add protein
+    var ratio = (day.calories || 0) / kcalTarget;
+    if (ratio >= 0.85) return 'complete';
+    if (ratio >= 0.60) return 'ambiguous';
+    return 'partial';
+  }
+  // { protein7d, coverage } over the trailing 7 days ending yesterday
+  // (today's own eating isn't finished yet, so it's never counted).
+  // Reads straight from localStorage — same origin as health.html, no
+  // network call needed for a same-device read.
+  function nutritionRollup7d() {
+    var nutrition = {}, goalsObj = {};
+    try { nutrition = JSON.parse(localStorage.getItem('health:nutrition') || '{}'); } catch (e) {}
+    try { goalsObj = JSON.parse(localStorage.getItem('health:goals') || '{}'); } catch (e) {}
+    var proteinTarget = goalsObj.proteinG || 155, kcalTarget = goalsObj.calories || 3000;
+    var sum = 0, count = 0;
+    for (var i = 1; i <= 7; i++) {
+      var d = new Date(); d.setDate(d.getDate() - i);
+      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      var state = classifyNutritionDay(nutrition[key], proteinTarget, kcalTarget);
+      if (state === 'complete') { sum += nutrition[key].proteinG || 0; count++; }
+    }
+    return { protein7d: count ? sum / count : null, coverage: count };
+  }
+
   // realEx: the exercise's REAL record (po_coach_v1.exercises entry) —
   // carries equipmentClass/barWeight/currentLoad/currentRepTarget/
   // sessionsAtCurrentLoad/maxedStreak. lastSessionSets: every set from
@@ -1263,6 +1303,22 @@ button { font-family: inherit; }
     if (allAtMax) {
       var nl = nextLoad(eqClass, curLoad);
       var jump = curLoad > 0 ? (nl / curLoad - 1) : 1;
+
+      // NUTRITION GATE — permission on adding load, never a general
+      // performance judgment. Only reachable here, since it must never
+      // hold back a session that was merely in-range. Skips itself
+      // below 4 tracked days in the trailing week rather than guessing
+      // off too little data.
+      var nutr = nutritionRollup7d();
+      if (nutr.coverage >= 4 && nutr.protein7d != null) {
+        if (nutr.protein7d < 124) {
+          return { currentLoad: curLoad, currentRepTarget: repMax + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Protein gate', reason: 'Maxed out, but 7-day protein average is ' + Math.round(nutr.protein7d) + 'g (target 124g+). Holding the weight — chase ' + (repMax + 1) + ' reps instead.' };
+        }
+        if (nutr.protein7d < 140 && jump > 0.08) {
+          return { currentLoad: curLoad, currentRepTarget: repMax + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Protein gate', reason: 'Maxed out, but protein (' + Math.round(nutr.protein7d) + 'g) is light for a ' + Math.round(jump * 100) + '% jump. Holding — chase ' + (repMax + 1) + ' reps.' };
+        }
+      }
+
       if (jump <= 0.08) {
         return { currentLoad: nl, currentRepTarget: repMin, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Add weight', reason: 'You hit ' + repMax + ' — time to add ' + (nl - curLoad) + unit() + '. Expect ' + repMin + '-' + (repMin + 1) + ' next session.' };
       }
@@ -1627,6 +1683,72 @@ button { font-family: inherit; }
   document.getElementById('volumeTile').addEventListener('keydown', function (ev) {
     if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); document.getElementById('volumeTile').click(); }
   });
+
+  // ------------------------------------------------------------------
+  // PHASE 3 — manual deload trigger only, per this round's discussion:
+  // automatic stall-cluster detection and the dismissible recommendation
+  // card are deliberately skipped for now. What this does: scales every
+  // exercise's currentLoad to ~60%, tags the window so writeRealLog()
+  // marks sets logged during it, and — the fix that actually matters —
+  // lastRealSessionSets() already excludes deload-tagged sets, so the
+  // engine can never mistake a deload week's lighter numbers for a real
+  // working weight and try to "progress" from them afterward.
+  // ------------------------------------------------------------------
+  function deloadState() {
+    try {
+      var live = loadLiveState();
+      if (live && live.deloadActive && live.deloadActive.endDate >= wtDateKey(new Date())) return live.deloadActive;
+    } catch (e) {}
+    return null;
+  }
+  function renderDeloadRow() {
+    var row = document.getElementById('deloadRow');
+    var active = deloadState();
+    if (active) {
+      row.innerHTML = '<div class="deload-banner"><div class="deload-banner-title">Deload week — 60% loads</div>' +
+        '<div class="deload-banner-sub">Runs through ' + dayLabelForKey(active.endDate) + '. Quick-log uses the reduced weights automatically.</div>' +
+        '<button type="button" class="deload-end-btn" id="deloadEndBtn">End deload now</button></div>';
+      document.getElementById('deloadEndBtn').addEventListener('click', endDeloadWeek);
+    } else {
+      row.innerHTML = '<button type="button" class="deload-start-btn" id="deloadStartBtn">Start a deload week</button>';
+      document.getElementById('deloadStartBtn').addEventListener('click', startDeloadWeek);
+    }
+  }
+  function startDeloadWeek() {
+    if (!confirm('Scale every exercise to ~60% for the next 7 days? You can end it early any time.')) return;
+    try {
+      var live = loadLiveState() || { exercises: [], logs: {} };
+      var today = wtDateKey(new Date());
+      var end = new Date(); end.setDate(end.getDate() + 7);
+      live.exercises.forEach(function (ex) {
+        if (ex.currentLoad == null || ex.bw) return;
+        ex.preDeloadLoad = ex.currentLoad;
+        ex.preDeloadRepTarget = ex.currentRepTarget;
+        var eq = ex.equipmentClass || 'cable';
+        var target = ex.currentLoad * 0.6, load = ex.currentLoad, floor = ex.barWeight || 0, guard = 0;
+        while (load > target && load > floor && guard++ < 100) load = prevLoad(eq, load, floor);
+        ex.currentLoad = load;
+        ex.currentRepTarget = ex.repMax;
+      });
+      live.deloadActive = { startDate: today, endDate: wtDateKey(end) };
+      localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
+    } catch (e) {}
+    renderDeloadRow();
+  }
+  function endDeloadWeek() {
+    try {
+      var live = loadLiveState();
+      if (live) {
+        live.exercises.forEach(function (ex) {
+          if (ex.preDeloadLoad != null) { ex.currentLoad = ex.preDeloadLoad; ex.currentRepTarget = ex.preDeloadRepTarget; delete ex.preDeloadLoad; delete ex.preDeloadRepTarget; }
+          ex.sessionsAtCurrentLoad = 0; ex.maxedStreak = 0;
+        });
+        delete live.deloadActive;
+        localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
+      }
+    } catch (e) {}
+    renderDeloadRow();
+  }
 
   // ------------------------------------------------------------------
   // 4a. TODAY'S WORKOUT — multi-select per area, no forced-on exercises.
@@ -2295,25 +2417,35 @@ button { font-family: inherit; }
       if (!Array.isArray(live.exercises)) live.exercises = [];
       if (!live.logs || typeof live.logs !== 'object') live.logs = {};
       var now = Date.now();
+      var deloadNow = live.deloadActive && live.deloadActive.endDate >= wtDateKey(new Date());
       sets.forEach(function (s, gi) {
         var ex = findOrCreateRealExercise(live, s.name, day);
         var arr = live.logs[ex.id] || [];
         for (var i = 0; i < s.setsCount; i++) {
-          arr.push({ weight: s.weight, reps: s.reps, date: localTimestampFor(new Date(now + gi * 1000 + i)) });
+          var entry = { weight: s.weight, reps: s.reps, date: localTimestampFor(new Date(now + gi * 1000 + i)) };
+          if (deloadNow) entry.deload = true;
+          arr.push(entry);
         }
         live.logs[ex.id] = arr;
-        // Recompute and persist the NEXT prescription right now, off
-        // exactly what was just logged — this is what lets one-tap
-        // quick-log read a real prescription next time instead of just
-        // repeating today's numbers forever.
-        var justLogged = [];
-        for (var j = 0; j < s.setsCount; j++) justLogged.push({ weight: s.weight, reps: s.reps });
-        var rx = computeNextRx(ex, justLogged);
-        ex.currentLoad = rx.currentLoad;
-        ex.currentRepTarget = rx.currentRepTarget;
-        ex.sessionsAtCurrentLoad = rx.sessionsAtCurrentLoad;
-        ex.maxedStreak = rx.maxedStreak;
-        ex.lastRx = { type: rx.type, tag: rx.tag, reason: rx.reason }; // for the modal's "next session" display
+        // A deload session's intentionally-lighter numbers must never
+        // feed back into the engine as if they were a real working
+        // weight — currentLoad/currentRepTarget stay exactly what
+        // startDeloadWeek() set them to until endDeloadWeek() restores
+        // the real prescription. Otherwise recompute and persist the
+        // NEXT prescription right now, off exactly what was just
+        // logged — this is what lets one-tap quick-log read a real
+        // prescription next time instead of just repeating today's
+        // numbers forever.
+        if (!deloadNow) {
+          var justLogged = [];
+          for (var j = 0; j < s.setsCount; j++) justLogged.push({ weight: s.weight, reps: s.reps });
+          var rx = computeNextRx(ex, justLogged);
+          ex.currentLoad = rx.currentLoad;
+          ex.currentRepTarget = rx.currentRepTarget;
+          ex.sessionsAtCurrentLoad = rx.sessionsAtCurrentLoad;
+          ex.maxedStreak = rx.maxedStreak;
+          ex.lastRx = { type: rx.type, tag: rx.tag, reason: rx.reason }; // for the modal's "next session" display
+        }
       });
       localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
     } catch (e) {}
@@ -2957,6 +3089,7 @@ button { font-family: inherit; }
   safeBoot(renderDateStrip);
   safeBoot(renderWeight);
   safeBoot(renderStrength);
+  safeBoot(renderDeloadRow);
   safeBoot(renderChecklist);
   safeBoot(renderActivity);
   safeBoot(renderWorkoutSummary);
