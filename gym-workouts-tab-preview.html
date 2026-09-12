@@ -51,31 +51,31 @@
   --font-mono: ui-monospace, SF Mono, Menlo, Consolas, monospace;
   color-scheme: dark;
 }
-/* Light theme — a deliberately restrained test: no borrowed hues at
-   all (no blue, no gold/amber, no purple like dark mode uses per day).
-   Everything, including the four day accents, stays inside one
-   sage-green-to-cream family, differentiated by shade/tone rather than
-   hue — a candidate for rolling out to the rest of the app's light
-   mode if this reads well. */
+/* Light theme — updated to your exact palette (#003B2F, #0F2A24,
+   #C2A46F, #F4EFE3, #2E2E2E). No blue/gold-mismatch hues left — every
+   accent is one of these five, or a var()-based tint of one. Active
+   states use the strong solid colors directly rather than a soft
+   dim/glow wash (see the .active overrides further down) — the wash
+   treatment stays only for dark mode. */
 :root[data-theme="light"] {
-  --bg: #EDEEE9;
+  --bg: #F4EFE3;
   --bg-card: #FFFFFF;
-  --bg-raised: rgba(28,30,27,0.045);
-  --bg-input: rgba(28,30,27,0.06);
+  --bg-raised: rgba(46,46,46,0.05);
+  --bg-input: rgba(46,46,46,0.07);
   --bg-sheet: #FFFFFF;
-  --border: rgba(28,30,27,0.08);
-  --border-strong: rgba(28,30,27,0.16);
-  --text-1: #1C1E1B;
-  --text-2: #63675F;
-  --text-3: #9A9E93;
-  --text-4: #C3C6BD;
-  --lime: #4C7A5B;
-  --lime-dim: rgba(76,122,91,0.12);
-  --lime-ink: #ffffff;
-  --day-push: #96AC84; --day-push-dim: rgba(150,172,132,0.16);
-  --day-pull: #6B8E6F; --day-pull-dim: rgba(107,142,111,0.15);
-  --day-lowera: #4C7A5B; --day-lowera-dim: rgba(76,122,91,0.14);
-  --day-lowerb: #3F5443; --day-lowerb-dim: rgba(63,84,67,0.14);
+  --border: rgba(46,46,46,0.10);
+  --border-strong: rgba(46,46,46,0.20);
+  --text-1: #2E2E2E;
+  --text-2: #5A5A54;
+  --text-3: #8C8C86;
+  --text-4: #C7C4B8;
+  --lime: #003B2F;
+  --lime-dim: rgba(0,59,47,0.12);
+  --lime-ink: #F4EFE3;
+  --day-push: #C2A46F; --day-push-dim: rgba(194,164,111,0.18);
+  --day-pull: #0F2A24; --day-pull-dim: rgba(15,42,36,0.14);
+  --day-lowera: #003B2F; --day-lowera-dim: rgba(0,59,47,0.14);
+  --day-lowerb: #2E2E2E; --day-lowerb-dim: rgba(46,46,46,0.12);
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -113,6 +113,8 @@ button { font-family: inherit; }
   color: var(--text-2); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s;
 }
 .day-pill.active { background: var(--pill-wash, var(--lime-dim)); border-color: var(--pill-accent, var(--lime)); color: var(--text-1); font-weight: 800; }
+/* Light mode skips the soft wash entirely — a strong solid fill instead. */
+[data-theme="light"] .day-pill.active { background: var(--pill-accent, var(--lime)); border-color: var(--pill-accent, var(--lime)); color: #F4EFE3; }
 
 /* ---------- calendar strip ---------- */
 .cal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 18px 18px 16px; margin-bottom: 14px; }
@@ -202,6 +204,7 @@ button { font-family: inherit; }
 .pick-opt { font-size: 12.5px; padding: 9px 14px; border-radius: 11px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; }
 .pick-opt.active { border-color: var(--hero-accent, var(--lime)); background: color-mix(in srgb, var(--hero-accent, var(--lime)) 16%, transparent); color: var(--text-1); font-weight: 700; }
 .pick-opt.active::before { content: '✓ '; }
+[data-theme="light"] .pick-opt.active { background: var(--hero-accent, var(--lime)); border-color: var(--hero-accent, var(--lime)); color: #F4EFE3; }
 .sheet-confirm { width: 100%; padding: 14px; border-radius: 14px; border: none; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 14px; cursor: pointer; margin-top: 4px; }
 
 /* ---------- exercise log modal ---------- */
@@ -435,7 +438,12 @@ button { font-family: inherit; }
     var today = new Date();
     document.getElementById('hdrDow').textContent = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
     document.getElementById('hdrName').textContent = DAY_FULL_NAME[activeDay];
-    document.getElementById('hdrName').style.color = 'var(' + meta.accent + ')';
+    // Light mode keeps the heading a strong neutral (near-black) rather
+    // than tinting it with the day's accent — reads cleaner against the
+    // stronger, more saturated accent colors used elsewhere on that
+    // theme. Dark mode keeps the per-day coloring.
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    document.getElementById('hdrName').style.color = isLight ? 'var(--text-1)' : 'var(' + meta.accent + ')';
     document.getElementById('hdrMuscles').textContent = meta.muscles;
   }
 
@@ -455,7 +463,8 @@ button { font-family: inherit; }
       var isToday = d.toDateString() === today.toDateString();
       var dayType = cycle[i % cycle.length];
       var accent = 'var(' + DAY_META[dayType].accent + ')';
-      var numStyle = isToday ? 'background:' + accent + ';box-shadow:0 0 14px 0 ' + accent : '';
+      var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      var numStyle = isToday ? 'background:' + accent + (isLight ? '' : ';box-shadow:0 0 14px 0 ' + accent) : '';
       html += '<div class="cal-day' + (isToday ? ' is-today' : '') + '">' +
         '<div class="cal-day-name">' + names[i] + '</div>' +
         '<div class="cal-day-num" style="' + numStyle + '">' + d.getDate() + '</div>' +
@@ -565,6 +574,11 @@ button { font-family: inherit; }
     var isLight = document.documentElement.getAttribute('data-theme') === 'light';
     try { localStorage.setItem(THEME_KEY, isLight ? 'mint' : 'sage'); } catch (e) {}
     applyStoredTheme();
+    // Re-run anything that branches on theme at render time (heading
+    // color, the calendar's today-glow) — the CSS variables update
+    // instantly, but these specific bits are set via inline JS style.
+    renderHeader();
+    renderCalendar();
   });
 
   // ---------- picker modal ----------
