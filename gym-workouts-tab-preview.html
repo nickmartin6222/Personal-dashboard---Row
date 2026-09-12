@@ -139,30 +139,30 @@ button { font-family: inherit; }
 .cal-day-num { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: var(--text-2); }
 .cal-day.is-today .cal-day-num { color: var(--lime-ink); font-weight: 800; }
 
-/* ---------- hero tile: gradient background + transparent-cutout
-   athlete on the right, name/tag on the left where the text already
-   sat — same idea as the reference card (colored gradient, ring
-   pattern texture, cutout bleeding off the right edge). ---------- */
+/* ---------- hero tile: a plain card (not a colored block) — the day
+   accent lives in the ring-pattern lines and the tag pill instead of
+   the background, so Push/Pull/Lower A/Lower B read as "same white
+   card, different line colour" rather than four different-coloured
+   tiles. Cutout bleeds off the right edge, name/tag sit bottom-left. ---------- */
 .hero-tile {
   position: relative; height: 230px; border-radius: 22px; overflow: hidden; cursor: pointer;
   margin-bottom: 14px; -webkit-tap-highlight-color: transparent;
-  background:
-    linear-gradient(100deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.12) 42%, transparent 62%),
-    linear-gradient(155deg, var(--hero-accent, var(--lime)) 0%, color-mix(in srgb, var(--hero-accent, var(--lime)) 55%, #000) 100%);
+  background: var(--bg-card); border: 1px solid var(--border);
 }
-/* Concentric ring texture, same device the reference card uses to keep
-   a flat color from reading as plain — pure CSS, no extra asset. */
+/* Concentric ring texture in the day's accent colour, on the plain
+   card background — this is now the only thing signalling "which
+   day" behind the photo. */
 .hero-pattern {
-  position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
-  background-image: repeating-radial-gradient(circle at 82% 28%, rgba(255,255,255,0.16) 0px, rgba(255,255,255,0.16) 1.5px, transparent 1.5px, transparent 15px);
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-radial-gradient(circle at 78% 30%, color-mix(in srgb, var(--hero-accent, var(--lime)) 45%, transparent) 0px, color-mix(in srgb, var(--hero-accent, var(--lime)) 45%, transparent) 1.5px, transparent 1.5px, transparent 15px);
 }
-.hero-cutout { position: absolute; right: -4%; bottom: -3%; height: 108%; width: auto; max-width: 62%; object-fit: contain; object-position: bottom right; filter: drop-shadow(0 16px 22px rgba(0,0,0,0.4)); transition: opacity 0.3s ease; }
+.hero-cutout { position: absolute; right: -4%; bottom: -3%; height: 108%; width: auto; max-width: 62%; object-fit: contain; object-position: bottom right; filter: drop-shadow(0 14px 18px rgba(0,0,0,0.18)); transition: opacity 0.3s ease; }
 .hero-body { position: absolute; left: 20px; right: 46%; bottom: 18px; }
-.hero-tag { display: inline-block; font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; background: rgba(255,255,255,0.22); color: #fff; }
-.hero-title { font-family: var(--font-heading); font-size: 27px; font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.35); letter-spacing: -0.005em; }
-.hero-sub { font-size: 12.5px; color: rgba(255,255,255,0.85); margin-top: 3px; }
-.hero-muscles { font-size: 12.5px; color: rgba(255,255,255,0.85); margin-top: 3px; }
-.hero-tap-hint { position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.4); backdrop-filter: blur(3px); color: #fff; font-size: 10.5px; font-family: var(--font-mono); padding: 6px 11px; border-radius: 999px; display: flex; align-items: center; gap: 5px; z-index: 2; }
+.hero-tag { display: inline-block; font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; background: color-mix(in srgb, var(--hero-accent, var(--lime)) 16%, transparent); color: var(--hero-accent, var(--lime)); }
+.hero-title { font-family: var(--font-heading); font-size: 27px; font-weight: 700; color: var(--text-1); letter-spacing: -0.005em; }
+.hero-sub { font-size: 12.5px; color: var(--text-2); margin-top: 3px; }
+.hero-muscles { font-size: 12.5px; color: var(--text-2); margin-top: 3px; }
+.hero-tap-hint { position: absolute; top: 16px; right: 18px; color: var(--hero-accent, var(--lime)); font-size: 10.5px; font-weight: 700; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; z-index: 2; }
 
 /* ---------- warm-up ---------- */
 .warmup-row { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -287,7 +287,7 @@ button { font-family: inherit; }
   <div class="hero-tile" id="heroTile">
     <div class="hero-pattern"></div>
     <img class="hero-cutout" id="heroImg" src="" alt="">
-    <div class="hero-tap-hint"><i data-lucide="pencil" style="width:12px;height:12px"></i>Tap to pick exercises</div>
+    <div class="hero-tap-hint">Choose exercises</div>
     <div class="hero-body">
       <span class="hero-tag" id="heroTag">—</span>
       <div class="hero-title" id="heroTitle">—</div>
