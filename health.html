@@ -106,6 +106,8 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .date-cell.is-selected:not(.is-today) { border-color: var(--accent); color: var(--text-primary); }
 .date-cell-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); position: absolute; bottom: 4px; }
 .date-cell.is-today .date-cell-dot { background: #04140f; opacity: 0.85; }
+[data-theme="light"] .date-cell.is-today { color: #FAFAFA; }
+[data-theme="light"] .date-cell.is-today .date-cell-dot { background: #FAFAFA; }
 .date-cell.is-future { opacity: 0.35; cursor: default; }
 
 /* ===== Cards ===== */
@@ -146,6 +148,12 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .dark-card:active { background: #111113; }
 .dark-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .dark-sub { font-size: 11px; color: var(--text-quaternary); margin: 2px 0 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+/* .dark-card stays a dark forest tile in both themes (deliberate — a
+   spotlight surface), so its own text must stay light-on-dark even
+   when the page around it flips to the light palette's dark-on-light
+   tokens. */
+[data-theme="light"] .dark-label { color: #FAFAFA; }
+[data-theme="light"] .dark-sub { color: rgba(250,250,250,0.55); }
 .dark-val { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
 .mini-bars { display: flex; align-items: flex-end; gap: 3px; height: 30px; }
 .mini-bar { flex: 1; border-radius: 2px 2px 0 0; opacity: 0.85; }
