@@ -39,6 +39,32 @@
 
   --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+/* Health had no light theme at all — the toggle existed but did
+   nothing. Built to match the cream/forest palette now standard across
+   the app's light mode (see golf.html, the Fitness Workouts prototype). */
+:root[data-theme="light"] {
+  --bg: #F4EFE3;
+  --bg-card: #FFFFFF;
+  --bg-dark: #0F2A24;
+  --bg-input: rgba(46,46,46,0.06);
+  --border: rgba(46,46,46,0.08);
+  --border-soft: rgba(46,46,46,0.04);
+  --border-strong: rgba(46,46,46,0.16);
+  --text-primary: #2E2E2E;
+  --text-secondary: #5A5A54;
+  --text-tertiary: #8C8C86;
+  --text-quaternary: #C7C4B8;
+  --accent: #003B2F;
+  --carbs: #C2A46F;
+  --fat: #6B4F8A;
+  --protein: #8A6B3F;
+  --fiber: #4A6B5C;
+  --steps: #A9673D;
+  --distance: #2F6B52;
+  --creatine: #7A4A2E;
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-secondary); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
