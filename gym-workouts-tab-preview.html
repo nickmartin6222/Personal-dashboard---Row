@@ -100,24 +100,30 @@ button { font-family: inherit; }
 .day-pills { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
 .day-pills::-webkit-scrollbar { display: none; }
 .day-pill {
-  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em;
-  padding: 9px 14px; border-radius: 999px; border: 1px solid transparent; background: var(--bg-raised);
+  font-family: var(--font); font-size: 13.5px; font-weight: 700;
+  padding: 10px 16px; border-radius: 999px; border: 1px solid transparent; background: var(--bg-raised);
   color: var(--text-2); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s;
 }
 .day-pill.active { background: var(--pill-wash, var(--lime-dim)); border-color: var(--pill-accent, var(--lime)); color: var(--text-1); font-weight: 800; }
 
 /* ---------- calendar strip ---------- */
-.cal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; }
-.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.cal-month { font-size: 13px; font-weight: 800; color: var(--text-1); }
-.cal-nav { display: flex; gap: 4px; }
-.cal-nav button { width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-3); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; }
-.cal-week { display: flex; gap: 6px; }
-.cal-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0 6px; border-radius: 12px; cursor: default; }
-.cal-day-name { font-size: 9.5px; font-family: var(--font-mono); color: var(--text-4); letter-spacing: 0.05em; }
-.cal-day-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; color: var(--text-2); }
+.cal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 18px 18px 16px; margin-bottom: 14px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.cal-month { font-size: 17px; font-weight: 800; color: var(--text-1); letter-spacing: -0.01em; }
+/* Joined prev/next control — one rounded pill, two halves, no gap —
+   matching the reference's single connected arrow control instead of
+   two separate buttons floating apart. */
+.cal-nav { display: flex; background: var(--bg-raised); border-radius: 999px; padding: 3px; gap: 2px; }
+.cal-nav button {
+  width: 30px; height: 30px; border-radius: 50%; border: none; background: var(--bg-card);
+  color: var(--text-2); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+.cal-week { display: flex; gap: 4px; }
+.cal-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0; border-radius: 12px; cursor: default; }
+.cal-day-name { font-size: 12px; font-weight: 700; font-family: var(--font-mono); color: var(--text-3); letter-spacing: 0.02em; }
+.cal-day-num { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: var(--text-2); }
 .cal-day.is-today .cal-day-num { color: var(--lime-ink); font-weight: 800; }
-.cal-day-dot { width: 4px; height: 4px; border-radius: 50%; }
 
 /* ---------- hero image tile ---------- */
 .hero-tile {
@@ -148,6 +154,16 @@ button { font-family: inherit; }
 .tw-label-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
 .tw-label { font-family: var(--font-mono); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
 .tw-count { font-size: 11.5px; color: var(--text-3); }
+.start-row { display: flex; gap: 8px; margin-top: 6px; }
+.start-btn {
+  flex: 1; padding: 15px; border-radius: 14px; border: none; background: var(--lime); color: var(--lime-ink);
+  font-weight: 800; font-size: 14.5px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.mark-done-btn {
+  padding: 15px 18px; border-radius: 14px; border: 1px solid var(--border-strong); background: var(--bg-raised);
+  color: var(--text-1); font-weight: 700; font-size: 13.5px; cursor: pointer;
+}
+.mark-done-btn.is-done { background: var(--lime-dim); border-color: var(--lime); color: var(--lime); }
 .ex-card {
   display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 16px;
   background: var(--bg-card); border: 1px solid var(--border); margin-bottom: 8px; cursor: pointer; -webkit-tap-highlight-color: transparent;
@@ -172,11 +188,11 @@ button { font-family: inherit; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .sheet-title { font-size: 17px; font-weight: 800; }
 .sheet-close { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-raised); border: none; color: var(--text-2); font-size: 15px; cursor: pointer; }
-.pick-area { margin-bottom: 16px; }
-.pick-area-label { font-size: 11.5px; color: var(--text-3); margin-bottom: 7px; font-weight: 700; }
-.pick-opts { display: flex; gap: 6px; flex-wrap: wrap; }
-.pick-opt { font-size: 12.5px; padding: 8px 13px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; }
-.pick-opt.active { border-color: var(--hero-accent, var(--lime)); background: var(--check-accent-dim, var(--lime-dim)); color: var(--text-1); font-weight: 700; }
+.pick-area { margin-bottom: 18px; }
+.pick-area-label { font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin-bottom: 8px; font-weight: 700; }
+.pick-opts { display: flex; gap: 7px; flex-wrap: wrap; }
+.pick-opt { font-size: 12.5px; padding: 9px 14px; border-radius: 11px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; }
+.pick-opt.active { border-color: var(--hero-accent, var(--lime)); background: color-mix(in srgb, var(--hero-accent, var(--lime)) 16%, transparent); color: var(--text-1); font-weight: 700; }
 .pick-opt.active::before { content: '✓ '; }
 .sheet-confirm { width: 100%; padding: 14px; border-radius: 14px; border: none; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 14px; cursor: pointer; margin-top: 4px; }
 
@@ -249,6 +265,10 @@ button { font-family: inherit; }
     <span class="tw-count" id="exCount"></span>
   </div>
   <div id="exList"></div>
+  <div class="start-row">
+    <button type="button" class="start-btn" id="startBtn"><span id="startBtnLabel">▶ Start Workout</span></button>
+    <button type="button" class="mark-done-btn" id="markDoneBtn">Mark done</button>
+  </div>
 </div>
 
 <!-- Exercise picker sheet -->
@@ -430,7 +450,6 @@ button { font-family: inherit; }
       html += '<div class="cal-day' + (isToday ? ' is-today' : '') + '">' +
         '<div class="cal-day-name">' + names[i] + '</div>' +
         '<div class="cal-day-num" style="' + numStyle + '">' + d.getDate() + '</div>' +
-        '<div class="cal-day-dot" style="background:' + accent + ';opacity:' + (isToday ? '1' : '0.4') + '"></div>' +
         '</div>';
     }
     document.getElementById('calWeek').innerHTML = html;
@@ -492,7 +511,33 @@ button { font-family: inherit; }
     document.querySelectorAll('.ex-card').forEach(function (card) {
       card.addEventListener('click', function () { openLogModal(card.dataset.name); });
     });
+    var markBtn = document.getElementById('markDoneBtn');
+    var allDone = list.length > 0 && list.every(function (ex) { return !!protoState.done[ex.name]; });
+    markBtn.textContent = allDone ? '✓ Done' : 'Mark done';
+    markBtn.classList.toggle('is-done', allDone);
   }
+  document.getElementById('markDoneBtn').addEventListener('click', function () {
+    exercisesForDay(activeDay).forEach(function (ex) { protoState.done[ex.name] = true; });
+    saveProto(); renderChecklist();
+  });
+
+  // ---------- start/finish timer — visual only in this prototype, same
+  // interaction as the live app (logging works independently of it). ----------
+  var sessionTimer = null, sessionStartedAt = null;
+  document.getElementById('startBtn').addEventListener('click', function () {
+    var label = document.getElementById('startBtnLabel');
+    if (sessionTimer) {
+      clearInterval(sessionTimer); sessionTimer = null; sessionStartedAt = null;
+      label.textContent = '▶ Start Workout';
+      return;
+    }
+    sessionStartedAt = Date.now();
+    sessionTimer = setInterval(function () {
+      var secs = Math.floor((Date.now() - sessionStartedAt) / 1000);
+      var mm = String(Math.floor(secs / 60)).padStart(2, '0'), ss = String(secs % 60).padStart(2, '0');
+      label.textContent = '■ ' + mm + ':' + ss + ' — Finish Workout';
+    }, 1000);
+  });
 
   function renderAll() { renderHeader(); renderPills(); renderHero(); renderWarmup(); renderChecklist(); }
 
