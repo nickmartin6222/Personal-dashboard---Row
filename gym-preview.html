@@ -307,6 +307,11 @@ button { font-family: inherit; }
 .confirm-btn.is-clean { background: var(--bg-raised); color: var(--text-3); }
 
 .tw-checklist { margin-top: 16px; }
+.warmup-block:empty { display: none; }
+.warmup-label { font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); margin-bottom: 7px; }
+.warmup-list { list-style: none; margin: 0 0 14px; padding: 10px 12px; background: var(--bg-raised); border-radius: var(--r-sm); display: flex; flex-direction: column; gap: 5px; }
+.warmup-item { font-size: 12.5px; color: var(--text-2); display: flex; align-items: center; gap: 8px; }
+.warmup-item::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--lime); flex: none; }
 .exercise-list { list-style: none; margin: 0; padding: 0; }
 .ex-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .ex-row:last-child { border-bottom: none; }
@@ -686,6 +691,7 @@ button { font-family: inherit; }
       </div>
 
       <div class="tw-checklist" id="twChecklist">
+        <div class="warmup-block" id="warmupBlock"></div>
         <ul class="exercise-list" id="exerciseList"></ul>
         <div class="start-row">
           <button class="start-btn" id="startBtn" type="button"><span id="startBtnLabel">▶ Start Workout</span></button>
@@ -939,6 +945,7 @@ button { font-family: inherit; }
   var DAY_META = {
     'Lower A': {
       muscles: 'Hamstrings · Glutes · Adductors',
+      warmup: ['5 min bike or brisk walk', 'Leg swings — front-back & side-side, 10/side', 'Bodyweight squats × 10', 'Glute bridges × 10'],
       areas: [
         { area: 'RDL', sets: 4, options: [{ name: 'Barbell RDL', muscle: 'Hamstrings', repMin: 6, repMax: 10, step: 5, startWeight: 60 }] },
         { area: 'Hip Thrust', sets: 4, options: [{ name: 'Single-Leg Machine Hip Thrust', muscle: 'Glutes', repMin: 8, repMax: 12, step: 5, startWeight: 40 }] },
@@ -961,6 +968,7 @@ button { font-family: inherit; }
     },
     'Push': {
       muscles: 'Chest · Shoulders · Triceps',
+      warmup: ['5 min bike or rower', 'Arm circles, 10/direction', 'Band pull-aparts × 15', 'Light push-ups × 10'],
       areas: [
         { area: 'Horizontal Press', sets: 4, options: [{ name: 'Barbell Bench Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 2.5, startWeight: 60 }] },
         { area: 'Incline Press', sets: 4, options: [{ name: 'Incline Barbell Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 2.5, startWeight: 45 }] },
@@ -999,13 +1007,14 @@ button { font-family: inherit; }
     },
     'Lower B': {
       muscles: 'Quads · Hamstrings · Calves',
+      warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10', 'Walking lunges × 10/side', 'Calf raises × 15'],
       areas: [
         { area: 'Squat', sets: 4, options: [{ name: 'Goblet / Front Squat', muscle: 'Quads', repMin: 6, repMax: 10, step: 2.5, startWeight: 20 }] },
         { area: 'Split Squat', sets: 4, options: [{ name: 'Bulgarian Split Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true }] },
-        { area: 'Hip External Rotation', sets: 3, options: [{ name: 'Hip External Rotation', muscle: 'Hips', repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true }] },
+        { area: 'Hip Abduction', sets: 3, options: [{ name: 'Hip Abduction', muscle: 'Hips', repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true }] },
         { area: 'Leg Extension', sets: 3, options: [{ name: 'Leg Extension', muscle: 'Quads', repMin: 10, repMax: 15, step: 5, startWeight: 30 }] },
         { area: 'Lower B Leg Curl', sets: 3, options: [
-          { name: 'Seated Leg Curl', muscle: 'Hamstrings', repMin: 10, repMax: 15, step: 5, startWeight: 30 },
+          { name: 'Seated Hamstring Curl', muscle: 'Hamstrings', repMin: 10, repMax: 15, step: 5, startWeight: 30 },
           { name: 'Lying Leg Curl', muscle: 'Hamstrings', repMin: 10, repMax: 15, step: 5, startWeight: 25 },
           { name: 'Nordic Curl or GHR', muscle: 'Hamstrings', repMin: 5, repMax: 10, step: 1, startWeight: 0, bw: true }
         ]},
@@ -1024,6 +1033,7 @@ button { font-family: inherit; }
     },
     'Pull': {
       muscles: 'Back · Biceps · Rear delts',
+      warmup: ['5 min row machine or bike', 'Band pull-aparts × 15', 'Scapular pull-ups × 10', 'Light lat pulldown × 10'],
       areas: [
         { area: 'Vertical Pull', sets: 4, options: [{ name: 'Lat Pulldown', muscle: 'Back', repMin: 6, repMax: 10, step: 5, startWeight: 50 }] },
         { area: 'Pull-Up', sets: 4, options: [{ name: 'Pull-Ups', muscle: 'Back', repMin: 4, repMax: 10, step: 1, startWeight: 0, bw: true }] },
@@ -1059,7 +1069,12 @@ button { font-family: inherit; }
   };
 
   // Persist any custom days/exercises across reloads.
-  var PROGRAM_KEY = 'po_preview_program_v2';
+  // Bumped to v3 so catalog changes made directly in code (renamed
+  // exercises, added warm-up steps) actually take effect — this key
+  // caches a full DAY_META/DAY_ORDER snapshot and overrides the in-code
+  // defaults entirely once it exists, so a v2 snapshot from before
+  // today's changes would otherwise silently keep showing stale names.
+  var PROGRAM_KEY = 'po_preview_program_v3';
   function saveProgram() { try { localStorage.setItem(PROGRAM_KEY, JSON.stringify({ DAY_META: DAY_META, DAY_ORDER: DAY_ORDER })); } catch (e) {} }
   (function loadProgram() {
     try {
@@ -1593,6 +1608,11 @@ button { font-family: inherit; }
     twDay.textContent = confirmedDay;
     twDay.style.color = dayColor(confirmedDay);
     document.getElementById('twCount').textContent = list.length + ' exercise' + (list.length === 1 ? '' : 's');
+    var dayMeta = DAY_META[confirmedDay];
+    var warmup = (dayMeta && Array.isArray(dayMeta.warmup)) ? dayMeta.warmup : [];
+    document.getElementById('warmupBlock').innerHTML = warmup.length
+      ? '<div class="warmup-label">Warm up first</div><ul class="warmup-list">' + warmup.map(function (w) { return '<li class="warmup-item">' + esc(w) + '</li>'; }).join('') + '</ul>'
+      : '';
     var html = list.map(function (ex) {
       var done = !!doneState[ex.name];
       // Once checked off, show what was actually logged (weight/reps
@@ -1628,41 +1648,51 @@ button { font-family: inherit; }
   function toggleExerciseDone(name) {
     var nowDone = !doneState[name];
     doneState[name] = nowDone;
-    if (nowDone) {
-      // Checking a box quick-logs it: sets = the area's target sets,
-      // weight/reps = last known (same defaults the modal opens with),
-      // so ticking things off is enough on its own — opening the modal
-      // is only needed to log something different. This does NOT start
-      // the timer — logging and timing are independent now; the clock
-      // only ever starts when you explicitly tap Start.
-      ensurePendingSession();
-      var already = currentSession.sets.some(function (s) { return s.name === name; });
-      if (!already) {
-        var ex = EX_INDEX[name];
-        var last = lastLogFor(ex);
-        var areaDef = findAreaForExercise(confirmedDay, name);
-        currentSession.sets.push({ name: name, setsCount: areaDef ? areaDef.sets : 3, reps: last.reps, weight: ex.bw ? 0 : (last.weight || ex.startWeight || 0) });
+    // Everything below this point is "best effort" — if any of it throws
+    // (e.g. a stale reference to an exercise that's since been renamed),
+    // the checkbox must still visually flip and doneState must still
+    // save. Previously an exception here would abort the function before
+    // ever reaching saveDoneToday()/renderChecklist() below, which is
+    // exactly what "the checkbox doesn't tick" looks like from the
+    // outside — the click registered, the state changed in memory, but
+    // nothing ever got persisted or re-rendered to show it.
+    try {
+      if (nowDone) {
+        // Checking a box quick-logs it: sets = the area's target sets,
+        // weight/reps = last known (same defaults the modal opens with),
+        // so ticking things off is enough on its own — opening the modal
+        // is only needed to log something different. This does NOT start
+        // the timer — logging and timing are independent now; the clock
+        // only ever starts when you explicitly tap Start.
+        ensurePendingSession();
+        var already = currentSession.sets.some(function (s) { return s.name === name; });
+        if (!already) {
+          var ex = EX_INDEX[name] || { bw: false, startWeight: 0, repMax: 12 };
+          var last = lastLogFor(ex);
+          var areaDef = findAreaForExercise(confirmedDay, name);
+          currentSession.sets.push({ name: name, setsCount: areaDef ? areaDef.sets : 3, reps: last.reps, weight: ex.bw ? 0 : (last.weight || ex.startWeight || 0) });
+        }
+        saveCurrentSession();
+      } else {
+        // Unchecking fully unlocks it for today — removes it from the
+        // live session if it's there, AND from any already-committed
+        // session(s) dated today (e.g. a workout already marked done),
+        // so re-checking it later can't create a duplicate logged entry
+        // alongside an old committed one.
+        var tk = wtDateKey(new Date());
+        var changed = false;
+        SESSIONS = SESSIONS.filter(function (s) {
+          if (s.dateKey !== tk) return true;
+          var before = s.sets.length;
+          s.sets = s.sets.filter(function (st) { return st.name !== name; });
+          if (s.sets.length !== before) { changed = true; s.volume = s.sets.reduce(function (sum, st) { return sum + st.setsCount * st.reps * st.weight; }, 0); }
+          return s.sets.length > 0;
+        });
+        if (changed) saveSessions();
+        if (currentSession) { currentSession.sets = currentSession.sets.filter(function (s) { return s.name !== name; }); saveCurrentSession(); }
+        if (changed) refreshAllSessionViews();
       }
-      saveCurrentSession();
-    } else {
-      // Unchecking fully unlocks it for today — removes it from the
-      // live session if it's there, AND from any already-committed
-      // session(s) dated today (e.g. a workout already marked done),
-      // so re-checking it later can't create a duplicate logged entry
-      // alongside an old committed one.
-      var tk = wtDateKey(new Date());
-      var changed = false;
-      SESSIONS = SESSIONS.filter(function (s) {
-        if (s.dateKey !== tk) return true;
-        var before = s.sets.length;
-        s.sets = s.sets.filter(function (st) { return st.name !== name; });
-        if (s.sets.length !== before) { changed = true; s.volume = s.sets.reduce(function (sum, st) { return sum + st.setsCount * st.reps * st.weight; }, 0); }
-        return s.sets.length > 0;
-      });
-      if (changed) saveSessions();
-      if (currentSession) { currentSession.sets = currentSession.sets.filter(function (s) { return s.name !== name; }); saveCurrentSession(); }
-      if (changed) refreshAllSessionViews();
-    }
+    } catch (e) {}
     saveDoneToday();
     renderChecklist();
     renderWorkoutSummary();
