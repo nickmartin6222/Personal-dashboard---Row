@@ -164,6 +164,29 @@ section { margin-bottom: 22px; }
 .set-name { font-size: 12.5px; font-weight: 600; overflow-wrap: anywhere; }
 .set-deload-tag { font-family: var(--font-mono); font-size: 8.5px; font-weight: 800; letter-spacing: 0.04em; color: var(--gold); background: var(--gold-dim); padding: 1px 6px; border-radius: 999px; margin-left: 6px; }
 .set-detail { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); margin-top: 1px; }
+.set-actions { display: flex; gap: 4px; flex: none; }
+.set-action-btn {
+  width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border);
+  background: var(--bg-raised); color: var(--text-3); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+.set-action-btn:hover, .set-action-btn:active { color: var(--text-1); border-color: var(--border-strong); }
+.set-action-btn.danger:hover, .set-action-btn.danger:active { color: #C4366B; }
+.set-edit-row { display: flex; align-items: center; gap: 6px; padding: 6px 0 6px 10px; flex-wrap: wrap; }
+.set-edit-row input {
+  width: 56px; background: var(--bg-raised); border: 1px solid var(--border-strong);
+  border-radius: 7px; color: var(--text-1); font-family: var(--font-mono);
+  font-size: 15px; padding: 6px 6px;
+}
+.set-edit-save, .set-edit-cancel { border: none; border-radius: 7px; padding: 6px 10px; font-size: 11px; font-weight: 700; cursor: pointer; }
+.set-edit-save { background: var(--lime); color: var(--lime-ink); }
+.set-edit-cancel { background: var(--bg-raised); color: var(--text-3); }
+.delete-session-btn {
+  width: 100%; margin: 8px 0 0; padding: 10px; border-radius: 10px;
+  border: 1px solid rgba(196,54,107,0.3); background: rgba(196,54,107,0.08);
+  color: #C4366B; font-size: 12px; font-weight: 700; cursor: pointer;
+}
 .view-all-btn { width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); font-weight: 700; font-size: 12.5px; cursor: pointer; }
 .act-empty { color: var(--text-3); font-size: 12.5px; padding: 14px 0; text-align: center; }
 
@@ -452,16 +475,204 @@ section { margin-bottom: 22px; }
     WEIGHTS = (Array.isArray(arrW) ? arrW : []).slice().sort(function (a, b) { return (a.dateKey || '').localeCompare(b.dateKey || ''); });
   } catch (e) {}
 
-  // Flatten every logged set into one array with its owning exercise attached.
+  // Flatten every logged set into one array with its owning exercise
+  // attached. Rebuildable (not just built once at boot) since editing/
+  // deleting a set in Recent Activity now changes what's on disk.
   var ALL_ENTRIES = [];
-  Object.keys(REAL_LOGS).forEach(function (exId) {
-    var ex = EX_BY_ID[exId];
-    if (!ex) return;
-    (REAL_LOGS[exId] || []).forEach(function (entry) {
-      ALL_ENTRIES.push({ ex: ex, weight: entry.weight || 0, reps: entry.reps || 0, dateKey: (entry.date || '').slice(0, 10), deload: !!entry.deload });
+  function rebuildAllEntries() {
+    ALL_ENTRIES = [];
+    Object.keys(REAL_LOGS).forEach(function (exId) {
+      var ex = EX_BY_ID[exId];
+      if (!ex) return;
+      (REAL_LOGS[exId] || []).forEach(function (entry) {
+        ALL_ENTRIES.push({ ex: ex, weight: entry.weight || 0, reps: entry.reps || 0, dateKey: (entry.date || '').slice(0, 10), deload: !!entry.deload });
+      });
     });
-  });
-  ALL_ENTRIES.sort(function (a, b) { return a.dateKey.localeCompare(b.dateKey); });
+    ALL_ENTRIES.sort(function (a, b) { return a.dateKey.localeCompare(b.dateKey); });
+  }
+  rebuildAllEntries();
+
+  // ===== Write engine — Recent Activity is no longer read-only. Same
+  // equipment ladder + computeNextRx ported verbatim from gym-preview.
+  // html (must never drift from that copy), plus the same backdating
+  // guard the Workouts tab uses: editing or deleting a set on a date
+  // that ISN'T the exercise's most recent one on record must never
+  // recompute the live prescription — only the newest date is allowed
+  // to drive currentLoad/currentRepTarget. =====
+  var LIVE_STATE_KEY = 'po_coach_v1';
+  var UNITS = 'kg';
+  function unit() { return UNITS; }
+  function localTimestampFor(d) {
+    var p = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  function nextLoad(equipmentClass, load) {
+    switch (equipmentClass) {
+      case 'barbell': case 'ezbar': case 'pin': case 'plateLoaded': case 'bodyweightLoaded': return load + 5;
+      case 'cable': return load + 2.5;
+      case 'dumbbell': return load < 10 ? load + 1 : load + 2.5;
+      default: return load;
+    }
+  }
+  function prevLoad(equipmentClass, load, floor) {
+    var f = floor || 0;
+    var step;
+    switch (equipmentClass) {
+      case 'barbell': case 'ezbar': case 'pin': case 'plateLoaded': case 'bodyweightLoaded': step = 5; break;
+      case 'cable': step = 2.5; break;
+      case 'dumbbell': step = load <= 10 ? 1 : 2.5; break;
+      default: return load;
+    }
+    return Math.max(f, load - step);
+  }
+  function deloadTarget(equipmentClass, currentLoad, floor) {
+    var ceiling = currentLoad * 0.9, load = currentLoad, f = floor || 0, guard = 0;
+    while (load > ceiling && load > f && guard++ < 100) load = prevLoad(equipmentClass, load, f);
+    return load;
+  }
+  function computeNextRx(realEx, lastSessionSets) {
+    var repMin = realEx.repMin, repMax = realEx.repMax;
+    var eqClass = realEx.equipmentClass || (realEx.bw ? 'bodyweight' : 'cable');
+    var floor = realEx.barWeight || 0;
+    var curLoad = realEx.currentLoad != null ? realEx.currentLoad : (realEx.bw ? 0 : (realEx.startWeight || 0));
+    var curRepTarget = realEx.currentRepTarget != null ? realEx.currentRepTarget : repMin;
+    var stall = realEx.sessionsAtCurrentLoad || 0;
+    var maxedStreak = realEx.maxedStreak || 0;
+    var unitWord = realEx.holdSeconds ? 's' : 'reps';
+    if (!lastSessionSets || !lastSessionSets.length) {
+      return { currentLoad: curLoad, currentRepTarget: curRepTarget, sessionsAtCurrentLoad: stall, maxedStreak: maxedStreak, tag: 'Starting point', reason: 'Log your first set to get a real suggestion.', type: 'hold' };
+    }
+    var allAtMax = lastSessionSets.every(function (s) { return s.reps >= repMax; });
+    var anyShort = lastSessionSets.some(function (s) { return s.reps < repMin; });
+    var lastReps = lastSessionSets[lastSessionSets.length - 1].reps;
+    if (realEx.bw) {
+      if (allAtMax) return { currentLoad: 0, currentRepTarget: lastReps + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Push for more', reason: lastReps + ' ' + unitWord + ' — strong. Push for ' + (lastReps + 1) + ' next time.' };
+      if (anyShort) {
+        if (stall >= 1) return { currentLoad: 0, currentRepTarget: repMin, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'down', tag: 'Reset target', reason: 'Short two sessions running. Resetting the target to ' + repMin + '.' };
+        return { currentLoad: 0, currentRepTarget: repMin, sessionsAtCurrentLoad: stall + 1, maxedStreak: 0, type: 'hold', tag: 'Repeat', reason: lastReps + ' ' + unitWord + ' fell short. Repeat until you hit ' + repMin + '+.' };
+      }
+      return { currentLoad: 0, currentRepTarget: lastReps + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Add a rep', reason: lastReps + ' ' + unitWord + '. Push for ' + (lastReps + 1) + ' next session.' };
+    }
+    if (anyShort) {
+      if (stall >= 1) {
+        var dl = deloadTarget(eqClass, curLoad, floor);
+        return { currentLoad: dl, currentRepTarget: repMax, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'down', tag: 'Deload', reason: 'Stuck at ' + curLoad + unit() + ' for 2 sessions. Dropped to ' + dl + unit() + ', reset, build back cleaner.' };
+      }
+      return { currentLoad: curLoad, currentRepTarget: repMin, sessionsAtCurrentLoad: stall + 1, maxedStreak: 0, type: 'hold', tag: 'Repeat', reason: lastReps + ' reps short of ' + repMin + '. Repeat ' + curLoad + unit() + ' until you hit it clean.' };
+    }
+    if (allAtMax) {
+      var nl = nextLoad(eqClass, curLoad);
+      var jump = curLoad > 0 ? (nl / curLoad - 1) : 1;
+      var nutr = nutritionRollup7d();
+      if (nutr.coverage >= 4 && nutr.protein7d != null) {
+        if (nutr.protein7d < 124) {
+          return { currentLoad: curLoad, currentRepTarget: repMax + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Protein gate', reason: 'Maxed out, but 7-day protein average is ' + Math.round(nutr.protein7d) + 'g (target 124g+). Holding the weight — chase ' + (repMax + 1) + ' reps instead.' };
+        }
+        if (nutr.protein7d < 140 && jump > 0.08) {
+          return { currentLoad: curLoad, currentRepTarget: repMax + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Protein gate', reason: 'Maxed out, but protein (' + Math.round(nutr.protein7d) + 'g) is light for a ' + Math.round(jump * 100) + '% jump. Holding — chase ' + (repMax + 1) + ' reps.' };
+        }
+      }
+      if (jump <= 0.08) {
+        return { currentLoad: nl, currentRepTarget: repMin, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Add weight', reason: 'You hit ' + repMax + ' — time to add ' + (nl - curLoad) + unit() + '. Expect ' + repMin + '-' + (repMin + 1) + ' next session.' };
+      }
+      if (jump <= 0.20) {
+        if (maxedStreak >= 1) {
+          return { currentLoad: nl, currentRepTarget: repMin, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Add weight', reason: 'Maxed out twice running — up to ' + nl + unit() + '.' };
+        }
+        return { currentLoad: curLoad, currentRepTarget: repMax, sessionsAtCurrentLoad: 0, maxedStreak: maxedStreak + 1, type: 'hold', tag: 'Confirm once more', reason: 'Maxed at ' + repMax + ' — next jump is ' + Math.round(jump * 100) + '%, on the larger side. One more clean max-out before adding it.' };
+      }
+      return { currentLoad: curLoad, currentRepTarget: repMax + 4, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Chase reps instead', reason: 'Next jump is ' + Math.round(jump * 100) + '% — too big to load in one step. Chasing reps instead: aim for ' + (repMax + 4) + '.' };
+    }
+    return { currentLoad: curLoad, currentRepTarget: lastReps + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Add a rep', reason: lastReps + ' reps in target. Stay at ' + curLoad + unit() + ', push for ' + (lastReps + 1) + '.' };
+  }
+  function refreshRealData() {
+    try {
+      var raw = localStorage.getItem(LIVE_STATE_KEY);
+      if (raw) {
+        var live = JSON.parse(raw);
+        REAL_EXERCISES = live.exercises || [];
+        REAL_LOGS = live.logs || {};
+        EX_BY_ID = {}; REAL_EXERCISES.forEach(function (e) { EX_BY_ID[e.id] = e; });
+        EX_BY_NAME = {}; REAL_EXERCISES.forEach(function (e) { EX_BY_NAME[e.name] = e; });
+        rebuildAllEntries();
+      }
+    } catch (e) {}
+  }
+  // Recomputes currentLoad/currentRepTarget for ex ONLY if
+  // mutatedDateKey is still (after the edit/delete) the most recent
+  // non-deload date on record — otherwise a real newer session
+  // already governs the live prescription and must not be disturbed.
+  function maybeRecomputeRx(live, ex, mutatedDateKey) {
+    var arr = (live.logs[ex.id] || []).filter(function (l) { return !l.deload; });
+    var latest = '';
+    arr.forEach(function (l) { var dk = (l.date || '').slice(0, 10); if (dk > latest) latest = dk; });
+    if (!latest || mutatedDateKey >= latest) {
+      var lastSets = arr.filter(function (l) { return (l.date || '').slice(0, 10) === latest; }).map(function (l) { return { weight: l.weight, reps: l.reps }; });
+      var rx = computeNextRx(ex, lastSets);
+      ex.currentLoad = rx.currentLoad; ex.currentRepTarget = rx.currentRepTarget;
+      ex.sessionsAtCurrentLoad = rx.sessionsAtCurrentLoad; ex.maxedStreak = rx.maxedStreak;
+      ex.lastRx = { type: rx.type, tag: rx.tag, reason: rx.reason };
+    }
+  }
+  // Replaces one set-group (all entries on dateKey matching the old
+  // weight/reps/deload) with newSetsCount entries at newWeight/newReps.
+  function updateSetGroup(exName, dateKey, oldWeight, oldReps, oldDeload, newWeight, newReps, newSetsCount) {
+    try {
+      var raw = localStorage.getItem(LIVE_STATE_KEY);
+      if (!raw) return;
+      var live = JSON.parse(raw);
+      var ex = (live.exercises || []).find(function (e) { return e.name === exName; });
+      if (!ex || !live.logs || !live.logs[ex.id]) return;
+      var kept = [], removedTimes = [];
+      live.logs[ex.id].forEach(function (l) {
+        var matches = (l.date || '').slice(0, 10) === dateKey && l.weight === oldWeight && l.reps === oldReps && !!l.deload === !!oldDeload;
+        if (matches) removedTimes.push(l.date); else kept.push(l);
+      });
+      var baseDate = new Date(dateKey + 'T12:00:00');
+      for (var i = 0; i < newSetsCount; i++) {
+        var entry = { weight: newWeight, reps: newReps, date: localTimestampFor(new Date(baseDate.getTime() + i * 1000)) };
+        if (oldDeload) entry.deload = true;
+        kept.push(entry);
+      }
+      live.logs[ex.id] = kept;
+      maybeRecomputeRx(live, ex, dateKey);
+      localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
+      refreshRealData();
+    } catch (e) {}
+  }
+  function deleteSetGroup(exName, dateKey, weight, reps, deload) {
+    try {
+      var raw = localStorage.getItem(LIVE_STATE_KEY);
+      if (!raw) return;
+      var live = JSON.parse(raw);
+      var ex = (live.exercises || []).find(function (e) { return e.name === exName; });
+      if (!ex || !live.logs || !live.logs[ex.id]) return;
+      live.logs[ex.id] = live.logs[ex.id].filter(function (l) {
+        return !((l.date || '').slice(0, 10) === dateKey && l.weight === weight && l.reps === reps && !!l.deload === !!deload);
+      });
+      maybeRecomputeRx(live, ex, dateKey);
+      localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
+      refreshRealData();
+    } catch (e) {}
+  }
+  function deleteWholeSession(dateKey) {
+    try {
+      var raw = localStorage.getItem(LIVE_STATE_KEY);
+      if (!raw) return;
+      var live = JSON.parse(raw);
+      if (!live.logs) return;
+      Object.keys(live.logs).forEach(function (exId) {
+        var before = live.logs[exId].length;
+        live.logs[exId] = live.logs[exId].filter(function (l) { return (l.date || '').slice(0, 10) !== dateKey; });
+        if (live.logs[exId].length !== before) {
+          var ex = (live.exercises || []).find(function (e) { return e.id === exId; });
+          if (ex) maybeRecomputeRx(live, ex, dateKey);
+        }
+      });
+      localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
+      refreshRealData();
+    } catch (e) {}
+  }
 
   // ---------- date helpers ----------
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -750,7 +961,7 @@ section { margin-bottom: 22px; }
     var d = new Date(key + 'T00:00:00');
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
-  var expandedSessionId = null;
+  var expandedSessionId = null, editingSetId = null;
   function sessionRowHtml(sess) {
     var acc = accents();
     var expanded = expandedSessionId === sess.id;
@@ -763,19 +974,99 @@ section { margin-bottom: 22px; }
     var body = '';
     if (expanded) {
       body = '<ul class="session-sets">' + sess.sets.map(function (st) {
-        return '<li class="set-row"><div class="set-main"><div class="set-name">' + st.name + (st.deload ? '<span class="set-deload-tag">DELOAD</span>' : '') + '</div>' +
-          '<div class="set-detail">' + st.setsCount + ' × ' + st.reps + (st.bw ? ' · bodyweight' : ' @ ' + st.weight + 'kg') + '</div></div></li>';
-      }).join('') + '</ul>';
+        if (editingSetId === st.id) {
+          return '<li class="set-edit-row" data-sess="' + sess.id + '" data-id="' + st.id + '">' +
+            '<span style="font-size:12px;font-weight:600;flex:1">' + st.name + '</span>' +
+            (st.bw ? '' : '<input type="number" class="edit-weight" value="' + st.weight + '" step="0.5">kg ×') +
+            '<input type="number" class="edit-reps" value="' + st.reps + '" min="1"> ×' +
+            '<input type="number" class="edit-sets" value="' + st.setsCount + '" min="1">' +
+            '<button type="button" class="set-edit-save">Save</button><button type="button" class="set-edit-cancel">Cancel</button></li>';
+        }
+        return '<li class="set-row" data-sess="' + sess.id + '" data-id="' + st.id + '">' +
+          '<div class="set-main"><div class="set-name">' + st.name + (st.deload ? '<span class="set-deload-tag">DELOAD</span>' : '') + '</div>' +
+          '<div class="set-detail">' + st.setsCount + ' × ' + st.reps + (st.bw ? ' · bodyweight' : ' @ ' + st.weight + 'kg') + '</div></div>' +
+          '<div class="set-actions"><button type="button" class="set-action-btn edit-set-btn" aria-label="Edit">✎</button><button type="button" class="set-action-btn danger remove-set-btn" aria-label="Remove">🗑</button></div></li>';
+      }).join('') + '</ul>' +
+        '<button type="button" class="delete-session-btn" data-sess="' + sess.id + '">🗑 Delete this workout</button>';
     }
     return '<li class="session-row">' + head + body + '</li>';
   }
+  function findSessionAndSet(sessId, setId) {
+    var sess = SESSIONS.find(function (s) { return s.id === sessId; });
+    if (!sess) return null;
+    var st = sess.sets.find(function (s) { return s.id === setId; });
+    if (!st) return null;
+    return { sess: sess, st: st };
+  }
+  function pruneStaleSelection() {
+    if (expandedSessionId != null && !SESSIONS.some(function (s) { return s.id === expandedSessionId; })) expandedSessionId = null;
+  }
+  // An edit/delete in Recent Activity changes real underlying data, not
+  // just that one card — every other section reading ALL_ENTRIES needs
+  // to catch up too, regardless of whether the edit happened in the
+  // main list or the "View all" modal.
+  function refreshStatsAfterMutation() {
+    SESSIONS = buildSessions();
+    pruneStaleSelection();
+    renderSummary();
+    renderWeeklyProgress();
+    renderMuscleVolume();
+    renderPRs();
+    renderLibrary();
+    renderAnatomy();
+  }
   function bindSessionRows(el, redraw) {
     el.querySelectorAll('.session-head').forEach(function (h) {
-      h.addEventListener('click', function () { var id = +h.dataset.id; expandedSessionId = expandedSessionId === id ? null : id; redraw(); });
+      h.addEventListener('click', function () { var id = +h.dataset.id; expandedSessionId = expandedSessionId === id ? null : id; editingSetId = null; redraw(); });
+    });
+    el.querySelectorAll('.edit-set-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) { ev.stopPropagation(); editingSetId = +btn.closest('.set-row').dataset.id; redraw(); });
+    });
+    el.querySelectorAll('.remove-set-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var row = btn.closest('.set-row'); var found = findSessionAndSet(+row.dataset.sess, +row.dataset.id);
+        if (!found) return;
+        deleteSetGroup(found.st.name, found.sess.dateKey, found.st.weight, found.st.reps, found.st.deload);
+        refreshStatsAfterMutation();
+        redraw();
+      });
+    });
+    el.querySelectorAll('.set-edit-save').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var row = btn.closest('.set-edit-row'); var found = findSessionAndSet(+row.dataset.sess, +row.dataset.id);
+        if (!found) return;
+        var weightInput = row.querySelector('.edit-weight');
+        var newWeight = weightInput ? (parseFloat(weightInput.value) || 0) : 0;
+        var newReps = +row.querySelector('.edit-reps').value || found.st.reps;
+        var newSetsCount = Math.max(1, +row.querySelector('.edit-sets').value || found.st.setsCount);
+        updateSetGroup(found.st.name, found.sess.dateKey, found.st.weight, found.st.reps, found.st.deload, newWeight, newReps, newSetsCount);
+        refreshStatsAfterMutation();
+        editingSetId = null;
+        redraw();
+      });
+    });
+    el.querySelectorAll('.set-edit-cancel').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) { ev.stopPropagation(); editingSetId = null; redraw(); });
+    });
+    el.querySelectorAll('.delete-session-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        if (!window.confirm('Delete this entire workout? This removes every set logged that day.')) return;
+        var sessId = +btn.dataset.sess;
+        var sess = SESSIONS.find(function (s) { return s.id === sessId; });
+        if (!sess) return;
+        deleteWholeSession(sess.dateKey);
+        expandedSessionId = null;
+        refreshStatsAfterMutation();
+        redraw();
+      });
     });
   }
   function renderActivity() {
     SESSIONS = buildSessions();
+    pruneStaleSelection();
     var recent = SESSIONS.slice(0, 3);
     var el = document.getElementById('sessionList');
     el.innerHTML = recent.length ? recent.map(sessionRowHtml).join('') : '<div class="act-empty">Nothing logged yet.</div>';
@@ -791,7 +1082,10 @@ section { margin-bottom: 22px; }
     el.innerHTML = SESSIONS.length ? SESSIONS.map(sessionRowHtml).join('') : '<div class="act-empty">Nothing logged yet.</div>';
     bindSessionRows(el, renderAllSessionsModal);
   }
-  document.getElementById('allSessionsClose').addEventListener('click', function () { document.getElementById('allSessionsModal').hidden = true; });
+  document.getElementById('allSessionsClose').addEventListener('click', function () {
+    document.getElementById('allSessionsModal').hidden = true;
+    renderActivity(); // picks up any edits/deletes made while the modal was open
+  });
 
   // ---------- exercise library (ported — grouped by muscle from your
   // REAL exercise records, not a static catalog, so it only ever shows
