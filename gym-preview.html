@@ -11,7 +11,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="topbar.js" defer></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
 
 <style>
 /* ==========================================================================
@@ -121,27 +120,9 @@ button { font-family: inherit; }
 .shell {
   width: 100%; max-width: min(760px, 100vw);
   margin: 0 auto;
-  padding: 22px 16px calc(100px + env(safe-area-inset-bottom));
+  padding: 22px 16px calc(48px + env(safe-area-inset-bottom));
 }
 .shell * { min-width: 0; }
-
-/* ---------- bottom tab bar (Home / Workouts / Statistics) ---------- */
-.bottom-tabs {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-  display: flex; justify-content: center; gap: 4px;
-  padding: 8px max(12px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-right));
-  background: linear-gradient(180deg, transparent, var(--bg) 38%);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-}
-.bot-tab {
-  flex: 1; max-width: 140px; display: flex; flex-direction: column; align-items: center; gap: 3px;
-  background: transparent; border: 1px solid transparent; color: var(--text-3);
-  padding: 8px 10px 7px; border-radius: 12px; cursor: pointer; text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.bot-tab i, .bot-tab svg { width: 18px; height: 18px; }
-.bot-tab span { font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-family: var(--font-mono); }
-.bot-tab.active { color: var(--lime); background: var(--lime-dim); border-color: color-mix(in srgb, var(--lime) 30%, transparent); }
 
 /* ---------- preview banner ---------- */
 .preview-banner {
@@ -779,12 +760,6 @@ button { font-family: inherit; }
   </div>
 
 </div>
-
-<nav class="bottom-tabs">
-  <a class="bot-tab active" href="gym-preview.html"><i data-lucide="home"></i><span>Home</span></a>
-  <a class="bot-tab" href="gym-workouts-tab-preview.html"><i data-lucide="dumbbell"></i><span>Workouts</span></a>
-  <a class="bot-tab" href="gym-stats-tab-preview.html"><i data-lucide="bar-chart-3"></i><span>Statistics</span></a>
-</nav>
 
 <!-- Exercise logging modal -->
 <div class="modal-bg" id="exModalBg" style="display:none">
@@ -3306,10 +3281,6 @@ button { font-family: inherit; }
   window.addEventListener('beforeunload', pcFlushPushOnUnload);
   document.addEventListener('visibilitychange', () => { if (document.hidden) pcFlushPushOnUnload(); });
 })();
-</script>
-<script>
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-  document.addEventListener('DOMContentLoaded', function () { if (typeof lucide !== 'undefined') lucide.createIcons(); });
 </script>
 
 </body>
