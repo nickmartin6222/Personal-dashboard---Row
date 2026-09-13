@@ -166,9 +166,9 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 .creatine-dot.hit { background: var(--creatine); }
 
 /* ===== Weekly modal ===== */
-.wk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: flex-end; }
+.wk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; padding: 20px; }
 .wk-overlay[hidden] { display: none; }
-.wk-sheet { background: #0d0d0e; border: 1px solid rgba(255,255,255,0.12); border-top-left-radius: 22px; border-top-right-radius: 22px; width: 100%; max-width: 560px; margin: 0 auto; padding: 20px 20px max(20px, env(safe-area-inset-bottom, 20px)); }
+.wk-sheet { background: #0d0d0e; border: 1px solid rgba(255,255,255,0.12); border-radius: 22px; width: 100%; max-width: 560px; max-height: 84vh; overflow-y: auto; margin: 0 auto; padding: 20px 20px max(20px, env(safe-area-inset-bottom, 20px)); }
 .wk-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 /* This sheet is always a dark surface regardless of page theme (same
    spotlight-tile idea as .dark-card above) — its own text must stay
