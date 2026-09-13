@@ -93,6 +93,23 @@ button { font-family: inherit; }
 .header-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .header-title { font-family: var(--font-heading); font-size: 26px; font-weight: 700; letter-spacing: -0.01em; margin-top: 3px; }
 .header-sub { font-size: 12.5px; color: var(--text-3); margin-top: 3px; }
+/* Same pill + sliding-dot switch as the main dashboard's own toggle —
+   every other page in the app already matches this via topbar.js; this
+   page and Workouts are the only two that had drifted to a plain icon
+   button instead. */
+.theme-toggle {
+  width: 48px; height: 28px; flex-shrink: 0; padding: 3px;
+  border-radius: 999px; border: 1px solid var(--border-strong);
+  background: var(--bg-raised); cursor: pointer;
+  display: flex; align-items: center;
+  transition: background 0.2s ease;
+}
+.theme-toggle-dot {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--lime);
+  transition: transform 0.25s ease, background 0.2s ease;
+}
+[data-theme="light"] .theme-toggle-dot { transform: translateX(20px); }
 .icon-btn {
   width: 36px; height: 36px; border-radius: 11px; background: var(--bg-raised); border: 1px solid var(--border);
   display: flex; align-items: center; justify-content: center; color: var(--text-2); text-decoration: none; flex-shrink: 0; cursor: pointer;
@@ -306,7 +323,7 @@ section { margin-bottom: 22px; }
       <div class="header-title">Training Overview</div>
       <div class="header-sub" id="hdrSub">—</div>
     </div>
-    <button type="button" class="icon-btn" id="themeBtn" aria-label="Toggle light/dark"><i data-lucide="sun-moon"></i></button>
+    <button type="button" class="theme-toggle" id="themeBtn" aria-label="Toggle light/dark"><span class="theme-toggle-dot"></span></button>
   </div>
 
   <div class="range-pills" id="rangePills"></div>
