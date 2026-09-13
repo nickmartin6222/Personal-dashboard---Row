@@ -161,7 +161,16 @@ button { font-family: inherit; }
 .hero-title { font-family: var(--font-heading); font-size: 27px; font-weight: 700; color: var(--text-1); letter-spacing: -0.005em; }
 .hero-sub { font-size: 12.5px; color: var(--text-2); margin-top: 3px; }
 .hero-muscles { font-size: 12.5px; color: var(--text-2); margin-top: 3px; }
-.hero-tap-hint { position: absolute; top: 16px; right: 18px; color: var(--hero-accent, var(--lime)); font-size: 10.5px; font-weight: 700; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; z-index: 2; }
+.hero-tap-hint {
+  position: absolute; top: 16px; right: 18px; z-index: 2;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px 5px 9px; border-radius: 999px;
+  background: color-mix(in srgb, var(--hero-accent, var(--lime)) 30%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--hero-accent, var(--lime)) 45%, transparent);
+  color: color-mix(in srgb, var(--hero-accent, var(--lime)) 75%, black);
+  font-size: 10.5px; font-weight: 700; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em;
+}
+.hero-tap-hint i, .hero-tap-hint svg { width: 12px; height: 12px; flex-shrink: 0; }
 
 /* ---------- warm-up ---------- */
 .warmup-row { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -316,7 +325,7 @@ button { font-family: inherit; }
       </g>
     </svg>
     <img class="hero-cutout" id="heroImg" src="" alt="">
-    <div class="hero-tap-hint">Choose exercises</div>
+    <div class="hero-tap-hint"><i data-lucide="pencil"></i>Choose exercises</div>
     <div class="hero-body">
       <span class="hero-tag" id="heroTag">—</span>
       <div class="hero-title" id="heroTitle">—</div>
