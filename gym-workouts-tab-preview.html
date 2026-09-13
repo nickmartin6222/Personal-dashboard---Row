@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
-<title>Workouts Tab — Prototype</title>
+<title>Workouts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -259,8 +259,6 @@ button { font-family: inherit; }
 <body>
 
 <div class="shell">
-  <div class="demo-flag">DESIGN PROTOTYPE — built from your annotated PDF. Real exercise data + real progressive-overload suggestions, but logging here writes to a separate local key, not your actual training history. Nothing here is wired into navigation.</div>
-
   <div class="header-row">
     <div>
       <div class="header-eyebrow" id="hdrDow">—</div>
@@ -343,7 +341,6 @@ button { font-family: inherit; }
   <a class="bot-tab" href="gym-preview.html"><i data-lucide="home"></i><span>Home</span></a>
   <a class="bot-tab active" href="gym-workouts-tab-preview.html"><i data-lucide="dumbbell"></i><span>Workouts</span></a>
   <a class="bot-tab" href="gym-stats-tab-preview.html"><i data-lucide="bar-chart-3"></i><span>Statistics</span></a>
-  <button type="button" class="bot-tab is-soon" disabled><i data-lucide="message-circle"></i><span>Coach</span></button>
 </nav>
 
 <!-- Exercise picker sheet -->
@@ -452,35 +449,280 @@ button { font-family: inherit; }
   var EX_INDEX = {};
   DAY_ORDER.forEach(function (d) { DAY_META[d].areas.forEach(function (a) { a.options.forEach(function (o) { EX_INDEX[o.name] = o; }); }); });
 
-  // ===== Read real logged history (po_coach_v1, same store the live
-  // app uses) for authentic "last time" values + real suggestions.
-  // Never written to from here. =====
-  var REAL_EXERCISES = [], REAL_LOGS = {};
-  try {
-    var raw = localStorage.getItem('po_coach_v1');
-    if (raw) {
-      var live = JSON.parse(raw);
-      REAL_EXERCISES = live.exercises || [];
-      REAL_LOGS = live.logs || {};
+  // ===== Real data engine — same po_coach_v1 store and same
+  // progressive-overload engine gym-preview.html uses. Checking an
+  // exercise off or logging a set here writes real, cloud-synced
+  // history immediately (no separate "commit" step) — this is the
+  // live Workouts view now, not a design-only demo. computeNextRx and
+  // the equipment ladder below are ported VERBATIM from
+  // gym-preview.html; never let this copy drift from that one. =====
+  var LIVE_STATE_KEY = 'po_coach_v1';
+  var UNITS = 'kg';
+  var REAL_NAME_TO_DAY_ID = { 'Push': 'push', 'Pull': 'pull', 'Lower A': 'lowerA', 'Lower B': 'lowerB' };
+  function unit() { return UNITS; }
+  function wtDateKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function localTimestampFor(d) {
+    var p = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+
+  function nextLoad(equipmentClass, load) {
+    switch (equipmentClass) {
+      case 'barbell': case 'ezbar': case 'pin': case 'plateLoaded': case 'bodyweightLoaded': return load + 5;
+      case 'cable': return load + 2.5;
+      case 'dumbbell': return load < 10 ? load + 1 : load + 2.5;
+      default: return load;
     }
-  } catch (e) {}
+  }
+  function prevLoad(equipmentClass, load, floor) {
+    var f = floor || 0;
+    var step;
+    switch (equipmentClass) {
+      case 'barbell': case 'ezbar': case 'pin': case 'plateLoaded': case 'bodyweightLoaded': step = 5; break;
+      case 'cable': step = 2.5; break;
+      case 'dumbbell': step = load <= 10 ? 1 : 2.5; break;
+      default: return load;
+    }
+    return Math.max(f, load - step);
+  }
+  function deloadTarget(equipmentClass, currentLoad, floor) {
+    var ceiling = currentLoad * 0.9, load = currentLoad, f = floor || 0, guard = 0;
+    while (load > ceiling && load > f && guard++ < 100) load = prevLoad(equipmentClass, load, f);
+    return load;
+  }
+
+  function classifyNutritionDay(day, proteinTarget, kcalTarget) {
+    if (!day) return 'none';
+    if ((day.proteinG || 0) >= proteinTarget) return 'complete';
+    var ratio = (day.calories || 0) / kcalTarget;
+    if (ratio >= 0.85) return 'complete';
+    if (ratio >= 0.60) return 'ambiguous';
+    return 'partial';
+  }
+  function nutritionRollup7d() {
+    var nutrition = {}, goalsObj = {};
+    try { nutrition = JSON.parse(localStorage.getItem('health:nutrition') || '{}'); } catch (e) {}
+    try { goalsObj = JSON.parse(localStorage.getItem('health:goals') || '{}'); } catch (e) {}
+    var proteinTarget = goalsObj.proteinG || 155, kcalTarget = goalsObj.calories || 3000;
+    var sum = 0, count = 0;
+    for (var i = 1; i <= 7; i++) {
+      var d = new Date(); d.setDate(d.getDate() - i);
+      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      var state = classifyNutritionDay(nutrition[key], proteinTarget, kcalTarget);
+      if (state === 'complete') { sum += nutrition[key].proteinG || 0; count++; }
+    }
+    return { protein7d: count ? sum / count : null, coverage: count };
+  }
+
+  function computeNextRx(realEx, lastSessionSets) {
+    var repMin = realEx.repMin, repMax = realEx.repMax;
+    var eqClass = realEx.equipmentClass || (realEx.bw ? 'bodyweight' : 'cable');
+    var floor = realEx.barWeight || 0;
+    var curLoad = realEx.currentLoad != null ? realEx.currentLoad : (realEx.bw ? 0 : (realEx.startWeight || 0));
+    var curRepTarget = realEx.currentRepTarget != null ? realEx.currentRepTarget : repMin;
+    var stall = realEx.sessionsAtCurrentLoad || 0;
+    var maxedStreak = realEx.maxedStreak || 0;
+    var unitWord = realEx.holdSeconds ? 's' : 'reps';
+
+    if (!lastSessionSets || !lastSessionSets.length) {
+      return { currentLoad: curLoad, currentRepTarget: curRepTarget, sessionsAtCurrentLoad: stall, maxedStreak: maxedStreak, tag: 'Starting point', reason: 'Log your first set to get a real suggestion.', type: 'hold' };
+    }
+    var allAtMax = lastSessionSets.every(function (s) { return s.reps >= repMax; });
+    var anyShort = lastSessionSets.some(function (s) { return s.reps < repMin; });
+    var lastReps = lastSessionSets[lastSessionSets.length - 1].reps;
+
+    if (realEx.bw) {
+      if (allAtMax) return { currentLoad: 0, currentRepTarget: lastReps + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Push for more', reason: lastReps + ' ' + unitWord + ' — strong. Push for ' + (lastReps + 1) + ' next time.' };
+      if (anyShort) {
+        if (stall >= 1) return { currentLoad: 0, currentRepTarget: repMin, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'down', tag: 'Reset target', reason: 'Short two sessions running. Resetting the target to ' + repMin + '.' };
+        return { currentLoad: 0, currentRepTarget: repMin, sessionsAtCurrentLoad: stall + 1, maxedStreak: 0, type: 'hold', tag: 'Repeat', reason: lastReps + ' ' + unitWord + ' fell short. Repeat until you hit ' + repMin + '+.' };
+      }
+      return { currentLoad: 0, currentRepTarget: lastReps + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Add a rep', reason: lastReps + ' ' + unitWord + '. Push for ' + (lastReps + 1) + ' next session.' };
+    }
+
+    if (anyShort) {
+      if (stall >= 1) {
+        var dl = deloadTarget(eqClass, curLoad, floor);
+        return { currentLoad: dl, currentRepTarget: repMax, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'down', tag: 'Deload', reason: 'Stuck at ' + curLoad + unit() + ' for 2 sessions. Dropped to ' + dl + unit() + ', reset, build back cleaner.' };
+      }
+      return { currentLoad: curLoad, currentRepTarget: repMin, sessionsAtCurrentLoad: stall + 1, maxedStreak: 0, type: 'hold', tag: 'Repeat', reason: lastReps + ' reps short of ' + repMin + '. Repeat ' + curLoad + unit() + ' until you hit it clean.' };
+    }
+
+    if (allAtMax) {
+      var nl = nextLoad(eqClass, curLoad);
+      var jump = curLoad > 0 ? (nl / curLoad - 1) : 1;
+
+      var nutr = nutritionRollup7d();
+      if (nutr.coverage >= 4 && nutr.protein7d != null) {
+        if (nutr.protein7d < 124) {
+          return { currentLoad: curLoad, currentRepTarget: repMax + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Protein gate', reason: 'Maxed out, but 7-day protein average is ' + Math.round(nutr.protein7d) + 'g (target 124g+). Holding the weight — chase ' + (repMax + 1) + ' reps instead.' };
+        }
+        if (nutr.protein7d < 140 && jump > 0.08) {
+          return { currentLoad: curLoad, currentRepTarget: repMax + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Protein gate', reason: 'Maxed out, but protein (' + Math.round(nutr.protein7d) + 'g) is light for a ' + Math.round(jump * 100) + '% jump. Holding — chase ' + (repMax + 1) + ' reps.' };
+        }
+      }
+
+      if (jump <= 0.08) {
+        return { currentLoad: nl, currentRepTarget: repMin, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Add weight', reason: 'You hit ' + repMax + ' — time to add ' + (nl - curLoad) + unit() + '. Expect ' + repMin + '-' + (repMin + 1) + ' next session.' };
+      }
+      if (jump <= 0.20) {
+        if (maxedStreak >= 1) {
+          return { currentLoad: nl, currentRepTarget: repMin, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Add weight', reason: 'Maxed out twice running — up to ' + nl + unit() + '.' };
+        }
+        return { currentLoad: curLoad, currentRepTarget: repMax, sessionsAtCurrentLoad: 0, maxedStreak: maxedStreak + 1, type: 'hold', tag: 'Confirm once more', reason: 'Maxed at ' + repMax + ' — next jump is ' + Math.round(jump * 100) + '%, on the larger side. One more clean max-out before adding it.' };
+      }
+      return { currentLoad: curLoad, currentRepTarget: repMax + 4, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Chase reps instead', reason: 'Next jump is ' + Math.round(jump * 100) + '% — too big to load in one step. Chasing reps instead: aim for ' + (repMax + 4) + '.' };
+    }
+
+    return { currentLoad: curLoad, currentRepTarget: lastReps + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'hold', tag: 'Add a rep', reason: lastReps + ' reps in target. Stay at ' + curLoad + unit() + ', push for ' + (lastReps + 1) + '.' };
+  }
+
+  function findOrCreateRealExercise(live, name, dayName) {
+    var ex = live.exercises.find(function (e) { return e.name === name; });
+    if (ex) {
+      var meta2 = EX_INDEX[name] || {};
+      if (ex.equipmentClass === undefined) ex.equipmentClass = meta2.equipmentClass || (ex.bw ? 'bodyweight' : 'cable');
+      if (ex.barWeight === undefined) ex.barWeight = meta2.barWeight != null ? meta2.barWeight : null;
+      if (ex.currentLoad === undefined) ex.currentLoad = null;
+      if (ex.currentRepTarget === undefined) ex.currentRepTarget = null;
+      if (ex.sessionsAtCurrentLoad === undefined) ex.sessionsAtCurrentLoad = 0;
+      if (ex.maxedStreak === undefined) ex.maxedStreak = 0;
+      return ex;
+    }
+    var meta = EX_INDEX[name] || {};
+    var newEx = {
+      id: 'workoutstab_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+      name: name, gym: 'comm', day: REAL_NAME_TO_DAY_ID[dayName] || 'push', tag: 'accessory',
+      muscle: meta.muscle || '', repMin: meta.repMin || 8, repMax: meta.repMax || 12,
+      step: meta.step || 2.5, startWeight: meta.startWeight || 20, bw: !!meta.bw, holdSeconds: !!meta.holdSeconds,
+      equipmentClass: meta.equipmentClass || (meta.bw ? 'bodyweight' : 'cable'),
+      barWeight: meta.barWeight != null ? meta.barWeight : null,
+      currentLoad: null, currentRepTarget: null, sessionsAtCurrentLoad: 0, maxedStreak: 0
+    };
+    live.exercises.push(newEx);
+    return newEx;
+  }
+  function lastRealSessionSets(live, exId) {
+    var arr = ((live.logs || {})[exId] || []).filter(function (l) { return !l.deload; });
+    if (!arr.length) return [];
+    var lastDate = (arr[arr.length - 1].date || '').slice(0, 10);
+    return arr.filter(function (l) { return (l.date || '').slice(0, 10) === lastDate; }).map(function (l) { return { weight: l.weight, reps: l.reps }; });
+  }
+  function writeRealLog(day, sets) {
+    try {
+      var raw = localStorage.getItem(LIVE_STATE_KEY);
+      var live = raw ? JSON.parse(raw) : { exercises: [], logs: {} };
+      if (!Array.isArray(live.exercises)) live.exercises = [];
+      if (!live.logs || typeof live.logs !== 'object') live.logs = {};
+      var now = Date.now();
+      var deloadNow = live.deloadActive && live.deloadActive.endDate >= wtDateKey(new Date());
+      sets.forEach(function (s, gi) {
+        var ex = findOrCreateRealExercise(live, s.name, day);
+        var arr = live.logs[ex.id] || [];
+        for (var i = 0; i < s.setsCount; i++) {
+          var entry = { weight: s.weight, reps: s.reps, date: localTimestampFor(new Date(now + gi * 1000 + i)) };
+          if (deloadNow) entry.deload = true;
+          arr.push(entry);
+        }
+        live.logs[ex.id] = arr;
+        if (!deloadNow) {
+          var justLogged = [];
+          for (var j = 0; j < s.setsCount; j++) justLogged.push({ weight: s.weight, reps: s.reps });
+          var rx = computeNextRx(ex, justLogged);
+          ex.currentLoad = rx.currentLoad;
+          ex.currentRepTarget = rx.currentRepTarget;
+          ex.sessionsAtCurrentLoad = rx.sessionsAtCurrentLoad;
+          ex.maxedStreak = rx.maxedStreak;
+          ex.lastRx = { type: rx.type, tag: rx.tag, reason: rx.reason };
+        }
+      });
+      localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
+    } catch (e) {}
+  }
+  // Undo for an unticked checkbox: removes today's log entries for
+  // this exercise only, then re-derives the prescription from whatever
+  // real history remains (never touches other dates).
+  function removeTodayLogFor(name) {
+    try {
+      var raw = localStorage.getItem(LIVE_STATE_KEY);
+      if (!raw) return;
+      var live = JSON.parse(raw);
+      var ex = (live.exercises || []).find(function (e) { return e.name === name; });
+      if (!ex || !live.logs || !live.logs[ex.id]) return;
+      var todayKey = wtDateKey(new Date());
+      live.logs[ex.id] = live.logs[ex.id].filter(function (l) { return (l.date || '').slice(0, 10) !== todayKey; });
+      var remaining = lastRealSessionSets(live, ex.id);
+      var rx = computeNextRx(ex, remaining);
+      ex.currentLoad = rx.currentLoad;
+      ex.currentRepTarget = rx.currentRepTarget;
+      ex.sessionsAtCurrentLoad = rx.sessionsAtCurrentLoad;
+      ex.maxedStreak = rx.maxedStreak;
+      ex.lastRx = { type: rx.type, tag: rx.tag, reason: rx.reason };
+      localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
+    } catch (e) {}
+  }
+
+  // Real exercise records + logs, reloaded after every write so the
+  // checklist/modal always reflect what's actually on disk.
+  var REAL_EXERCISES = [], REAL_LOGS = {};
+  function refreshRealData() {
+    try {
+      var raw = localStorage.getItem(LIVE_STATE_KEY);
+      if (raw) {
+        var live = JSON.parse(raw);
+        REAL_EXERCISES = live.exercises || [];
+        REAL_LOGS = live.logs || {};
+      }
+    } catch (e) {}
+  }
+  refreshRealData();
+  function realExByName(name) { return REAL_EXERCISES.find(function (e) { return e.name === name; }); }
   function realLogsForName(name) {
-    var ex = REAL_EXERCISES.find(function (e) { return e.name === name; });
+    var ex = realExByName(name);
     if (!ex) return [];
     return (REAL_LOGS[ex.id] || []).slice().sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
   }
+  function todayRealLogsForName(name) {
+    var todayKey = wtDateKey(new Date());
+    return realLogsForName(name).filter(function (l) { return (l.date || '').slice(0, 10) === todayKey; });
+  }
+  function areaDefFor(day, name) {
+    return DAY_META[day].areas.find(function (a) { return a.options.some(function (o) { return o.name === name; }); });
+  }
+  // Ticking a box quick-logs the full prescribed set count immediately,
+  // preferring the engine's real currentLoad/currentRepTarget over a
+  // last-log guess — same fix already applied in gym-preview.html.
+  function quickLogExercise(name) {
+    var ex = EX_INDEX[name];
+    if (!ex) return;
+    var areaDef = areaDefFor(activeDay, name);
+    var realEx = realExByName(name);
+    var rxWeight, rxReps;
+    if (realEx && realEx.currentLoad != null && realEx.currentRepTarget != null) {
+      rxWeight = realEx.currentLoad; rxReps = realEx.currentRepTarget;
+    } else {
+      var logs = realLogsForName(name);
+      var lastEntry = logs.length ? logs[logs.length - 1] : null;
+      rxWeight = ex.bw ? 0 : (lastEntry ? lastEntry.weight : ex.startWeight || 0);
+      rxReps = lastEntry ? lastEntry.reps : ex.repMin;
+    }
+    writeRealLog(activeDay, [{ name: name, setsCount: areaDef ? areaDef.sets : 3, reps: rxReps, weight: ex.bw ? 0 : rxWeight }]);
+    refreshRealData();
+  }
 
-  // ===== Prototype-only interaction state — never touches real data. =====
-  var PROTO_KEY = 'po_preview_workoutstab_demo_v1';
-  var protoState = { picks: {}, done: {}, sessionSets: {} }; // sessionSets: { name: [{weight,reps}] }
-  try { var rawP = localStorage.getItem(PROTO_KEY); if (rawP) protoState = Object.assign(protoState, JSON.parse(rawP)); } catch (e) {}
-  function saveProto() { try { localStorage.setItem(PROTO_KEY, JSON.stringify(protoState)); } catch (e) {} }
+  // ===== Local UI-only state — which exercises are picked/ticked for
+  // today, on this device. The actual logged sets live in po_coach_v1
+  // above, not here, so this never needs to be "real" or synced. =====
+  var UI_KEY = 'po_workoutstab_ui_v1';
+  var uiState = { picks: {}, done: {} };
+  try { var rawUi = localStorage.getItem(UI_KEY); if (rawUi) uiState = Object.assign(uiState, JSON.parse(rawUi)); } catch (e) {}
+  function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(uiState)); } catch (e) {} }
 
   function getPicks(day) {
-    if (!protoState.picks[day]) {
-      protoState.picks[day] = DAY_META[day].areas.map(function (a) { return a.options[0].name; });
+    if (!uiState.picks[day]) {
+      uiState.picks[day] = DAY_META[day].areas.map(function (a) { return a.options[0].name; });
     }
-    return protoState.picks[day];
+    return uiState.picks[day];
   }
   function exercisesForDay(day) {
     return getPicks(day).map(function (name) { return EX_INDEX[name]; }).filter(Boolean);
@@ -570,14 +812,14 @@ button { font-family: inherit; }
   }
 
   // ---------- checklist ----------
-  function todaySetsFor(name) { return protoState.sessionSets[name] || []; }
+  function todaySetsFor(name) { return todayRealLogsForName(name); }
   function renderChecklist() {
     var meta = DAY_META[activeDay];
     var list = exercisesForDay(activeDay);
     document.getElementById('exCount').textContent = list.length + ' exercises';
     document.getElementById('exList').innerHTML = list.map(function (ex) {
       var areaDef = meta.areas.find(function (a) { return a.options.some(function (o) { return o.name === ex.name; }); });
-      var done = !!protoState.done[ex.name];
+      var done = !!uiState.done[ex.name];
       var metaStr = areaDef.sets + ' × ' + ex.repMin + '-' + ex.repMax;
       if (done) {
         var logged = todaySetsFor(ex.name);
@@ -592,21 +834,26 @@ button { font-family: inherit; }
       btn.addEventListener('click', function (ev) {
         ev.stopPropagation();
         var name = btn.dataset.check;
-        protoState.done[name] = !protoState.done[name];
-        saveProto(); renderChecklist();
+        var nowDone = !uiState.done[name];
+        uiState.done[name] = nowDone;
+        if (nowDone) quickLogExercise(name);
+        else { removeTodayLogFor(name); refreshRealData(); }
+        saveUi(); renderChecklist();
       });
     });
     document.querySelectorAll('.ex-card').forEach(function (card) {
       card.addEventListener('click', function () { openLogModal(card.dataset.name); });
     });
     var markBtn = document.getElementById('markDoneBtn');
-    var allDone = list.length > 0 && list.every(function (ex) { return !!protoState.done[ex.name]; });
+    var allDone = list.length > 0 && list.every(function (ex) { return !!uiState.done[ex.name]; });
     markBtn.textContent = allDone ? '✓ Done' : 'Mark done';
     markBtn.classList.toggle('is-done', allDone);
   }
   document.getElementById('markDoneBtn').addEventListener('click', function () {
-    exercisesForDay(activeDay).forEach(function (ex) { protoState.done[ex.name] = true; });
-    saveProto(); renderChecklist();
+    exercisesForDay(activeDay).forEach(function (ex) {
+      if (!uiState.done[ex.name]) { uiState.done[ex.name] = true; quickLogExercise(ex.name); }
+    });
+    saveUi(); renderChecklist();
   });
 
   // ---------- start/finish timer — visual only in this prototype, same
@@ -669,8 +916,8 @@ button { font-family: inherit; }
         var areaNames = area.options.map(function (o) { return o.name; });
         var current = getPicks(activeDay);
         // keep exactly one pick per area for this simple prototype
-        protoState.picks[activeDay] = current.filter(function (n) { return areaNames.indexOf(n) === -1; }).concat([name]);
-        saveProto(); openPicker();
+        uiState.picks[activeDay] = current.filter(function (n) { return areaNames.indexOf(n) === -1; }).concat([name]);
+        saveUi(); openPicker();
       });
     });
     document.getElementById('pickerModal').hidden = false;
@@ -681,6 +928,13 @@ button { font-family: inherit; }
   // ---------- log modal ----------
   var logCtx = null; // { name, weight, reps, sets }
   function suggestionFor(ex) {
+    var realEx = realExByName(ex.name);
+    if (realEx && realEx.currentLoad != null && realEx.currentRepTarget != null) {
+      var w = realEx.currentLoad, r = realEx.currentRepTarget;
+      var tag = (realEx.lastRx && realEx.lastRx.tag) || 'Next up';
+      var txt = (realEx.lastRx && realEx.lastRx.reason) || ('Prescribed ' + (ex.bw ? r + ' reps' : w + 'kg × ' + r) + '.');
+      return { weight: ex.bw ? 0 : w, reps: r, tag: tag, txt: txt };
+    }
     var realLogs = realLogsForName(ex.name);
     if (!realLogs.length) return { weight: ex.startWeight, reps: ex.repMin, tag: 'Starting point', txt: 'No history yet for this one — starting weight from the catalog.' };
     var last = realLogs[realLogs.length - 1];
@@ -729,10 +983,10 @@ button { font-family: inherit; }
   document.getElementById('wPlus').addEventListener('click', function () { var ex = EX_INDEX[logCtx.name]; if (!ex.bw) { logCtx.weight = logCtx.weight + ex.step; renderLogFields(); } });
   document.getElementById('logClose').addEventListener('click', function () { document.getElementById('logModal').hidden = true; });
   document.getElementById('logSetBtn').addEventListener('click', function () {
-    if (!protoState.sessionSets[logCtx.name]) protoState.sessionSets[logCtx.name] = [];
-    protoState.sessionSets[logCtx.name].push({ weight: logCtx.weight, reps: logCtx.reps });
-    protoState.done[logCtx.name] = true;
-    saveProto();
+    writeRealLog(activeDay, [{ name: logCtx.name, setsCount: 1, reps: logCtx.reps, weight: logCtx.weight }]);
+    refreshRealData();
+    uiState.done[logCtx.name] = true;
+    saveUi();
     document.getElementById('logModal').hidden = true;
     renderChecklist();
   });

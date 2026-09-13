@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
-<title>Statistics Tab — Prototype</title>
+<title>Statistics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -226,18 +226,6 @@ section { margin-bottom: 22px; }
 .bw-chart-svg { width: 100%; height: 86px; display: block; overflow: visible; }
 .bw-empty { font-size: 12.5px; color: var(--text-3); padding: 10px 0; }
 
-/* ---------- core lift cards ---------- */
-.lift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.lift-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; border-left: 3px solid var(--lift-accent, var(--lime)); }
-.lift-name { font-size: 12.5px; font-weight: 700; color: var(--text-1); margin-bottom: 2px; }
-.lift-tag { font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; color: var(--lift-accent, var(--text-3)); margin-bottom: 10px; }
-.lift-now { font-size: 20px; font-weight: 800; color: var(--text-1); }
-.lift-now span { font-size: 11px; font-weight: 600; color: var(--text-3); }
-.lift-delta { font-size: 11px; color: var(--text-3); margin-top: 2px; margin-bottom: 8px; }
-.lift-delta b { color: var(--lime); font-weight: 700; }
-.lift-spark { width: 100%; height: 30px; display: block; overflow: visible; }
-.lift-empty { font-size: 11.5px; color: var(--text-3); padding: 6px 0 2px; }
-
 /* ---------- muscle volume bars ---------- */
 .mv-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
 .mv-name { width: 92px; flex-shrink: 0; font-size: 12px; color: var(--text-2); font-weight: 600; }
@@ -289,8 +277,6 @@ section { margin-bottom: 22px; }
 <body>
 
 <div class="shell">
-  <div class="demo-flag">DESIGN PROTOTYPE — Statistics tab. Read-only: every number here is computed live from your real po_coach_v1 history, po_coach_weights log, and Health's nutrition data. Nothing on this page ever writes back to your training data.</div>
-
   <div class="header-row">
     <div>
       <div class="header-eyebrow">STATISTICS</div>
@@ -370,11 +356,6 @@ section { margin-bottom: 22px; }
   </section>
 
   <section>
-    <div class="sec-label-row"><span class="sec-label">Core Lifts</span></div>
-    <div class="lift-grid" id="liftGrid"></div>
-  </section>
-
-  <section>
     <div class="sec-label-row"><span class="sec-label">Volume by Muscle Group</span></div>
     <div class="card" id="muscleCard"></div>
   </section>
@@ -410,7 +391,6 @@ section { margin-bottom: 22px; }
   <a class="bot-tab" href="gym-preview.html"><i data-lucide="home"></i><span>Home</span></a>
   <a class="bot-tab" href="gym-workouts-tab-preview.html"><i data-lucide="dumbbell"></i><span>Workouts</span></a>
   <a class="bot-tab active" href="gym-stats-tab-preview.html"><i data-lucide="bar-chart-3"></i><span>Statistics</span></a>
-  <button type="button" class="bot-tab is-soon" disabled><i data-lucide="message-circle"></i><span>Coach</span></button>
 </nav>
 
 <script>
@@ -482,13 +462,6 @@ section { margin-bottom: 22px; }
     });
   });
   ALL_ENTRIES.sort(function (a, b) { return a.dateKey.localeCompare(b.dateKey); });
-
-  var HERO_LIFTS = [
-    { name: 'Barbell Bench Press', day: 'push' },
-    { name: 'Lat Pulldown', day: 'pull' },
-    { name: 'Barbell RDL', day: 'lowerA' },
-    { name: 'Hack Squat', day: 'lowerB' }
-  ];
 
   // ---------- date helpers ----------
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -601,43 +574,6 @@ section { margin-bottom: 22px; }
       '<path d="' + linePath + '" fill="none" stroke="' + acc.primary + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
       '<circle cx="' + pts[pts.length - 1].x.toFixed(1) + '" cy="' + pts[pts.length - 1].y.toFixed(1) + '" r="4" fill="' + acc.primary + '"/>' +
       '</svg>';
-  }
-
-  // ---------- core lift cards ----------
-  function renderLifts() {
-    var acc = accents();
-    var days = RANGE_DAYS[activeRange];
-    var cutoff = days == null ? null : daysAgoKey(days);
-    var html = HERO_LIFTS.map(function (hero) {
-      var ex = EX_BY_NAME[hero.name];
-      var accentVar = 'var(--day-' + hero.day + ')';
-      if (!ex || !REAL_LOGS[ex.id] || !REAL_LOGS[ex.id].length) {
-        return '<div class="lift-card" style="--lift-accent:' + accentVar + '"><div class="lift-name">' + hero.name + '</div><div class="lift-tag">' + DAY_LABEL[hero.day] + '</div><div class="lift-empty">Not logged yet</div></div>';
-      }
-      var logs = (REAL_LOGS[ex.id] || []).filter(function (l) { return !l.deload && (!cutoff || (l.date || '').slice(0, 10) >= cutoff); }).sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
-      if (!logs.length) {
-        return '<div class="lift-card" style="--lift-accent:' + accentVar + '"><div class="lift-name">' + hero.name + '</div><div class="lift-tag">' + DAY_LABEL[hero.day] + '</div><div class="lift-empty">Nothing in this range</div></div>';
-      }
-      var first = logs[0].weight, current = ex.currentLoad != null ? ex.currentLoad : logs[logs.length - 1].weight;
-      var delta = current - first;
-      var deltaHtml = logs.length > 1 ? '<div class="lift-delta"><b>' + (delta > 0 ? '+' : '') + delta + 'kg</b> since ' + new Date(logs[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '</div>' : '<div class="lift-delta">First session logged</div>';
-      var spark = '';
-      if (logs.length >= 2) {
-        var vals = logs.map(function (l) { return l.weight; });
-        var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
-        if (mx === mn) { mx += 1; mn -= 1; }
-        var W = 200, H = 30;
-        var pts = logs.map(function (l, i) { return { x: (i / (logs.length - 1)) * W, y: H - 4 - ((l.weight - mn) / (mx - mn)) * (H - 8) }; });
-        var path = pts.map(function (p, i) { return (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
-        spark = '<svg class="lift-spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
-          '<path d="' + path + '" fill="none" stroke="' + accents()[hero.day] + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
-          '<circle cx="' + pts[pts.length - 1].x.toFixed(1) + '" cy="' + pts[pts.length - 1].y.toFixed(1) + '" r="3" fill="' + accents()[hero.day] + '"/></svg>';
-      }
-      return '<div class="lift-card" style="--lift-accent:' + accentVar + '">' +
-        '<div class="lift-name">' + hero.name + '</div><div class="lift-tag">' + DAY_LABEL[hero.day] + '</div>' +
-        '<div class="lift-now">' + current + '<span>kg working</span></div>' + deltaHtml + spark + '</div>';
-    }).join('');
-    document.getElementById('liftGrid').innerHTML = html;
   }
 
   // ---------- muscle group volume ----------
@@ -968,7 +904,6 @@ section { margin-bottom: 22px; }
     renderLibrary();
     renderAnatomy();
     renderBodyweight();
-    renderLifts();
     renderMuscleVolume();
     renderPRs();
     renderNutritionRecovery();
