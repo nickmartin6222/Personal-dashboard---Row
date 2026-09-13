@@ -648,16 +648,20 @@ body::after {
       return sum + chf * itRate;
     }, 0);
   }
+  // Matches golf.html's computeHandicapIndex() exactly — same best-8-
+  // of-last-20 WHS-style calc, scoped to 9-hole rounds only (the golf
+  // tab's default view) rather than blending 9- and 18-hole rounds
+  // together, so this tile shows the same number the golf tab does.
   function currentHandicap() {
     const rounds = readJSON('golf:rounds', []);
     if (!Array.isArray(rounds) || !rounds.length) return null;
-    const comparable = rounds.slice()
-      .sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.ts || 0) - (a.ts || 0))
-      .slice(0, 20)
-      .map(r => typeof r.differential === 'number' ? (r.holes === 9 ? r.differential * 2 : r.differential) : null)
-      .filter(d => typeof d === 'number');
-    if (comparable.length < 3) return null;
-    const best = comparable.slice().sort((a, b) => a - b).slice(0, Math.min(8, comparable.length));
+    const nineHole = rounds.filter(r => (r.holes || 18) === 9);
+    const withDiff = nineHole.slice()
+      .filter(r => typeof r.differential === 'number')
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
+    if (withDiff.length < 3) return null;
+    const last20 = withDiff.slice(-20).map(r => r.differential * 2);
+    const best = last20.slice().sort((a, b) => a - b).slice(0, Math.min(8, last20.length));
     return Math.round((best.reduce((a, b) => a + b, 0) / best.length) * 10) / 10;
   }
   function currentSteps() {
