@@ -121,23 +121,30 @@ button { font-family: inherit; }
 [data-theme="light"] .day-pill.active { background: var(--pill-accent, var(--lime)); border-color: var(--pill-accent, var(--lime)); color: #F4EFE3; }
 
 /* ---------- calendar strip ---------- */
-.cal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 18px 18px 16px; margin-bottom: 14px; }
-.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.cal-month { font-size: 17px; font-weight: 800; color: var(--text-1); letter-spacing: -0.01em; }
-/* Joined prev/next control — one rounded pill, two halves, no gap —
-   matching the reference's single connected arrow control instead of
-   two separate buttons floating apart. */
+/* ---------- canonical calendar component — this exact design (card,
+   month label, joined nav circles, plain floating day numbers, solid
+   colour-filled "today" circle, no light-mode glow) is the one
+   calendar style for the whole app now. Any other page's date strip
+   should match this, not invent its own. ---------- */
+.cal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 22px 20px; margin-bottom: 14px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.cal-month { font-size: 23px; font-weight: 800; color: var(--text-1); letter-spacing: -0.01em; }
+/* Joined prev/next control — one rounded pill, two halves, no gap. */
 .cal-nav { display: flex; background: var(--bg-raised); border-radius: 999px; padding: 3px; gap: 2px; }
 .cal-nav button {
-  width: 30px; height: 30px; border-radius: 50%; border: none; background: var(--bg-card);
+  width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--bg-card);
   color: var(--text-2); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
 }
 .cal-week { display: flex; gap: 4px; }
-.cal-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0; border-radius: 12px; cursor: default; }
+.cal-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 4px 0; cursor: default; }
 .cal-day-name { font-size: 12px; font-weight: 700; font-family: var(--font-mono); color: var(--text-3); letter-spacing: 0.02em; }
-.cal-day-num { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: var(--text-2); }
-.cal-day.is-today .cal-day-num { color: var(--lime-ink); font-weight: 800; }
+.cal-day-num { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--text-1); }
+/* "Today" is always the universal brand accent (mint/forest), never a
+   day-type colour — this component has to work identically on pages
+   with no concept of "training day" at all. */
+.cal-day.is-today .cal-day-num { background: var(--lime); color: var(--lime-ink); }
+:root:not([data-theme="light"]) .cal-day.is-today .cal-day-num { box-shadow: 0 0 14px 0 var(--lime); }
 
 /* ---------- hero tile: a plain card (not a colored block) — the day
    accent lives in the ring-pattern lines and the tag pill instead of
@@ -778,18 +785,13 @@ button { font-family: inherit; }
     var monday = new Date(today); monday.setDate(today.getDate() + mondayOffset + calWeekOffset * 7);
     document.getElementById('calMonth').textContent = monday.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     var names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    var cycle = ['Push', 'Pull', 'Lower A', 'Lower B'];
     var html = '';
     for (var i = 0; i < 7; i++) {
       var d = new Date(monday); d.setDate(monday.getDate() + i);
       var isToday = d.toDateString() === today.toDateString();
-      var dayType = cycle[i % cycle.length];
-      var accent = 'var(' + DAY_META[dayType].accent + ')';
-      var isLight = document.documentElement.getAttribute('data-theme') === 'light';
-      var numStyle = isToday ? 'background:' + accent + (isLight ? '' : ';box-shadow:0 0 14px 0 ' + accent) : '';
       html += '<div class="cal-day' + (isToday ? ' is-today' : '') + '">' +
         '<div class="cal-day-name">' + names[i] + '</div>' +
-        '<div class="cal-day-num" style="' + numStyle + '">' + d.getDate() + '</div>' +
+        '<div class="cal-day-num">' + d.getDate() + '</div>' +
         '</div>';
     }
     document.getElementById('calWeek').innerHTML = html;
