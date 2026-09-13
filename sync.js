@@ -119,6 +119,17 @@
       clearTimeout(pushTimer);
       pushTimer = setTimeout(pushNow, 250);
     }
+    // For a write the caller knows is important to not lose (e.g. a
+    // settings/goal edit right before the user is likely to navigate
+    // away) — pushes immediately instead of waiting out the normal
+    // 250ms debounce, shrinking the window where a fast tab-close/
+    // navigation could beat the push and leave the edit stranded
+    // locally until flushOnUnload (best-effort, not guaranteed on every
+    // browser) or the next write picks it up.
+    function flushNow() {
+      clearTimeout(pushTimer);
+      return pushNow();
+    }
     function flushOnUnload() {
       const state = collect();
       const json = JSON.stringify(state);
@@ -176,5 +187,7 @@
     window.addEventListener('storage', (e) => {
       if (e.key && matches(e.key)) schedulePush();
     });
+
+    return { flush: flushNow };
   };
 })();

@@ -294,6 +294,11 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
 
 <script>
 (function () {
+  // Set once initCloudSync() resolves near the bottom — lets a
+  // critical edit (a goal) force an immediate push instead of waiting
+  // out the normal debounce, so it can't get stranded locally if the
+  // tab closes/navigates away right after.
+  let healthSync = null;
   function storeGet(key, fallback) {
     try { const raw = localStorage.getItem(key); return raw == null ? fallback : JSON.parse(raw); } catch (e) { return fallback; }
   }
@@ -578,7 +583,7 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     e.stopPropagation();
     const g = goals();
     const v = prompt('Daily calorie goal:', g.calories);
-    if (v && !isNaN(v)) { g.calories = Number(v); storeSet('health:goals', g); renderCalories(); }
+    if (v && !isNaN(v)) { g.calories = Number(v); storeSet('health:goals', g); renderCalories(); if (healthSync) healthSync.flush(); }
   });
   document.querySelectorAll('[data-edit-macro]').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -588,7 +593,7 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
       const label = card.querySelector('.macro-name').textContent;
       const g = goals();
       const v = prompt(label + ' goal (g):', g[key]);
-      if (v && !isNaN(v)) { g[key] = Number(v); storeSet('health:goals', g); renderCalories(); }
+      if (v && !isNaN(v)) { g[key] = Number(v); storeSet('health:goals', g); renderCalories(); if (healthSync) healthSync.flush(); }
     });
   });
 
@@ -597,7 +602,7 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof lucide !== 'undefined') lucide.createIcons();
     if (typeof initCloudSync !== 'function') return;
-    initCloudSync({
+    healthSync = initCloudSync({
       appKey: 'health-metrics',
       syncedKeys: ['health:steps', 'health:nutrition', 'health:distance', 'health:distanceUnit', 'health:goals', 'health:creatine'],
       onApplied: function () { window.dispatchEvent(new Event('storage')); }
