@@ -241,7 +241,7 @@ body::after {
   border-radius: 10px; padding: 12px 13px;
   color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; outline: none;
 }
-.aikey-input:focus { border-color: rgba(107,227,164,0.5); }
+.aikey-input:focus { border-color: rgba(110,227,164,0.5); }
 .aikey-sub { font-size: 12px; color: var(--text-tertiary); margin: 8px 0 0; }
 .aikey-sub a, .aikey-note a { color: var(--success); text-decoration: underline; }
 .aikey-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 20px; }
@@ -469,8 +469,8 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   flex-shrink: 0;
   background: rgba(255,255,255,0.30);
 }
-.tag-green::before { background: #6BE3A4; box-shadow: 0 0 6px rgba(107,227,164,0.55); }
-.tag-green { background: rgba(107, 227, 164, 0.10); color: #8EE9B7; }
+.tag-green::before { background: #6EE3A4; box-shadow: 0 0 6px rgba(110,227,164,0.55); }
+.tag-green { background: rgba(110, 227, 164, 0.10); color: #A7F3D0; }
 .pill-group { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
 
 /* Empty state */
@@ -1331,7 +1331,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.wish-row-pct.good { color: #6BE3A4; }
+.wish-row-pct.good { color: #6EE3A4; }
 .wish-row-pct.warn { color: #F2C063; }
 .wish-row-pct.bad  { color: #F97066; }
 .wish-row-pct.flat { color: var(--text-tertiary); }
@@ -1353,7 +1353,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   height: 100%; border-radius: 3px;
   transition: width 0.3s ease;
 }
-.wish-row-bar-fill.good { background: #6BE3A4; box-shadow: 0 0 6px rgba(107,227,164,0.5); }
+.wish-row-bar-fill.good { background: #6EE3A4; box-shadow: 0 0 6px rgba(110,227,164,0.5); }
 .wish-row-bar-fill.warn { background: #F2C063; box-shadow: 0 0 6px rgba(242,192,99,0.5); }
 .wish-row-bar-fill.bad  { background: #F97066; box-shadow: 0 0 6px rgba(249,112,102,0.5); }
 .wish-row-bar-fill.flat { background: rgba(255,255,255,0.20); }
@@ -1425,7 +1425,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 }
 .ticker-item-amt {
   font-weight: 700;
-  color: #6BE3A4;
+  color: #6EE3A4;
 }
 .finance-ticker.urgent .ticker-item-amt { color: #F97066; }
 .ticker-item-days {
@@ -1448,7 +1448,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   background: rgba(255,255,255,0.18);
   transition: background 0.2s;
 }
-.ticker-dot.active { background: #6BE3A4; }
+.ticker-dot.active { background: #6EE3A4; }
 .finance-ticker.urgent .ticker-dot.active { background: #F97066; }
 
 /* ============================================================
@@ -1810,14 +1810,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: transform 0.2s, background 0.2s;
 }
 .sub-auto-toggle input:checked ~ .sub-auto-track {
-  background: #6BE3A4;
+  background: #6EE3A4;
 }
 .sub-auto-toggle input:checked ~ .sub-auto-track .sub-auto-thumb {
   transform: translateX(14px);
   background: #04201A;
 }
 .sub-auto-toggle input:checked ~ .sub-auto-label {
-  color: #6BE3A4;
+  color: #6EE3A4;
   font-weight: 700;
 }
 .sub-auto-label {
@@ -1848,17 +1848,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 700;
 }
 .sub-row-toggle.is-on {
-  background: rgba(107,227,164,0.10);
-  border-color: rgba(107,227,164,0.30);
-  color: #6BE3A4;
+  background: rgba(110,227,164,0.10);
+  border-color: rgba(110,227,164,0.30);
+  color: #6EE3A4;
 }
 .sub-row-toggle .sub-row-toggle-dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: rgba(255,255,255,0.25);
 }
 .sub-row-toggle.is-on .sub-row-toggle-dot {
-  background: #6BE3A4;
-  box-shadow: 0 0 6px rgba(107,227,164,0.7);
+  background: #6EE3A4;
+  box-shadow: 0 0 6px rgba(110,227,164,0.7);
 }
 
 .sub-from-pill {
@@ -2564,7 +2564,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   const NAMED_COLORS = {
     green:  { dark: '#6EE3A4', light: '#2F6B52' },
     orange: { dark: '#FB923C', light: '#C2A46F' },
-    pink:   { dark: '#F472B6', light: '#B5568F' },
+    pink:   { dark: '#F472B6', light: '#A9673D' },
     purpleLight: { dark: '#C9B8FF', light: '#6B4A54' },
     blue:   { dark: '#60A5FA', light: '#4F7FBF' }
   };

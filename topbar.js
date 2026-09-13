@@ -46,8 +46,9 @@
 .home-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 44px; height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.04);
+  color: #6EE3A4;
+  border: 1px solid rgba(110, 227, 164, 0.3);
+  background: rgba(110, 227, 164, 0.08);
   border-radius: 12px;
   font-size: 18px; line-height: 1;
   cursor: pointer;
@@ -55,7 +56,7 @@
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s;
 }
-.home-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.home-btn:hover { background: rgba(110, 227, 164, 0.14); }
 .home-btn svg { width: 18px; height: 18px; display: block; }
 /* Same pill + sliding dot as the dashboard's own toggle (index.html
    .theme-toggle) — colors hardcoded here since this file runs on pages
@@ -148,15 +149,22 @@ body.has-bottombar {
   border-bottom: none;
   padding-bottom: 20px;
 }
-[data-theme="light"] .topbar-finance-btn,
-[data-theme="light"] .home-btn {
+[data-theme="light"] .topbar-finance-btn {
   background: #FFFFFF;
   border-color: rgba(20,18,15,0.12);
   box-shadow: 0 2px 10px rgba(20,18,15,0.08);
 }
-[data-theme="light"] .topbar-finance-btn:hover,
-[data-theme="light"] .home-btn:hover {
+[data-theme="light"] .topbar-finance-btn:hover {
   background: rgba(20,18,15,0.06);
+}
+[data-theme="light"] .home-btn {
+  color: #003B2F;
+  background: #FFFFFF;
+  border-color: rgba(0,59,47,0.3);
+  box-shadow: 0 2px 10px rgba(20,18,15,0.06);
+}
+[data-theme="light"] .home-btn:hover {
+  background: rgba(0,59,47,0.06);
 }
 [data-theme="light"] .theme-btn {
   background: #FFFFFF;
@@ -236,7 +244,7 @@ body.topbar-modal-open {
     <span class="bottombar-tab-icon"><i data-lucide="house"></i></span>
     <span>Main</span>
   </a>
-  <a href="gym-preview.html" class="bottombar-tab" data-page="fitness">
+  <a href="gym-workouts-tab-preview.html" class="bottombar-tab" data-page="fitness">
     <span class="bottombar-tab-icon"><i data-lucide="dumbbell"></i></span>
     <span>Fitness</span>
   </a>
@@ -270,7 +278,7 @@ body.topbar-modal-open {
   }
   function currentPageKey() {
     const p = (window.location.pathname || '').toLowerCase();
-    if (p.endsWith('gym.html') || p.endsWith('gym-preview.html')) return 'fitness';
+    if (p.endsWith('gym.html') || p.endsWith('gym-preview.html') || p.endsWith('gym-workouts-tab-preview.html') || p.endsWith('gym-stats-tab-preview.html')) return 'fitness';
     if (p.endsWith('golf.html')) return 'golf';
     if (p.endsWith('health.html')) return 'health';
     // Finance suppresses this bottombar entirely (its own internal tabs

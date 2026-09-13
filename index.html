@@ -576,8 +576,11 @@ body::after {
     try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
     // The Finance Overview pie picks a different default palette per
     // theme (dark = Finance's own category colors, light = the muted
-    // per-item palette) — needs a re-render to actually recolor.
+    // per-item palette) — needs a re-render to actually recolor. Same
+    // for the goal bars (savings/stock/handicap/steps), which pick a
+    // theme-matched gradient now instead of one fixed neon one.
     if (typeof renderFinance === 'function') renderFinance();
+    if (typeof renderGoals === 'function') renderGoals();
   });
   // Stay in sync if the shared toggle button (topbar.js, present on
   // every page) changes the theme instead of this page's own pill.
@@ -585,6 +588,7 @@ body::after {
     if (e.key === THEME_KEY) {
       applyTheme(e.newValue || 'mint');
       if (typeof renderFinance === 'function') renderFinance();
+      if (typeof renderGoals === 'function') renderGoals();
     }
   });
 
@@ -676,33 +680,40 @@ body::after {
     return Math.max(0, Math.min(100, pct));
   }
 
-  // Each bar fill is a two-stop neon gradient (deep shade -> bright hue)
-  // rather than a flat color, so the goals section has the same glowing
-  // pop the mint accent has elsewhere instead of reading flat/muted.
+  // Each bar fill is a two-stop gradient (deep shade -> canonical hue),
+  // matched per theme so dark keeps its neon glow while light stays
+  // muted/solid — same signal-palette hues used everywhere else now
+  // (steps was wrongly purple before; it's Health's Steps colour,
+  // Coral/Rust, like everywhere else steps shows up in the app).
+  function isLightTheme() { return document.documentElement.getAttribute('data-theme') === 'light'; }
   const GOAL_DEFS = [
     {
-      key: 'savings', label: 'Savings', color: 'linear-gradient(90deg, #1C6B45, #6EE3A4)',
+      key: 'savings', label: 'Savings',
+      color: () => isLightTheme() ? 'linear-gradient(90deg, #0F2A24, #003B2F)' : 'linear-gradient(90deg, #1C6B45, #6EE3A4)',
       current: () => nwCategoryTotal('bank'),
       target: (g) => g.savings,
       progress: (g, cur) => ratioProgress(cur, g.savings),
       fmt: (v) => displayCcy().ccy + ' ' + Math.round(v).toLocaleString()
     },
     {
-      key: 'stock', label: 'Stock amount', color: 'linear-gradient(90deg, #1E4F91, #5AC8FA)',
+      key: 'stock', label: 'Stock amount',
+      color: () => isLightTheme() ? 'linear-gradient(90deg, color-mix(in srgb, #4F7FBF 60%, black), #4F7FBF)' : 'linear-gradient(90deg, #1E4F91, #7DD3FC)',
       current: () => nwCategoryTotal('stocks'),
       target: (g) => g.stock,
       progress: (g, cur) => ratioProgress(cur, g.stock),
       fmt: (v) => displayCcy().ccy + ' ' + Math.round(v).toLocaleString()
     },
     {
-      key: 'handicap', label: 'Golf handicap', color: 'linear-gradient(90deg, #A66B1F, #FFC857)',
+      key: 'handicap', label: 'Golf handicap',
+      color: () => isLightTheme() ? 'linear-gradient(90deg, color-mix(in srgb, #C2A46F 55%, black), #C2A46F)' : 'linear-gradient(90deg, #A66B1F, #F2C063)',
       current: () => currentHandicap(),
       target: (g) => g.handicap,
       progress: (g, cur) => distanceProgress(g.handicapStart, cur == null ? g.handicapStart : cur, g.handicap),
       fmt: (v) => v == null ? 'no rounds yet' : v.toFixed(1)
     },
     {
-      key: 'steps', label: 'Steps today', color: 'linear-gradient(90deg, #5B3E8C, #C79BFF)',
+      key: 'steps', label: 'Steps today',
+      color: () => isLightTheme() ? 'linear-gradient(90deg, color-mix(in srgb, #A9673D 60%, black), #A9673D)' : 'linear-gradient(90deg, #7A2E22, #F97066)',
       current: () => currentSteps(),
       target: (g) => g.steps,
       progress: (g, cur) => ratioProgress(cur == null ? 0 : cur, g.steps),
@@ -738,7 +749,7 @@ body::after {
       return '<div class="goal-card" data-key="' + def.key + '">'
         + '<div class="goal-card-top"><span class="goal-card-label">' + def.label + '</span><span class="goal-card-pct">' + pct + '%</span></div>'
         + '<div class="goal-card-vals">' + def.fmt(cur) + ' &rarr; ' + def.fmt(def.target(goals)) + '</div>'
-        + '<div class="goal-bar-track"><div class="goal-bar-fill" data-pct="' + pct + '" style="width:' + startWidth + '%;background:' + def.color + '"></div></div>'
+        + '<div class="goal-bar-track"><div class="goal-bar-fill" data-pct="' + pct + '" style="width:' + startWidth + '%;background:' + def.color() + '"></div></div>'
         + (isEditing
             ? '<div class="goal-edit-row"><input type="number" inputmode="decimal" id="goalInput_' + def.key + '" value="' + def.target(goals) + '"><button type="button" data-save="' + def.key + '">Save</button></div>'
             : '<button type="button" class="goal-edit-btn" data-edit="' + def.key + '">Edit target</button>')
@@ -787,7 +798,7 @@ body::after {
   const NAMED_COLORS = {
     green:  { dark: '#6EE3A4', light: '#2F6B52' },
     orange: { dark: '#FB923C', light: '#C2A46F' },
-    pink:   { dark: '#F472B6', light: '#B5568F' },
+    pink:   { dark: '#F472B6', light: '#A9673D' },
     purpleLight: { dark: '#C9B8FF', light: '#6B4A54' },
     blue:   { dark: '#60A5FA', light: '#4F7FBF' }
   };
