@@ -1221,10 +1221,20 @@ section { margin-bottom: 22px; }
         if (mx === mn) { mx += 1; mn -= 1; }
         var W = 300, H = 80;
         var pts = logs.map(function (l, i) { return { x: (i / (logs.length - 1)) * W, y: H - 8 - (((ex.bw ? l.reps : l.weight) - mn) / (mx - mn)) * (H - 16) }; });
-        var path = pts.map(function (p, i) { return (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+        var linePath = pts.map(function (p, i) { return (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+        var areaPath = linePath + ' L' + pts[pts.length - 1].x.toFixed(1) + ',' + H + ' L0,' + H + ' Z';
+        var gradId = 'ehGrad' + ex.id;
+        // Same gradient-fill-under-line + endpoint-dot treatment as the
+        // Bodyweight chart and every other trend chart on this page —
+        // a bare stroke line here would be the only chart on the site
+        // without the fill.
         chartHtml = '<div class="eh-chart-label">' + (ex.bw ? 'Reps' : 'Top weight') + ' trend</div><svg class="eh-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
-          '<path d="' + path + '" fill="none" stroke="' + acc.primary + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
-          '<circle cx="' + pts[pts.length - 1].x.toFixed(1) + '" cy="' + pts[pts.length - 1].y.toFixed(1) + '" r="3.5" fill="' + acc.primary + '"/></svg>';
+          '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="' + acc.primary + '" stop-opacity="0.28"/>' +
+          '<stop offset="100%" stop-color="' + acc.primary + '" stop-opacity="0"/></linearGradient></defs>' +
+          '<path d="' + areaPath + '" fill="url(#' + gradId + ')" stroke="none"/>' +
+          '<path d="' + linePath + '" fill="none" stroke="' + acc.primary + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '<circle cx="' + pts[pts.length - 1].x.toFixed(1) + '" cy="' + pts[pts.length - 1].y.toFixed(1) + '" r="4" fill="' + acc.primary + '"/></svg>';
       }
       body.innerHTML = statsHtml + chartHtml;
     }

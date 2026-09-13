@@ -1022,14 +1022,18 @@ button { font-family: inherit; }
       }).join('');
       return '<div class="pick-area"><div class="pick-area-label">' + a.area + ' · ' + a.sets + ' sets</div><div class="pick-opts">' + opts + '</div></div>';
     }).join('');
+    // Multi-select per area: tapping an unpicked option adds it, tapping
+    // an already-picked one removes it — an area can end up with zero,
+    // one, or several exercises picked, which is how the checklist
+    // length (and so how long the session runs) gets customized.
     document.querySelectorAll('.pick-opt').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var name = btn.dataset.name, areaIdx = +btn.dataset.area;
-        var area = meta.areas[areaIdx];
-        var areaNames = area.options.map(function (o) { return o.name; });
+        var name = btn.dataset.name;
         var current = getPicks(activeDay);
-        // keep exactly one pick per area for this simple prototype
-        uiState.picks[activeDay] = current.filter(function (n) { return areaNames.indexOf(n) === -1; }).concat([name]);
+        var idx = current.indexOf(name);
+        uiState.picks[activeDay] = idx !== -1
+          ? current.slice(0, idx).concat(current.slice(idx + 1))
+          : current.concat([name]);
         saveUi(); openPicker();
       });
     });
