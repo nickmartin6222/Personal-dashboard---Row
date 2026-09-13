@@ -154,6 +154,7 @@ button { font-family: inherit; }
   background: rgba(242,192,99,0.14); border: 1px solid rgba(242,192,99,0.35);
   border-radius: 14px; padding: 11px 14px; margin-bottom: 14px; font-size: 12.5px; color: var(--text-1); font-weight: 600;
 }
+.backdate-banner[hidden] { display: none; }
 [data-theme="light"] .backdate-banner { background: color-mix(in srgb, #C2A46F 18%, white); border-color: color-mix(in srgb, #C2A46F 45%, transparent); }
 .backdate-banner button {
   flex-shrink: 0; font-family: var(--font-mono); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
@@ -399,7 +400,7 @@ button { font-family: inherit; }
     </div>
     <div class="grid-label">Reps</div>
     <div class="num-grid" id="repsGrid"></div>
-    <div class="grid-label">Sets logged this session</div>
+    <div class="grid-label">Sets <span style="text-transform:none;font-weight:500;opacity:.7">(logs each one the same)</span></div>
     <div class="num-grid" id="setsGrid"></div>
     <button class="log-btn" id="logSetBtn">Log set</button>
     <div class="suggestion-box" id="suggestionBox" hidden>
@@ -1032,7 +1033,8 @@ button { font-family: inherit; }
     var ex = EX_INDEX[name];
     var meta = DAY_META[activeDay];
     var sug = suggestionFor(ex);
-    logCtx = { name: name, weight: sug.weight, reps: sug.reps, sets: todaySetsFor(name).length };
+    var areaDef = areaDefFor(activeDay, name);
+    logCtx = { name: name, weight: sug.weight, reps: sug.reps, sets: areaDef ? Math.min(6, areaDef.sets) : 3 };
     document.documentElement.style.setProperty('--hero-accent', 'var(' + meta.accent + ')');
     document.getElementById('logTitle').textContent = name;
     var realLogs = realLogsForName(name);
@@ -1057,14 +1059,15 @@ button { font-family: inherit; }
     document.querySelectorAll('[data-reps]').forEach(function (c) { c.addEventListener('click', function () { logCtx.reps = +c.dataset.reps; renderLogFields(); }); });
     var setOpts = [1, 2, 3, 4, 5, 6];
     document.getElementById('setsGrid').innerHTML = setOpts.map(function (s) {
-      return '<div class="num-cell' + (s === logCtx.sets ? ' active' : '') + '">' + s + '</div>';
+      return '<div class="num-cell' + (s === logCtx.sets ? ' active' : '') + '" data-sets="' + s + '">' + s + '</div>';
     }).join('');
+    document.querySelectorAll('[data-sets]').forEach(function (c) { c.addEventListener('click', function () { logCtx.sets = +c.dataset.sets; renderLogFields(); }); });
   }
   document.getElementById('wMinus').addEventListener('click', function () { var ex = EX_INDEX[logCtx.name]; if (!ex.bw) { logCtx.weight = Math.max(0, logCtx.weight - ex.step); renderLogFields(); } });
   document.getElementById('wPlus').addEventListener('click', function () { var ex = EX_INDEX[logCtx.name]; if (!ex.bw) { logCtx.weight = logCtx.weight + ex.step; renderLogFields(); } });
   document.getElementById('logClose').addEventListener('click', function () { document.getElementById('logModal').hidden = true; });
   document.getElementById('logSetBtn').addEventListener('click', function () {
-    writeRealLog(activeDay, [{ name: logCtx.name, setsCount: 1, reps: logCtx.reps, weight: logCtx.weight }]);
+    writeRealLog(activeDay, [{ name: logCtx.name, setsCount: logCtx.sets, reps: logCtx.reps, weight: logCtx.weight }]);
     refreshRealData();
     document.getElementById('logModal').hidden = true;
     renderChecklist();
