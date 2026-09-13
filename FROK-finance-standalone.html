@@ -2587,6 +2587,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     return palette[hash % palette.length];
   }
   function itemColor(catKey, it) {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const key = (it.ticker || it.name || '').toLowerCase();
+    const named = ITEM_COLOR_OVERRIDES[key];
+    if (named && it.color) {
+      // A stored colour on a KNOWN named holding (S&P 500, NASDAQ, etc.)
+      // that exactly matches the OTHER theme's canonical hex for that
+      // same name is almost certainly a frozen auto-value — e.g. the
+      // native <input type="color"> swatch firing its change event on
+      // a theme switch rather than a real user pick — not a deliberate
+      // custom colour. (A genuine custom pick landing on our own exact
+      // palette hex is vanishingly unlikely.) Self-heal back to this
+      // theme's correct colour instead of showing the wrong theme's
+      // hue forever.
+      const otherTheme = NAMED_COLORS[named][isLight ? 'dark' : 'light'];
+      if (it.color.toLowerCase() === otherTheme.toLowerCase()) return NAMED_COLORS[named][isLight ? 'light' : 'dark'];
+    }
     return it.color || defaultItemColor(catKey, it);
   }
 
