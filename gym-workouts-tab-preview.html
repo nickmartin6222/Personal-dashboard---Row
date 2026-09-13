@@ -137,14 +137,28 @@ button { font-family: inherit; }
   box-shadow: 0 1px 2px rgba(0,0,0,0.12);
 }
 .cal-week { display: flex; gap: 4px; }
-.cal-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 4px 0; cursor: default; }
+.cal-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 4px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: 14px; background: none; border: none; font-family: inherit; }
 .cal-day-name { font-size: 12px; font-weight: 700; font-family: var(--font-mono); color: var(--text-3); letter-spacing: 0.02em; }
-.cal-day-num { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--text-1); }
+.cal-day-num { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--text-1); transition: background 0.15s, box-shadow 0.15s; }
 /* "Today" is always the universal brand accent (mint/forest), never a
    day-type colour — this component has to work identically on pages
-   with no concept of "training day" at all. */
+   with no concept of "training day" at all. Tapping a PAST day (to
+   log or review it) gets a lighter outline treatment — visually
+   distinct from "today" so it's never ambiguous which date you're
+   actually about to log against. */
 .cal-day.is-today .cal-day-num { background: var(--lime); color: var(--lime-ink); }
 :root:not([data-theme="light"]) .cal-day.is-today .cal-day-num { box-shadow: 0 0 14px 0 var(--lime); }
+.cal-day.is-selected:not(.is-today) .cal-day-num { box-shadow: inset 0 0 0 2px var(--lime); color: var(--lime); }
+.backdate-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: rgba(242,192,99,0.14); border: 1px solid rgba(242,192,99,0.35);
+  border-radius: 14px; padding: 11px 14px; margin-bottom: 14px; font-size: 12.5px; color: var(--text-1); font-weight: 600;
+}
+[data-theme="light"] .backdate-banner { background: color-mix(in srgb, #C2A46F 18%, white); border-color: color-mix(in srgb, #C2A46F 45%, transparent); }
+.backdate-banner button {
+  flex-shrink: 0; font-family: var(--font-mono); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
+  padding: 7px 12px; border-radius: 999px; border: none; background: var(--lime); color: var(--lime-ink); cursor: pointer;
+}
 
 /* ---------- hero tile: a plain card (not a colored block) — the day
    accent lives in the ring-pattern lines and the tag pill instead of
@@ -293,6 +307,11 @@ button { font-family: inherit; }
       <div class="cal-nav"><button type="button" id="calPrev">‹</button><button type="button" id="calNext">›</button></div>
     </div>
     <div class="cal-week" id="calWeek"></div>
+  </div>
+
+  <div class="backdate-banner" id="backdateBanner" hidden>
+    <span id="backdateLabel">—</span>
+    <button type="button" id="backdateReturn">Back to today</button>
   </div>
 
   <div class="day-pills" id="dayPills"></div>
@@ -624,24 +643,38 @@ button { font-family: inherit; }
     var lastDate = (arr[arr.length - 1].date || '').slice(0, 10);
     return arr.filter(function (l) { return (l.date || '').slice(0, 10) === lastDate; }).map(function (l) { return { weight: l.weight, reps: l.reps }; });
   }
+  // Stamps every entry on activeLogDate (not always "now") so a
+  // backdated workout logs against the day it actually happened.
+  // Guards the live prescription: if this write's date is OLDER than
+  // an already-logged later date for the same exercise, currentLoad/
+  // currentRepTarget must NOT be recomputed off it — that would let a
+  // forgotten-then-backfilled Tuesday clobber a prescription already
+  // advanced by Wednesday's real session. History still gets recorded
+  // either way; only the live "next weight" number is protected.
   function writeRealLog(day, sets) {
     try {
       var raw = localStorage.getItem(LIVE_STATE_KEY);
       var live = raw ? JSON.parse(raw) : { exercises: [], logs: {} };
       if (!Array.isArray(live.exercises)) live.exercises = [];
       if (!live.logs || typeof live.logs !== 'object') live.logs = {};
-      var now = Date.now();
-      var deloadNow = live.deloadActive && live.deloadActive.endDate >= wtDateKey(new Date());
+      var base = new Date(activeLogDate);
+      var nowTime = new Date();
+      base.setHours(nowTime.getHours(), nowTime.getMinutes(), nowTime.getSeconds());
+      var now = base.getTime();
+      var writeDateKey = activeLogDateKey();
+      var deloadNow = live.deloadActive && live.deloadActive.endDate >= writeDateKey;
       sets.forEach(function (s, gi) {
         var ex = findOrCreateRealExercise(live, s.name, day);
         var arr = live.logs[ex.id] || [];
+        var priorLatest = '';
+        arr.forEach(function (l) { if (!l.deload) { var dk = (l.date || '').slice(0, 10); if (dk > priorLatest) priorLatest = dk; } });
         for (var i = 0; i < s.setsCount; i++) {
           var entry = { weight: s.weight, reps: s.reps, date: localTimestampFor(new Date(now + gi * 1000 + i)) };
           if (deloadNow) entry.deload = true;
           arr.push(entry);
         }
         live.logs[ex.id] = arr;
-        if (!deloadNow) {
+        if (!deloadNow && writeDateKey >= priorLatest) {
           var justLogged = [];
           for (var j = 0; j < s.setsCount; j++) justLogged.push({ weight: s.weight, reps: s.reps });
           var rx = computeNextRx(ex, justLogged);
@@ -655,25 +688,30 @@ button { font-family: inherit; }
       localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
     } catch (e) {}
   }
-  // Undo for an unticked checkbox: removes today's log entries for
-  // this exercise only, then re-derives the prescription from whatever
-  // real history remains (never touches other dates).
-  function removeTodayLogFor(name) {
+  // Undo for an unticked checkbox: removes activeLogDate's log entries
+  // for this exercise only, then re-derives the prescription — but
+  // only if that was genuinely the most recent date on record (same
+  // backdating guard as writeRealLog, in reverse).
+  function removeLogForActiveDate(name) {
     try {
       var raw = localStorage.getItem(LIVE_STATE_KEY);
       if (!raw) return;
       var live = JSON.parse(raw);
       var ex = (live.exercises || []).find(function (e) { return e.name === name; });
       if (!ex || !live.logs || !live.logs[ex.id]) return;
-      var todayKey = wtDateKey(new Date());
-      live.logs[ex.id] = live.logs[ex.id].filter(function (l) { return (l.date || '').slice(0, 10) !== todayKey; });
-      var remaining = lastRealSessionSets(live, ex.id);
-      var rx = computeNextRx(ex, remaining);
-      ex.currentLoad = rx.currentLoad;
-      ex.currentRepTarget = rx.currentRepTarget;
-      ex.sessionsAtCurrentLoad = rx.sessionsAtCurrentLoad;
-      ex.maxedStreak = rx.maxedStreak;
-      ex.lastRx = { type: rx.type, tag: rx.tag, reason: rx.reason };
+      var dateKey = activeLogDateKey();
+      live.logs[ex.id] = live.logs[ex.id].filter(function (l) { return (l.date || '').slice(0, 10) !== dateKey; });
+      var remainingLatest = '';
+      live.logs[ex.id].forEach(function (l) { if (!l.deload) { var dk = (l.date || '').slice(0, 10); if (dk > remainingLatest) remainingLatest = dk; } });
+      if (dateKey >= remainingLatest) {
+        var remaining = lastRealSessionSets(live, ex.id);
+        var rx = computeNextRx(ex, remaining);
+        ex.currentLoad = rx.currentLoad;
+        ex.currentRepTarget = rx.currentRepTarget;
+        ex.sessionsAtCurrentLoad = rx.sessionsAtCurrentLoad;
+        ex.maxedStreak = rx.maxedStreak;
+        ex.lastRx = { type: rx.type, tag: rx.tag, reason: rx.reason };
+      }
       localStorage.setItem(LIVE_STATE_KEY, JSON.stringify(live));
     } catch (e) {}
   }
@@ -698,9 +736,17 @@ button { font-family: inherit; }
     if (!ex) return [];
     return (REAL_LOGS[ex.id] || []).slice().sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
   }
-  function todayRealLogsForName(name) {
-    var todayKey = wtDateKey(new Date());
-    return realLogsForName(name).filter(function (l) { return (l.date || '').slice(0, 10) === todayKey; });
+  // ===== Which date logging currently targets — defaults to today, but
+  // tapping a past day on the calendar lets you fill in a workout you
+  // forgot to log at the time. Day-type (Push/Pull/etc) and log-date
+  // are independent: you can view/pick Lower A's exercises while
+  // logging them against yesterday's date. =====
+  var activeLogDate = new Date();
+  function activeLogDateKey() { return wtDateKey(activeLogDate); }
+  function isLoggingToday() { return activeLogDateKey() === wtDateKey(new Date()); }
+  function activeDateRealLogsForName(name) {
+    var dateKey = activeLogDateKey();
+    return realLogsForName(name).filter(function (l) { return (l.date || '').slice(0, 10) === dateKey; });
   }
   function areaDefFor(day, name) {
     return DAY_META[day].areas.find(function (a) { return a.options.some(function (o) { return o.name === name; }); });
@@ -730,7 +776,7 @@ button { font-family: inherit; }
   // today, on this device. The actual logged sets live in po_coach_v1
   // above, not here, so this never needs to be "real" or synced. =====
   var UI_KEY = 'po_workoutstab_ui_v1';
-  var uiState = { picks: {}, done: {} };
+  var uiState = { picks: {} };
   try { var rawUi = localStorage.getItem(UI_KEY); if (rawUi) uiState = Object.assign(uiState, JSON.parse(rawUi)); } catch (e) {}
   function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(uiState)); } catch (e) {} }
 
@@ -789,13 +835,34 @@ button { font-family: inherit; }
     for (var i = 0; i < 7; i++) {
       var d = new Date(monday); d.setDate(monday.getDate() + i);
       var isToday = d.toDateString() === today.toDateString();
-      html += '<div class="cal-day' + (isToday ? ' is-today' : '') + '">' +
+      var isSelected = d.toDateString() === activeLogDate.toDateString();
+      var isFuture = d > today && !isToday;
+      html += '<button type="button" class="cal-day' + (isToday ? ' is-today' : '') + (isSelected ? ' is-selected' : '') + '"' +
+        (isFuture ? ' disabled style="opacity:0.35;cursor:default"' : ' data-date="' + wtDateKey(d) + '"') + '>' +
         '<div class="cal-day-name">' + names[i] + '</div>' +
         '<div class="cal-day-num">' + d.getDate() + '</div>' +
-        '</div>';
+        '</button>';
     }
     document.getElementById('calWeek').innerHTML = html;
+    document.querySelectorAll('.cal-day[data-date]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var parts = btn.dataset.date.split('-').map(Number);
+        activeLogDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        renderCalendar(); renderBackdateBanner(); renderChecklist();
+      });
+    });
   }
+  function renderBackdateBanner() {
+    var banner = document.getElementById('backdateBanner');
+    if (isLoggingToday()) { banner.hidden = true; return; }
+    banner.hidden = false;
+    document.getElementById('backdateLabel').textContent = 'Logging for ' + activeLogDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  }
+  document.getElementById('backdateReturn').addEventListener('click', function () {
+    activeLogDate = new Date();
+    calWeekOffset = 0;
+    renderCalendar(); renderBackdateBanner(); renderChecklist();
+  });
   document.getElementById('calPrev').addEventListener('click', function () { calWeekOffset--; renderCalendar(); });
   document.getElementById('calNext').addEventListener('click', function () { calWeekOffset++; renderCalendar(); });
 
@@ -823,18 +890,22 @@ button { font-family: inherit; }
   }
 
   // ---------- checklist ----------
-  function todaySetsFor(name) { return todayRealLogsForName(name); }
+  // "Done" is derived straight from real logs on activeLogDate, not a
+  // separate flag — so it can never drift out of sync with what's
+  // actually recorded (the exact bug a standalone done-flag risked
+  // once backdating meant "today" wasn't the only loggable date).
+  function todaySetsFor(name) { return activeDateRealLogsForName(name); }
   function renderChecklist() {
     var meta = DAY_META[activeDay];
     var list = exercisesForDay(activeDay);
     document.getElementById('exCount').textContent = list.length + ' exercises';
     document.getElementById('exList').innerHTML = list.map(function (ex) {
       var areaDef = meta.areas.find(function (a) { return a.options.some(function (o) { return o.name === ex.name; }); });
-      var done = !!uiState.done[ex.name];
+      var logged = todaySetsFor(ex.name);
+      var done = logged.length > 0;
       var metaStr = areaDef.sets + ' × ' + ex.repMin + '-' + ex.repMax;
       if (done) {
-        var logged = todaySetsFor(ex.name);
-        if (logged.length) metaStr = logged.length + '×' + logged[logged.length - 1].reps + (ex.bw ? '' : ' @ ' + logged[logged.length - 1].weight + 'kg');
+        metaStr = logged.length + '×' + logged[logged.length - 1].reps + (ex.bw ? '' : ' @ ' + logged[logged.length - 1].weight + 'kg');
       }
       return '<div class="ex-card' + (done ? ' is-done' : '') + '" data-name="' + ex.name + '" style="--check-accent:var(' + meta.accent + ')">' +
         '<button type="button" class="ex-check' + (done ? ' is-done' : '') + '" data-check="' + ex.name + '" style="--check-accent:var(' + meta.accent + ')">' + (done ? '✓' : '') + '</button>' +
@@ -845,26 +916,25 @@ button { font-family: inherit; }
       btn.addEventListener('click', function (ev) {
         ev.stopPropagation();
         var name = btn.dataset.check;
-        var nowDone = !uiState.done[name];
-        uiState.done[name] = nowDone;
-        if (nowDone) quickLogExercise(name);
-        else { removeTodayLogFor(name); refreshRealData(); }
-        saveUi(); renderChecklist();
+        var currentlyDone = activeDateRealLogsForName(name).length > 0;
+        if (!currentlyDone) quickLogExercise(name);
+        else removeLogForActiveDate(name);
+        refreshRealData(); renderChecklist();
       });
     });
     document.querySelectorAll('.ex-card').forEach(function (card) {
       card.addEventListener('click', function () { openLogModal(card.dataset.name); });
     });
     var markBtn = document.getElementById('markDoneBtn');
-    var allDone = list.length > 0 && list.every(function (ex) { return !!uiState.done[ex.name]; });
+    var allDone = list.length > 0 && list.every(function (ex) { return activeDateRealLogsForName(ex.name).length > 0; });
     markBtn.textContent = allDone ? '✓ Done' : 'Mark done';
     markBtn.classList.toggle('is-done', allDone);
   }
   document.getElementById('markDoneBtn').addEventListener('click', function () {
     exercisesForDay(activeDay).forEach(function (ex) {
-      if (!uiState.done[ex.name]) { uiState.done[ex.name] = true; quickLogExercise(ex.name); }
+      if (activeDateRealLogsForName(ex.name).length === 0) quickLogExercise(ex.name);
     });
-    saveUi(); renderChecklist();
+    refreshRealData(); renderChecklist();
   });
 
   // ---------- start/finish timer — visual only in this prototype, same
@@ -996,14 +1066,13 @@ button { font-family: inherit; }
   document.getElementById('logSetBtn').addEventListener('click', function () {
     writeRealLog(activeDay, [{ name: logCtx.name, setsCount: 1, reps: logCtx.reps, weight: logCtx.weight }]);
     refreshRealData();
-    uiState.done[logCtx.name] = true;
-    saveUi();
     document.getElementById('logModal').hidden = true;
     renderChecklist();
   });
 
   renderAll();
   renderCalendar();
+  renderBackdateBanner();
   if (typeof lucide !== 'undefined') lucide.createIcons();
   document.addEventListener('DOMContentLoaded', function () { if (typeof lucide !== 'undefined') lucide.createIcons(); });
 })();
