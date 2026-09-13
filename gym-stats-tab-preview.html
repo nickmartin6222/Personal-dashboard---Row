@@ -566,14 +566,19 @@ section { margin-bottom: 22px; }
     var repMin = realEx.repMin, repMax = realEx.repMax;
     var eqClass = realEx.equipmentClass || (realEx.bw ? 'bodyweight' : 'cable');
     var floor = realEx.barWeight || 0;
-    var curLoad = realEx.currentLoad != null ? realEx.currentLoad : (realEx.bw ? 0 : (realEx.startWeight || 0));
+    var startLoad = realEx.currentLoad != null ? realEx.currentLoad : (realEx.bw ? 0 : (realEx.startWeight || 0));
     var curRepTarget = realEx.currentRepTarget != null ? realEx.currentRepTarget : repMin;
     var stall = realEx.sessionsAtCurrentLoad || 0;
     var maxedStreak = realEx.maxedStreak || 0;
     var unitWord = realEx.holdSeconds ? 's' : 'reps';
     if (!lastSessionSets || !lastSessionSets.length) {
-      return { currentLoad: curLoad, currentRepTarget: curRepTarget, sessionsAtCurrentLoad: stall, maxedStreak: maxedStreak, tag: 'Starting point', reason: 'Log your first set to get a real suggestion.', type: 'hold' };
+      return { currentLoad: startLoad, currentRepTarget: curRepTarget, sessionsAtCurrentLoad: stall, maxedStreak: maxedStreak, tag: 'Starting point', reason: 'Log your first set to get a real suggestion.', type: 'hold' };
     }
+    // The weight actually lifted last session is the ground truth for
+    // "what you're on right now" — NOT the previously stored
+    // currentLoad. See gym-preview.html's computeNextRx for the full
+    // note; keep this copy verbatim with the other two.
+    var curLoad = realEx.bw ? 0 : lastSessionSets[lastSessionSets.length - 1].weight;
     var allAtMax = lastSessionSets.every(function (s) { return s.reps >= repMax; });
     var anyShort = lastSessionSets.some(function (s) { return s.reps < repMin; });
     var lastReps = lastSessionSets[lastSessionSets.length - 1].reps;

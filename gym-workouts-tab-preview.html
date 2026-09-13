@@ -491,7 +491,7 @@ button { font-family: inherit; }
       muscles: ['Quads', 'Hamstrings', 'Calves'],
       warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10'],
       areas: [
-        { area: 'Squat Pattern', sets: 4, options: [{ name: "Hack Squat", repMin: 8, repMax: 12, step: 5, startWeight: 80, equipmentClass: 'plateLoaded' }, { name: "Smith Squat", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }, { name: "Front Squat", repMin: 6, repMax: 10, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Goblet Squat", repMin: 6, repMax: 10, step: 2.5, startWeight: 20, equipmentClass: 'dumbbell' }] },
+        { area: 'Squat Pattern', sets: 4, options: [{ name: "Hack Squat", repMin: 8, repMax: 12, step: 5, startWeight: 80, perSide: true, equipmentClass: 'plateLoaded' }, { name: "Smith Squat", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }, { name: "Front Squat", repMin: 6, repMax: 10, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Goblet Squat", repMin: 6, repMax: 10, step: 2.5, startWeight: 20, equipmentClass: 'dumbbell' }] },
         { area: 'Unilateral', sets: 3, options: [{ name: "Bulgarian Split Squat", repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Rear-Foot-Flat Split Squat", repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Step-Up", repMin: 8, repMax: 12, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Reverse Lunge", repMin: 10, repMax: 12, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }] },
         { area: 'Copenhagen Plank', sets: 3, options: [{ name: "Copenhagen Plank", repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight', progressionType: 'ladder' }] },
         { area: 'Leg Press', sets: 3, options: [{ name: "Leg Press", repMin: 10, repMax: 15, step: 5, startWeight: 100, equipmentClass: 'plateLoaded' }, { name: "Single-Leg Leg Press", repMin: 10, repMax: 15, step: 5, startWeight: 60, perSide: true, equipmentClass: 'plateLoaded' }] },
@@ -585,15 +585,20 @@ button { font-family: inherit; }
     var repMin = realEx.repMin, repMax = realEx.repMax;
     var eqClass = realEx.equipmentClass || (realEx.bw ? 'bodyweight' : 'cable');
     var floor = realEx.barWeight || 0;
-    var curLoad = realEx.currentLoad != null ? realEx.currentLoad : (realEx.bw ? 0 : (realEx.startWeight || 0));
+    var startLoad = realEx.currentLoad != null ? realEx.currentLoad : (realEx.bw ? 0 : (realEx.startWeight || 0));
     var curRepTarget = realEx.currentRepTarget != null ? realEx.currentRepTarget : repMin;
     var stall = realEx.sessionsAtCurrentLoad || 0;
     var maxedStreak = realEx.maxedStreak || 0;
     var unitWord = realEx.holdSeconds ? 's' : 'reps';
 
     if (!lastSessionSets || !lastSessionSets.length) {
-      return { currentLoad: curLoad, currentRepTarget: curRepTarget, sessionsAtCurrentLoad: stall, maxedStreak: maxedStreak, tag: 'Starting point', reason: 'Log your first set to get a real suggestion.', type: 'hold' };
+      return { currentLoad: startLoad, currentRepTarget: curRepTarget, sessionsAtCurrentLoad: stall, maxedStreak: maxedStreak, tag: 'Starting point', reason: 'Log your first set to get a real suggestion.', type: 'hold' };
     }
+    // The weight actually lifted last session is the ground truth for
+    // "what you're on right now" — NOT the previously stored
+    // currentLoad. See gym-preview.html's computeNextRx for the full
+    // note; keep this copy verbatim with the other two.
+    var curLoad = realEx.bw ? 0 : lastSessionSets[lastSessionSets.length - 1].weight;
     var allAtMax = lastSessionSets.every(function (s) { return s.reps >= repMax; });
     var anyShort = lastSessionSets.some(function (s) { return s.reps < repMin; });
     var lastReps = lastSessionSets[lastSessionSets.length - 1].reps;
@@ -1091,7 +1096,7 @@ button { font-family: inherit; }
   function renderLogFields() {
     var ex = EX_INDEX[logCtx.name];
     document.getElementById('wVal').textContent = ex.bw ? 'BW' : logCtx.weight;
-    document.getElementById('wUnit').textContent = ex.bw ? 'bodyweight' : 'kg';
+    document.getElementById('wUnit').textContent = ex.bw ? 'bodyweight' : ('kg' + (ex.perSide ? ' / side' : ''));
     var repsOpts = [];
     for (var r = Math.max(1, ex.repMin - 2); r <= ex.repMax + 3; r++) repsOpts.push(r);
     document.getElementById('repsGrid').innerHTML = repsOpts.map(function (r) {
