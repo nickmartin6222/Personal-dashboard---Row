@@ -1039,7 +1039,7 @@ button { font-family: inherit; }
         { area: 'Split Squat', sets: 4, tier: 1, options: [{ name: 'Bulgarian Split Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }] },
         { area: 'Copenhagen Plank', sets: 3, tier: 1, options: [{ name: 'Copenhagen Plank', muscle: 'Adductors', repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight', progressionType: 'ladder' }] },
         { area: 'Leg Press', sets: 3, tier: 2, options: [{ name: 'Leg Press', muscle: 'Quads', repMin: 10, repMax: 15, step: 5, startWeight: 100, equipmentClass: 'plateLoaded' }] },
-        { area: 'Hip Abduction', sets: 3, tier: 2, options: [{ name: 'Hip Abduction', muscle: 'Hips', repMin: 12, repMax: 20, step: 2.5, startWeight: 0, equipmentClass: 'cable' /* was bodyweight-only; log the real stack weight going forward */ }] },
+        { area: 'Hip Abduction', sets: 3, tier: 2, options: [{ name: 'Hip Abduction Machine', muscle: 'Hips', repMin: 12, repMax: 20, step: 2.5, startWeight: 0, equipmentClass: 'cable' /* was bodyweight-only; log the real stack weight going forward */ }] },
         { area: 'Leg Extension', sets: 3, tier: 3, options: [{ name: 'Leg Extension', muscle: 'Quads', repMin: 10, repMax: 15, step: 5, startWeight: 30, equipmentClass: 'pin' }] },
         { area: 'Lower B Leg Curl', sets: 3, tier: 2, options: [
           { name: 'Seated Hamstring Curl', muscle: 'Hamstrings', repMin: 10, repMax: 15, step: 5, startWeight: 30, equipmentClass: 'pin' },
@@ -1119,7 +1119,7 @@ button { font-family: inherit; }
       var obj = JSON.parse(raw);
       if (obj && obj.DAY_META && obj.DAY_ORDER) {
         DAY_META = obj.DAY_META; DAY_ORDER = obj.DAY_ORDER;
-        var RENAME_MAP = { 'Hip External Rotation': 'Hip Abduction', 'Seated Leg Curl': 'Seated Hamstring Curl', 'Single-Leg Machine Hip Thrust': 'Machine Hip Thrust' };
+        var RENAME_MAP = { 'Hip External Rotation': 'Hip Abduction Machine', 'Hip Abduction': 'Hip Abduction Machine', 'Seated Leg Curl': 'Seated Hamstring Curl', 'Single-Leg Machine Hip Thrust': 'Machine Hip Thrust' };
         Object.keys(DAY_META).forEach(function (day) {
           (DAY_META[day].areas || []).forEach(function (a) {
             if (RENAME_MAP[a.area]) a.area = RENAME_MAP[a.area];
@@ -1786,7 +1786,7 @@ button { font-family: inherit; }
     // Seated Hamstring Curl) would otherwise silently vanish from the
     // checklist — getPicksForDay filters out any picked name that no
     // longer matches a real option. Patch old names in place instead.
-    var PICKS_RENAME_MAP = { 'Hip External Rotation': 'Hip Abduction', 'Seated Leg Curl': 'Seated Hamstring Curl', 'Single-Leg Machine Hip Thrust': 'Machine Hip Thrust' };
+    var PICKS_RENAME_MAP = { 'Hip External Rotation': 'Hip Abduction Machine', 'Hip Abduction': 'Hip Abduction Machine', 'Seated Leg Curl': 'Seated Hamstring Curl', 'Single-Leg Machine Hip Thrust': 'Machine Hip Thrust' };
     Object.keys(picks).forEach(function (day) {
       Object.keys(picks[day] || {}).forEach(function (i) {
         if (Array.isArray(picks[day][i])) {

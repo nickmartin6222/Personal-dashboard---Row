@@ -248,9 +248,14 @@ button { font-family: inherit; }
 .ex-chevron { color: var(--text-4); font-size: 16px; flex-shrink: 0; }
 
 /* ---------- picker modal (choose exercises per area) ---------- */
-.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: flex-end; }
+/* Centered on screen rather than docked to the bottom — both the
+   exercise picker and the set-log sheet are short lookups/actions,
+   not long scrolling lists, so a bottom sheet just buries them below
+   the fold (especially the log sheet, which can run past the
+   viewport on a short screen and clip "Log set" off entirely). */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; padding: 20px; }
 .modal-bg[hidden] { display: none; }
-.sheet { background: var(--bg-sheet); border: 1px solid var(--border-strong); border-top-left-radius: 24px; border-top-right-radius: 24px; width: 100%; max-width: 560px; margin: 0 auto; padding: 20px 18px max(20px, env(safe-area-inset-bottom)); max-height: 84vh; overflow-y: auto; }
+.sheet { background: var(--bg-sheet); border: 1px solid var(--border-strong); border-radius: 24px; width: 100%; max-width: 560px; margin: 0 auto; padding: 20px 18px max(20px, env(safe-area-inset-bottom)); max-height: 84vh; overflow-y: auto; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .sheet-title { font-family: var(--font-heading); font-size: 19px; font-weight: 700; }
 .sheet-close { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-raised); border: none; color: var(--text-2); font-size: 15px; cursor: pointer; }
@@ -481,7 +486,7 @@ button { font-family: inherit; }
       areas: [
         { area: 'Squat', sets: 4, options: [{ name: 'Goblet / Front Squat', repMin: 6, repMax: 10, step: 2.5, startWeight: 20 }, { name: 'Hack Squat', repMin: 6, repMax: 10, step: 10, startWeight: 80 }] },
         { area: 'Split Squat', sets: 4, options: [{ name: 'Bulgarian Split Squat', repMin: 8, repMax: 12, step: 2.5, startWeight: 15 }] },
-        { area: 'Hip Abduction', sets: 3, options: [{ name: 'Hip Abduction', repMin: 10, repMax: 15, step: 1, startWeight: 0, bw: true }] },
+        { area: 'Hip Abduction', sets: 3, options: [{ name: 'Hip Abduction Machine', repMin: 12, repMax: 20, step: 2.5, startWeight: 0, equipmentClass: 'cable' }] },
         { area: 'Leg Curl', sets: 3, options: [{ name: 'Seated Hamstring Curl', repMin: 10, repMax: 15, step: 5, startWeight: 30 }, { name: 'Lying Leg Curl', repMin: 10, repMax: 15, step: 5, startWeight: 25 }] },
         { area: 'Calf', sets: 3, options: [{ name: 'Standing Calf Raise', repMin: 12, repMax: 18, step: 5, startWeight: 60 }] }
       ]
@@ -1051,12 +1056,18 @@ button { font-family: inherit; }
     var meta = DAY_META[activeDay];
     var sug = suggestionFor(ex);
     var areaDef = areaDefFor(activeDay, name);
-    logCtx = { name: name, weight: sug.weight, reps: sug.reps, sets: areaDef ? Math.min(6, areaDef.sets) : 3 };
+    var realLogs = realLogsForName(name);
+    var last = realLogs.length ? realLogs[realLogs.length - 1] : null;
+    // Preselected stepper values are what you actually did LAST time,
+    // not the engine's next-session suggestion — the suggestion still
+    // shows below as "Next up" context, but defaulting the fields to it
+    // meant confirming without checking silently logged the prescribed
+    // number instead of what was really lifted.
+    logCtx = { name: name, weight: last ? last.weight : sug.weight, reps: last ? last.reps : sug.reps, sets: areaDef ? Math.min(6, areaDef.sets) : 3 };
     document.documentElement.style.setProperty('--hero-accent', 'var(' + meta.accent + ')');
     document.getElementById('logTitle').textContent = name;
-    var realLogs = realLogsForName(name);
-    document.getElementById('logLast').innerHTML = realLogs.length
-      ? 'Last time <b>' + realLogs[realLogs.length - 1].weight + 'kg × ' + realLogs[realLogs.length - 1].reps + '</b>'
+    document.getElementById('logLast').innerHTML = last
+      ? 'Last time <b>' + last.weight + 'kg × ' + last.reps + '</b>'
       : 'No previous log for this exercise yet';
     renderLogFields();
     document.getElementById('suggestionBox').hidden = false;

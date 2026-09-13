@@ -249,29 +249,38 @@ section { margin-bottom: 22px; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .sheet-title { font-family: var(--font-heading); font-size: 19px; font-weight: 700; }
 .sheet-close { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-raised); border: none; color: var(--text-2); font-size: 15px; cursor: pointer; flex-shrink: 0; }
+/* Exercise-history popup centers on screen instead of docking to the
+   bottom like the "All Sessions" sheet — it's a small lookup, not a
+   long scrolling list, so a bottom sheet just hides it below the fold. */
+.modal-bg.modal-center { align-items: center; padding: 20px; }
+.modal-bg.modal-center .sheet { border-radius: 24px; max-height: 80vh; }
 .eh-stat-row { display: flex; gap: 8px; margin-bottom: 16px; }
 .eh-stat { flex: 1; background: var(--bg-raised); border-radius: 12px; padding: 10px; text-align: center; }
 .eh-stat-val { font-size: 16px; font-weight: 800; color: var(--text-1); }
 .eh-stat-label { font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin-top: 2px; }
+.eh-chart-label { font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin-bottom: 6px; }
 .eh-chart { width: 100%; height: 80px; display: block; overflow: visible; }
 
 /* ---------- bodyweight chart ---------- */
-.bw-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.bw-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.bw-head-left { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .bw-current { font-size: 24px; font-weight: 800; color: var(--text-1); }
 .bw-current span { font-size: 13px; font-weight: 600; color: var(--text-3); margin-left: 3px; }
 .bw-delta { font-size: 12px; font-family: var(--font-mono); font-weight: 700; padding: 4px 9px; border-radius: 999px; }
 .bw-delta.down { background: var(--lime-dim); color: var(--lime); }
 .bw-delta.up { background: var(--gold-dim); color: var(--gold); }
 .bw-delta.flat { background: var(--bg-raised); color: var(--text-3); }
+.bw-edit-btn { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-2); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+.bw-edit-btn:hover { border-color: var(--border-strong); color: var(--text-1); }
+.bw-edit-btn i, .bw-edit-btn svg { width: 14px; height: 14px; }
+.bw-log-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+.bw-log-row[hidden] { display: none; }
+.bw-log-input { flex: 1; min-width: 0; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px; font-size: 14px; color: var(--text-1); font-family: inherit; }
+.bw-log-input:focus { outline: none; border-color: var(--lime); }
+.bw-log-unit { font-size: 12px; color: var(--text-3); font-weight: 600; flex-shrink: 0; }
+.bw-log-btn { font-family: inherit; font-size: 13px; font-weight: 700; padding: 9px 16px; border-radius: 10px; background: var(--lime); color: var(--lime-ink); border: none; cursor: pointer; flex-shrink: 0; }
 .bw-chart-svg { width: 100%; height: 86px; display: block; overflow: visible; }
 .bw-empty { font-size: 12.5px; color: var(--text-3); padding: 10px 0; }
-
-/* ---------- muscle volume bars ---------- */
-.mv-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
-.mv-name { width: 92px; flex-shrink: 0; font-size: 12px; color: var(--text-2); font-weight: 600; }
-.mv-track { flex: 1; height: 10px; border-radius: 6px; background: var(--bg-input); overflow: hidden; }
-.mv-fill { height: 100%; border-radius: 6px; }
-.mv-count { width: 30px; text-align: right; flex-shrink: 0; font-size: 11.5px; font-family: var(--font-mono); color: var(--text-3); }
 
 /* ---------- PRs ---------- */
 .pr-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--border); }
@@ -396,11 +405,6 @@ section { margin-bottom: 22px; }
   </section>
 
   <section>
-    <div class="sec-label-row"><span class="sec-label">Volume by Muscle Group</span></div>
-    <div class="card" id="muscleCard"></div>
-  </section>
-
-  <section>
     <div class="sec-label-row"><span class="sec-label">Personal Records</span><span class="sec-note">All-time · est. 1RM</span></div>
     <div class="card" id="prCard"></div>
   </section>
@@ -420,7 +424,7 @@ section { margin-bottom: 22px; }
   </div>
 </div>
 
-<div class="modal-bg" id="ehModal" hidden>
+<div class="modal-bg modal-center" id="ehModal" hidden>
   <div class="sheet">
     <div class="sheet-head"><span class="sheet-title" id="ehTitle">—</span><button type="button" class="sheet-close" id="ehClose">✕</button></div>
     <div id="ehBody"></div>
@@ -475,6 +479,17 @@ section { margin-bottom: 22px; }
     'Triceps': '#fb923c', 'Back': '#34d399', 'Rear Delts': '#818cf8',
     'Biceps': '#22d3ee', 'Lower Back': '#c2a878'
   };
+  // Same set, re-tuned to the muted "Wellness" light palette — the
+  // neon dark-theme hues above read as off-brand and low-contrast on
+  // the cream light background.
+  var MUSCLE_COLORS_LIGHT = {
+    'Quads': '#C2A46F', 'Hamstrings': '#A9673D', 'Glutes': '#6B3B3B',
+    'Adductors': '#6B4A54', 'Hips': '#8A6B3F', 'Calves': '#2F6B52',
+    'Core': '#7A9A4A', 'Chest': '#4F7FBF', 'Shoulders': '#5B7A99',
+    'Triceps': '#B5764A', 'Back': '#003B2F', 'Rear Delts': '#7591AD',
+    'Biceps': '#3F8FA6', 'Lower Back': '#8C6F52'
+  };
+  function muscleColors() { return isLight() ? MUSCLE_COLORS_LIGHT : MUSCLE_COLORS; }
   // Body-region SVG paths, ported verbatim from gym-preview.html's
   // Muscle Anatomy (itself ported from gym.html) — same markers,
   // same viewBox split (front 0-35, back 37-72 in one 0-93 sheet).
@@ -764,15 +779,59 @@ section { margin-bottom: 22px; }
   }
 
   // ---------- bodyweight chart ----------
+  // WEIGHTS was read-only before — Statistics had no way to actually
+  // log today's weight, unlike gym-preview.html's Weight card. This
+  // upserts into the same po_coach_weights store (one entry per
+  // calendar day) so it rides the same cloud sync as everywhere else.
+  function bwTodayKey() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function saveBodyweightEntry(weight) {
+    try {
+      var raw = localStorage.getItem('po_coach_weights');
+      var arr = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(arr)) arr = [];
+      var key = bwTodayKey();
+      var existing = arr.find(function (e) { return e.dateKey === key; });
+      if (existing) existing.weight = weight;
+      else arr.push({ dateKey: key, weight: weight });
+      arr.sort(function (a, b) { return (a.dateKey || '').localeCompare(b.dateKey || ''); });
+      localStorage.setItem('po_coach_weights', JSON.stringify(arr));
+      WEIGHTS = arr;
+    } catch (e) {}
+  }
+  var bwEditing = false;
+  function bindBodyweightLogRow() {
+    var btn = document.getElementById('bwLogBtn');
+    var input = document.getElementById('bwLogInput');
+    if (btn) btn.addEventListener('click', function () {
+      var v = parseFloat(input.value);
+      if (!v || v <= 0) return;
+      saveBodyweightEntry(v);
+      bwEditing = false;
+      renderBodyweight();
+    });
+    if (input) input.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); btn.click(); } });
+    var editBtn = document.getElementById('bwEditBtn');
+    if (editBtn) editBtn.addEventListener('click', function () { bwEditing = true; renderBodyweight(); });
+  }
   function renderBodyweight() {
     var acc = accents();
     var wts = weightsInRange();
     var card = document.getElementById('bwCard');
+    var todayKey = bwTodayKey();
+    var todayEntry = WEIGHTS.find(function (w) { return w.dateKey === todayKey; });
+    var showLogRow = !todayEntry || bwEditing;
+    var logRowHtml = '<div class="bw-log-row"' + (showLogRow ? '' : ' hidden') + '>' +
+      '<input type="number" step="0.1" inputmode="decimal" class="bw-log-input" id="bwLogInput" placeholder="Weight" value="' + (todayEntry ? todayEntry.weight : '') + '">' +
+      '<span class="bw-log-unit">kg</span>' +
+      '<button type="button" class="bw-log-btn" id="bwLogBtn">Log</button></div>';
+    var editBtnHtml = (!showLogRow) ? '<button type="button" class="bw-edit-btn" id="bwEditBtn" aria-label="Update today\'s weight"><i data-lucide="pencil"></i></button>' : '';
     if (wts.length < 2) {
       var latest = WEIGHTS.length ? WEIGHTS[WEIGHTS.length - 1].weight : null;
-      card.innerHTML = latest != null
-        ? '<div class="bw-head"><div class="bw-current">' + latest + '<span>kg</span></div></div><div class="bw-empty">Not enough entries in this range for a trend yet.</div>'
-        : '<div class="bw-empty">No bodyweight entries logged yet.</div>';
+      card.innerHTML = (latest != null
+        ? '<div class="bw-head"><div class="bw-head-left"><div class="bw-current">' + latest + '<span>kg</span></div></div>' + editBtnHtml + '</div><div class="bw-empty">Not enough entries in this range for a trend yet.</div>'
+        : '<div class="bw-empty">No bodyweight entries logged yet.</div>') + logRowHtml;
+      bindBodyweightLogRow();
+      if (typeof lucide !== 'undefined') lucide.createIcons();
       return;
     }
     var vals = wts.map(function (w) { return w.weight; });
@@ -793,7 +852,7 @@ section { margin-bottom: 22px; }
     var deltaTxt = (delta > 0 ? '+' : '') + delta.toFixed(1) + 'kg';
     var gradId = 'bwGrad';
     card.innerHTML =
-      '<div class="bw-head"><div class="bw-current">' + last + '<span>kg</span></div><div class="bw-delta ' + deltaClass + '">' + deltaTxt + ' this range</div></div>' +
+      '<div class="bw-head"><div class="bw-head-left"><div class="bw-current">' + last + '<span>kg</span></div><div class="bw-delta ' + deltaClass + '">' + deltaTxt + ' this range</div></div>' + editBtnHtml + '</div>' +
       '<svg class="bw-chart-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
       '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
       '<stop offset="0%" stop-color="' + acc.primary + '" stop-opacity="0.28"/>' +
@@ -801,24 +860,9 @@ section { margin-bottom: 22px; }
       '<path d="' + areaPath + '" fill="url(#' + gradId + ')" stroke="none"/>' +
       '<path d="' + linePath + '" fill="none" stroke="' + acc.primary + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
       '<circle cx="' + pts[pts.length - 1].x.toFixed(1) + '" cy="' + pts[pts.length - 1].y.toFixed(1) + '" r="4" fill="' + acc.primary + '"/>' +
-      '</svg>';
-  }
-
-  // ---------- muscle group volume ----------
-  function renderMuscleVolume() {
-    var cats = catColors();
-    var entries = entriesInRange().filter(function (e) { return !e.deload; });
-    var counts = {};
-    entries.forEach(function (e) { var m = e.ex.muscle || 'Other'; counts[m] = (counts[m] || 0) + 1; });
-    var rows = Object.keys(counts).map(function (m) { return { name: m, n: counts[m] }; }).sort(function (a, b) { return b.n - a.n; });
-    var card = document.getElementById('muscleCard');
-    if (!rows.length) { card.innerHTML = '<div class="bw-empty">No sets logged in this range yet.</div>'; return; }
-    var max = rows[0].n;
-    card.innerHTML = rows.map(function (r, i) {
-      var color = cats[i % cats.length];
-      var pct = Math.max(6, Math.round((r.n / max) * 100));
-      return '<div class="mv-row"><div class="mv-name">' + r.name + '</div><div class="mv-track"><div class="mv-fill" style="width:' + pct + '%;background:' + color + '"></div></div><div class="mv-count">' + r.n + '</div></div>';
-    }).join('');
+      '</svg>' + logRowHtml;
+    bindBodyweightLogRow();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
   }
 
   // ---------- personal records (all-time, ignores range pill) ----------
@@ -847,6 +891,25 @@ section { margin-bottom: 22px; }
     if (ratio >= 0.85) return 'complete';
     if (ratio >= 0.60) return 'ambiguous';
     return 'partial';
+  }
+  // { protein7d, coverage } over the trailing 7 days ending yesterday —
+  // ported verbatim from gym-preview.html/gym-workouts-tab-preview.html.
+  // computeNextRx's protein-gate branch calls this; it was missing here
+  // entirely, so any edit in Recent Activity that recomputed rx for an
+  // exercise sitting at allAtMax threw a ReferenceError.
+  function nutritionRollup7d() {
+    var nutrition = {}, goalsObj = {};
+    try { nutrition = JSON.parse(localStorage.getItem('health:nutrition') || '{}'); } catch (e) {}
+    try { goalsObj = JSON.parse(localStorage.getItem('health:goals') || '{}'); } catch (e) {}
+    var proteinTarget = goalsObj.proteinG || 155, kcalTarget = goalsObj.calories || 3000;
+    var sum = 0, count = 0;
+    for (var i = 1; i <= 7; i++) {
+      var d = new Date(); d.setDate(d.getDate() - i);
+      var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      var state = classifyNutritionDay(nutrition[key], proteinTarget, kcalTarget);
+      if (state === 'complete') { sum += nutrition[key].proteinG || 0; count++; }
+    }
+    return { protein7d: count ? sum / count : null, coverage: count };
   }
   function renderNutritionRecovery() {
     var nutrition = {}, goalsObj = {};
@@ -1027,7 +1090,6 @@ section { margin-bottom: 22px; }
     pruneStaleSelection();
     renderSummary();
     renderWeeklyProgress();
-    renderMuscleVolume();
     renderPRs();
     renderLibrary();
     renderAnatomy();
@@ -1124,7 +1186,7 @@ section { margin-bottom: 22px; }
     var order = names.sort(function (a, b) { return (activity[b] || 0) - (activity[a] || 0); });
     el.innerHTML = order.map(function (m) {
       var open = !!libOpen[m];
-      var color = MUSCLE_COLORS[m] || '#888';
+      var color = muscleColors()[m] || '#888';
       var pct = Math.round(((activity[m] || 0) / maxActivity) * 100);
       return '<div class="lib-group"><div class="lib-group-head" data-m="' + m + '"><span class="lib-dot" style="background:' + color + '"></span>' +
         '<span class="lib-group-name">' + m + '</span><span class="lib-group-count">' + groups[m].length + '</span>' +
@@ -1153,14 +1215,14 @@ section { margin-bottom: 22px; }
         '<div class="eh-stat"><div class="eh-stat-val">' + best + '</div><div class="eh-stat-label">Best</div></div>' +
         '<div class="eh-stat"><div class="eh-stat-val">' + logs.length + '</div><div class="eh-stat-label">Sets logged</div></div></div>';
       var chartHtml = '';
-      if (!ex.bw && logs.length >= 2) {
-        var vals = logs.map(function (l) { return l.weight; });
+      if (logs.length >= 2) {
+        var vals = logs.map(function (l) { return ex.bw ? l.reps : l.weight; });
         var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
         if (mx === mn) { mx += 1; mn -= 1; }
         var W = 300, H = 80;
-        var pts = logs.map(function (l, i) { return { x: (i / (logs.length - 1)) * W, y: H - 8 - ((l.weight - mn) / (mx - mn)) * (H - 16) }; });
+        var pts = logs.map(function (l, i) { return { x: (i / (logs.length - 1)) * W, y: H - 8 - (((ex.bw ? l.reps : l.weight) - mn) / (mx - mn)) * (H - 16) }; });
         var path = pts.map(function (p, i) { return (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
-        chartHtml = '<svg class="eh-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+        chartHtml = '<div class="eh-chart-label">' + (ex.bw ? 'Reps' : 'Top weight') + ' trend</div><svg class="eh-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
           '<path d="' + path + '" fill="none" stroke="' + acc.primary + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
           '<circle cx="' + pts[pts.length - 1].x.toFixed(1) + '" cy="' + pts[pts.length - 1].y.toFixed(1) + '" r="3.5" fill="' + acc.primary + '"/></svg>';
       }
@@ -1194,15 +1256,16 @@ section { margin-bottom: 22px; }
       if (anatomyMode === 'week' && e.dateKey >= weekStart) active.add(e.ex.muscle);
     });
     document.getElementById('anatomyTitle').textContent = 'MUSCLES TRAINED — ' + (anatomyMode === 'today' ? 'TODAY' : 'THIS WEEK');
+    var mc = muscleColors();
     document.querySelectorAll('.abody-region[data-muscle]').forEach(function (el) {
       var m = el.dataset.muscle;
-      if (active.has(m)) { el.style.fill = MUSCLE_COLORS[m] || '#888'; el.classList.add('is-active'); }
+      if (active.has(m)) { el.style.fill = mc[m] || '#888'; el.classList.add('is-active'); }
       else { el.style.fill = ''; el.classList.remove('is-active'); }
     });
     var legend = document.getElementById('anatomyLegend');
     if (!active.size) { legend.innerHTML = '<div class="anatomy-empty">Nothing logged ' + (anatomyMode === 'today' ? 'today' : 'this week') + ' yet.</div>'; return; }
     legend.innerHTML = Array.from(active).sort().map(function (m) {
-      return '<span class="anatomy-legend-item"><span class="anatomy-legend-dot" style="background:' + (MUSCLE_COLORS[m] || '#888') + '"></span>' + m + '</span>';
+      return '<span class="anatomy-legend-item"><span class="anatomy-legend-dot" style="background:' + (mc[m] || '#888') + '"></span>' + m + '</span>';
     }).join('');
   }
 
@@ -1215,7 +1278,6 @@ section { margin-bottom: 22px; }
     renderLibrary();
     renderAnatomy();
     renderBodyweight();
-    renderMuscleVolume();
     renderPRs();
     renderNutritionRecovery();
     if (typeof lucide !== 'undefined') lucide.createIcons();
