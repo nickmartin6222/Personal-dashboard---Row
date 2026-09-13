@@ -212,9 +212,30 @@ button { font-family: inherit; }
 .hero-tap-hint i, .hero-tap-hint svg { width: 12px; height: 12px; flex-shrink: 0; }
 
 /* ---------- warm-up ---------- */
-.warmup-row { display: flex; gap: 8px; margin-bottom: 14px; }
-.warmup-chip { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; font-size: 11.5px; color: var(--text-2); display: flex; align-items: center; gap: 8px; }
+.warmup-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.warmup-chip { flex: 1 1 calc(50% - 4px); min-width: 140px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; font-size: 11.5px; color: var(--text-2); display: flex; align-items: center; gap: 8px; }
 .warmup-chip i { width: 15px; height: 15px; flex-shrink: 0; color: var(--hero-accent, var(--lime)); }
+
+/* ---------- rest day ---------- */
+.rest-card { text-align: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 40px 24px; margin-bottom: 14px; }
+.rest-card[hidden] { display: none; }
+.rest-card i { width: 30px; height: 30px; color: var(--text-3); margin-bottom: 12px; }
+.rest-card-title { font-family: var(--font-heading); font-size: 21px; font-weight: 700; color: var(--text-1); margin-bottom: 6px; }
+.rest-card-sub { font-size: 13px; color: var(--text-3); line-height: 1.5; max-width: 280px; margin: 0 auto; }
+
+/* ---------- edit weekly schedule modal ---------- */
+.schedule-hint { font-size: 12.5px; color: var(--text-3); line-height: 1.5; margin: 0 0 16px; }
+.schedule-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); }
+.schedule-row:first-child { border-top: none; }
+.schedule-day-label { font-size: 13px; font-weight: 700; color: var(--text-1); width: 46px; flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+.schedule-today-tag { font-family: var(--font-mono); font-size: 8.5px; font-weight: 800; letter-spacing: 0.05em; color: var(--lime-ink); background: var(--lime); padding: 2px 5px; border-radius: 5px; }
+.schedule-opts { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+.schedule-opt { font-size: 10.5px; font-weight: 700; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.schedule-opt.active { color: var(--lime-ink); }
+.schedule-actions { display: flex; gap: 10px; margin-top: 18px; }
+.schedule-btn-secondary, .schedule-btn-primary { flex: 1; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; border: none; }
+.schedule-btn-secondary { background: var(--bg-raised); color: var(--text-2); }
+.schedule-btn-primary { background: var(--lime); color: var(--lime-ink); }
 
 /* ---------- checklist ---------- */
 .tw-label-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
@@ -340,6 +361,7 @@ button { font-family: inherit; }
       <div class="header-sub" id="hdrMuscles">—</div>
     </div>
     <div class="header-actions">
+      <button type="button" class="icon-btn" id="scheduleBtn" aria-label="Edit weekly schedule"><i data-lucide="calendar-days"></i></button>
       <button type="button" class="theme-toggle" id="themeBtn" aria-label="Toggle light/dark"><span class="theme-toggle-dot"></span></button>
       <a class="icon-btn" href="index.html" aria-label="Back to dashboard"><i data-lucide="home"></i></a>
     </div>
@@ -405,14 +427,22 @@ button { font-family: inherit; }
 
   <div class="warmup-row" id="warmupRow"></div>
 
-  <div class="tw-label-row">
-    <span class="tw-label">Today's Workout</span>
-    <span class="tw-count" id="exCount"></span>
+  <div class="rest-card" id="restCard" hidden>
+    <i data-lucide="moon-star"></i>
+    <div class="rest-card-title">Rest Day</div>
+    <div class="rest-card-sub">No training planned — recover up. Tap a day above if you want to train anyway.</div>
   </div>
-  <div id="exList"></div>
-  <div class="start-row">
-    <button type="button" class="start-btn" id="startBtn"><span id="startBtnLabel">▶ Start Workout</span></button>
-    <button type="button" class="mark-done-btn" id="markDoneBtn">Mark done</button>
+
+  <div id="twSection">
+    <div class="tw-label-row">
+      <span class="tw-label">Today's Workout</span>
+      <span class="tw-count" id="exCount"></span>
+    </div>
+    <div id="exList"></div>
+    <div class="start-row">
+      <button type="button" class="start-btn" id="startBtn"><span id="startBtnLabel">▶ Start Workout</span></button>
+      <button type="button" class="mark-done-btn" id="markDoneBtn">Mark done</button>
+    </div>
   </div>
 </div>
 
@@ -430,6 +460,19 @@ button { font-family: inherit; }
     <button type="button" class="add-ex-toggle" id="addExToggle"><i data-lucide="plus"></i>Add a custom exercise</button>
     <div class="add-ex-form" id="addExForm" hidden></div>
     <button class="sheet-confirm" id="pickerConfirm">Confirm today's picks</button>
+  </div>
+</div>
+
+<!-- Edit weekly schedule sheet -->
+<div class="modal-bg" id="scheduleModal" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><span class="sheet-title">Edit weekly schedule</span><button class="sheet-close" id="scheduleClose">✕</button></div>
+    <p class="schedule-hint">Pick which split (or Rest) falls on each day of the week — fixed to the calendar, so it stays in sync with the main dashboard and Statistics.</p>
+    <div id="scheduleRows"></div>
+    <div class="schedule-actions">
+      <button type="button" class="schedule-btn-secondary" id="scheduleCancelBtn">Cancel</button>
+      <button type="button" class="schedule-btn-primary" id="scheduleSaveBtn">Save</button>
+    </div>
   </div>
 </div>
 
@@ -469,60 +512,60 @@ button { font-family: inherit; }
       accent: '--day-push', accentDim: '--day-push-dim',
       img: 'assets/shoulder-press-cutout.png',
       muscles: ['Chest', 'Shoulders', 'Triceps'],
-      warmup: ['5 min bike or rower', 'Band pull-aparts × 15'],
+      warmup: ['5 min bike or rower', 'Band pull-aparts × 15', 'Arm circles + shoulder dislocates × 10', 'Push-ups × 10-12'],
       areas: [
-        { area: 'Horizontal Press', sets: 4, options: [{ name: "Barbell Bench Press", repMin: 5, repMax: 8, step: 5, startWeight: 50, equipmentClass: 'barbell', barWeight: 20 }, { name: "DB Bench Press", repMin: 5, repMax: 8, step: 2.5, startWeight: 20, perSide: true, equipmentClass: 'dumbbell' }, { name: "Smith Machine Bench Press", repMin: 5, repMax: 8, step: 5, startWeight: 20, equipmentClass: 'plateLoaded' }, { name: "Machine Chest Press", repMin: 5, repMax: 8, step: 5, startWeight: 20, equipmentClass: 'pin' }, { name: "Weighted Dip", repMin: 5, repMax: 8, step: 2.5, startWeight: 0, equipmentClass: 'bodyweightLoaded' }] },
-        { area: 'Incline Press', sets: 3, options: [{ name: "Incline Barbell Press", repMin: 5, repMax: 8, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Incline DB Press", repMin: 5, repMax: 8, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Incline Smith Press", repMin: 5, repMax: 8, step: 5, startWeight: 15, equipmentClass: 'plateLoaded' }] },
-        { area: 'Shoulder Press', sets: 3, options: [{ name: "DB Shoulder Press", repMin: 8, repMax: 12, step: 2.5, startWeight: 17.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Arnold Press", repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Landmine Press", repMin: 8, repMax: 12, step: 5, startWeight: 20, perSide: true, equipmentClass: 'plateLoaded' }, { name: "Machine Shoulder Press", repMin: 8, repMax: 12, step: 5, startWeight: 20, equipmentClass: 'pin' }] },
-        { area: 'Push Fly', sets: 3, options: [{ name: "Cable Fly", repMin: 10, repMax: 15, step: 2.5, startWeight: 15, equipmentClass: 'cable' }, { name: "Pec Deck", repMin: 10, repMax: 15, step: 5, startWeight: 40, equipmentClass: 'pin' }, { name: "Incline Cable Fly", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5, equipmentClass: 'cable' }] },
-        { area: 'Lateral Raise', sets: 3, options: [{ name: "Machine Lateral Raise", repMin: 12, repMax: 20, step: 5, startWeight: 20, equipmentClass: 'pin' }, { name: "Lateral Raise", repMin: 12, repMax: 20, step: 1, startWeight: 7.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Cable Lateral Raise", repMin: 12, repMax: 20, step: 2.5, startWeight: 7.5, perSide: true, equipmentClass: 'cable' }] },
-        { area: 'Triceps', sets: 3, options: [{ name: "Dip", repMin: 8, repMax: 12, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }, { name: "Close-Grip Bench Press", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Cable Pushdown", repMin: 10, repMax: 15, step: 2.5, startWeight: 25, equipmentClass: 'cable' }, { name: "Rope Pushdown", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5, equipmentClass: 'cable' }, { name: "Single-Arm Pushdown", repMin: 12, repMax: 15, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'cable' }, { name: "Overhead DB Extension", repMin: 10, repMax: 15, step: 2.5, startWeight: 15, equipmentClass: 'dumbbell' }] },
-        { area: 'Core', sets: 3, options: [{ name: "Pallof Press", repMin: 10, repMax: 12, step: 2.5, startWeight: 10, perSide: true, equipmentClass: 'cable' }] },
+        { area: 'Horizontal Press', sets: 4, order: 1, options: [{ name: "Barbell Bench Press", repMin: 5, repMax: 8, step: 5, startWeight: 50, equipmentClass: 'barbell', barWeight: 20 }, { name: "DB Bench Press", repMin: 5, repMax: 8, step: 2.5, startWeight: 20, perSide: true, equipmentClass: 'dumbbell' }, { name: "Smith Machine Bench Press", repMin: 5, repMax: 8, step: 5, startWeight: 20, equipmentClass: 'plateLoaded' }, { name: "Machine Chest Press", repMin: 5, repMax: 8, step: 5, startWeight: 20, equipmentClass: 'pin' }, { name: "Weighted Dip", repMin: 5, repMax: 8, step: 2.5, startWeight: 0, equipmentClass: 'bodyweightLoaded' }] },
+        { area: 'Incline Press', sets: 3, order: 2, options: [{ name: "Incline Barbell Press", repMin: 5, repMax: 8, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Incline DB Press", repMin: 5, repMax: 8, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Incline Smith Press", repMin: 5, repMax: 8, step: 5, startWeight: 15, equipmentClass: 'plateLoaded' }] },
+        { area: 'Shoulder Press', sets: 3, order: 3, options: [{ name: "DB Shoulder Press", repMin: 8, repMax: 12, step: 2.5, startWeight: 17.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Arnold Press", repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Landmine Press", repMin: 8, repMax: 12, step: 5, startWeight: 20, perSide: true, equipmentClass: 'plateLoaded' }, { name: "Machine Shoulder Press", repMin: 8, repMax: 12, step: 5, startWeight: 20, equipmentClass: 'pin' }] },
+        { area: 'Push Fly', sets: 3, order: 4, options: [{ name: "Cable Fly", repMin: 10, repMax: 15, step: 2.5, startWeight: 15, equipmentClass: 'cable' }, { name: "Pec Deck", repMin: 10, repMax: 15, step: 5, startWeight: 40, equipmentClass: 'pin' }, { name: "Incline Cable Fly", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5, equipmentClass: 'cable' }] },
+        { area: 'Lateral Raise', sets: 3, order: 5, options: [{ name: "Machine Lateral Raise", repMin: 12, repMax: 20, step: 5, startWeight: 20, equipmentClass: 'pin' }, { name: "Lateral Raise", repMin: 12, repMax: 20, step: 1, startWeight: 7.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Cable Lateral Raise", repMin: 12, repMax: 20, step: 2.5, startWeight: 7.5, perSide: true, equipmentClass: 'cable' }] },
+        { area: 'Triceps', sets: 3, order: 6, options: [{ name: "Dip", repMin: 8, repMax: 12, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }, { name: "Close-Grip Bench Press", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Cable Pushdown", repMin: 10, repMax: 15, step: 2.5, startWeight: 25, equipmentClass: 'cable' }, { name: "Rope Pushdown", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5, equipmentClass: 'cable' }, { name: "Single-Arm Pushdown", repMin: 12, repMax: 15, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'cable' }, { name: "Overhead DB Extension", repMin: 10, repMax: 15, step: 2.5, startWeight: 15, equipmentClass: 'dumbbell' }] },
+        { area: 'Core', sets: 3, order: 7, options: [{ name: "Pallof Press", repMin: 10, repMax: 12, step: 2.5, startWeight: 10, perSide: true, equipmentClass: 'cable' }] },
       ]
     },
     'Pull': {
       accent: '--day-pull', accentDim: '--day-pull-dim',
       img: 'assets/lat-pulldown-cutout-v2.png',
       muscles: ['Back', 'Biceps', 'Rear Delts', 'Lower Back'],
-      warmup: ['5 min row machine or bike', 'Band pull-aparts × 15'],
+      warmup: ['5 min row machine or bike', 'Band pull-aparts × 15', 'Dead hangs × 20-30s', 'Cat-cow × 10'],
       areas: [
-        { area: 'Vertical Pull', sets: 4, options: [{ name: "Lat Pulldown", repMin: 8, repMax: 12, step: 5, startWeight: 50, equipmentClass: 'pin' }, { name: "Pull-Ups", repMin: 4, repMax: 10, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }, { name: "Assisted Pull-Up", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'pin' }, { name: "Neutral-Grip Pulldown", repMin: 8, repMax: 12, step: 5, startWeight: 45, equipmentClass: 'pin' }] },
-        { area: 'Horizontal Row', sets: 4, options: [{ name: "Chest-Supported Row", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'pin' }, { name: "Chest-Supported T-Bar Row", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }, { name: "Machine Row", repMin: 8, repMax: 12, step: 5, startWeight: 45, equipmentClass: 'pin' }] },
-        { area: 'Rear Delt', sets: 3, options: [{ name: "Rear Delt Fly", repMin: 12, repMax: 20, step: 1, startWeight: 7.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Reverse Pec Deck", repMin: 12, repMax: 20, step: 5, startWeight: 25, equipmentClass: 'pin' }, { name: "Cable Rear Delt Fly", repMin: 12, repMax: 20, step: 2.5, startWeight: 10, equipmentClass: 'cable' }] },
-        { area: 'Back Extension', sets: 3, options: [{ name: "45-Degree Back Extension", repMin: 12, repMax: 20, step: 2.5, startWeight: 10, equipmentClass: 'bodyweightLoaded' }, { name: "Horizontal Back Extension", repMin: 12, repMax: 20, step: 2.5, startWeight: 10, equipmentClass: 'bodyweightLoaded' }, { name: "Reverse Hyper", repMin: 12, repMax: 20, step: 5, startWeight: 20, equipmentClass: 'plateLoaded' }] },
-        { area: 'Face Pull', sets: 3, options: [{ name: "Rope Face Pull", repMin: 12, repMax: 20, step: 2.5, startWeight: 12.5, equipmentClass: 'cable' }, { name: "Band Pull-Apart", repMin: 15, repMax: 25, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
-        { area: 'Biceps', sets: 3, options: [{ name: "DB Curl", repMin: 8, repMax: 12, step: 1, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Hammer Curl", repMin: 8, repMax: 12, step: 1, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Cable Curl", repMin: 8, repMax: 12, step: 2.5, startWeight: 20, equipmentClass: 'cable' }, { name: "Preacher Curl", repMin: 8, repMax: 12, step: 5, startWeight: 20, equipmentClass: 'ezbar', barWeight: 10 }, { name: "Incline DB Curl", repMin: 8, repMax: 12, step: 1, startWeight: 10, perSide: true, equipmentClass: 'dumbbell' }] },
-        { area: 'Secondary Row', sets: 3, options: [{ name: "Single-Arm Cable Row", repMin: 10, repMax: 15, step: 2.5, startWeight: 20, perSide: true, equipmentClass: 'cable' }, { name: "Kroc Row", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "T-Bar / Chest-Supported Single-Arm Row", repMin: 10, repMax: 15, step: 5, startWeight: 20, perSide: true, equipmentClass: 'plateLoaded' }] },
-        { area: 'Core', sets: 3, options: [{ name: "Cable Chop", repMin: 10, repMax: 12, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'cable' }, { name: "Cable Lift", repMin: 10, repMax: 12, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'cable' }] },
+        { area: 'Vertical Pull', sets: 4, order: 1, options: [{ name: "Lat Pulldown", repMin: 8, repMax: 12, step: 5, startWeight: 50, equipmentClass: 'pin' }, { name: "Pull-Ups", repMin: 4, repMax: 10, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }, { name: "Assisted Pull-Up", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'pin' }, { name: "Neutral-Grip Pulldown", repMin: 8, repMax: 12, step: 5, startWeight: 45, equipmentClass: 'pin' }] },
+        { area: 'Horizontal Row', sets: 4, order: 2, options: [{ name: "Chest-Supported Row", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'pin' }, { name: "Chest-Supported T-Bar Row", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }, { name: "Machine Row", repMin: 8, repMax: 12, step: 5, startWeight: 45, equipmentClass: 'pin' }] },
+        { area: 'Rear Delt', sets: 3, order: 5, options: [{ name: "Rear Delt Fly", repMin: 12, repMax: 20, step: 1, startWeight: 7.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Reverse Pec Deck", repMin: 12, repMax: 20, step: 5, startWeight: 25, equipmentClass: 'pin' }, { name: "Cable Rear Delt Fly", repMin: 12, repMax: 20, step: 2.5, startWeight: 10, equipmentClass: 'cable' }] },
+        { area: 'Back Extension', sets: 3, order: 3, options: [{ name: "45-Degree Back Extension", repMin: 12, repMax: 20, step: 2.5, startWeight: 10, equipmentClass: 'bodyweightLoaded' }, { name: "Horizontal Back Extension", repMin: 12, repMax: 20, step: 2.5, startWeight: 10, equipmentClass: 'bodyweightLoaded' }, { name: "Reverse Hyper", repMin: 12, repMax: 20, step: 5, startWeight: 20, equipmentClass: 'plateLoaded' }] },
+        { area: 'Face Pull', sets: 3, order: 6, options: [{ name: "Rope Face Pull", repMin: 12, repMax: 20, step: 2.5, startWeight: 12.5, equipmentClass: 'cable' }, { name: "Band Pull-Apart", repMin: 15, repMax: 25, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Biceps', sets: 3, order: 7, options: [{ name: "DB Curl", repMin: 8, repMax: 12, step: 1, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Hammer Curl", repMin: 8, repMax: 12, step: 1, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Cable Curl", repMin: 8, repMax: 12, step: 2.5, startWeight: 20, equipmentClass: 'cable' }, { name: "Preacher Curl", repMin: 8, repMax: 12, step: 5, startWeight: 20, equipmentClass: 'ezbar', barWeight: 10 }, { name: "Incline DB Curl", repMin: 8, repMax: 12, step: 1, startWeight: 10, perSide: true, equipmentClass: 'dumbbell' }] },
+        { area: 'Secondary Row', sets: 3, order: 4, options: [{ name: "Single-Arm Cable Row", repMin: 10, repMax: 15, step: 2.5, startWeight: 20, perSide: true, equipmentClass: 'cable' }, { name: "Kroc Row", repMin: 10, repMax: 15, step: 2.5, startWeight: 22.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "T-Bar / Chest-Supported Single-Arm Row", repMin: 10, repMax: 15, step: 5, startWeight: 20, perSide: true, equipmentClass: 'plateLoaded' }] },
+        { area: 'Core', sets: 3, order: 8, options: [{ name: "Cable Chop", repMin: 10, repMax: 12, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'cable' }, { name: "Cable Lift", repMin: 10, repMax: 12, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'cable' }] },
       ]
     },
     'Lower A': {
       accent: '--day-lowera', accentDim: '--day-lowera-dim',
       img: 'assets/rdl-cutout-v2.png',
       muscles: ['Hamstrings', 'Glutes', 'Adductors'],
-      warmup: ['5 min bike or brisk walk', 'Leg swings — 10/side'],
+      warmup: ['5 min bike or brisk walk', 'Leg swings — 10/side', 'Glute bridges × 15', 'Hip flexor stretch — 30s/side'],
       areas: [
-        { area: 'Hip Hinge', sets: 4, options: [{ name: "Barbell RDL", repMin: 6, repMax: 10, step: 5, startWeight: 60, equipmentClass: 'barbell', barWeight: 20 }, { name: "DB RDL", repMin: 6, repMax: 10, step: 2.5, startWeight: 20, perSide: true, equipmentClass: 'dumbbell' }, { name: "Single-Leg RDL", repMin: 8, repMax: 12, step: 1, startWeight: 10, perSide: true, equipmentClass: 'dumbbell' }, { name: "Machine Back Extension", repMin: 12, repMax: 20, step: 5, startWeight: 20, equipmentClass: 'pin' }] },
-        { area: 'Hip Thrust', sets: 3, options: [{ name: "Machine Hip Thrust", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'pin' }, { name: "Barbell Hip Thrust", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Single-Leg Machine Hip Thrust", repMin: 8, repMax: 12, step: 5, startWeight: 20, perSide: true, equipmentClass: 'pin' }] },
-        { area: 'Copenhagen Plank', sets: 3, options: [{ name: "Copenhagen Plank", repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight', progressionType: 'ladder' }] },
-        { area: 'Knee Flexion', sets: 3, options: [{ name: "Seated Hamstring Curl", repMin: 10, repMax: 15, step: 5, startWeight: 30, equipmentClass: 'pin' }, { name: "Lying Leg Curl", repMin: 10, repMax: 15, step: 5, startWeight: 25, equipmentClass: 'pin' }, { name: "Nordic Curl or GHR", repMin: 6, repMax: 10, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
-        { area: 'Adductor', sets: 3, options: [{ name: "Machine Hip Adductor", repMin: 10, repMax: 15, step: 2.5, startWeight: 30, equipmentClass: 'cable' }] },
-        { area: 'Calf', sets: 3, options: [{ name: "Standing Calf Raise", repMin: 12, repMax: 20, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }, { name: "Smith Calf Raise", repMin: 12, repMax: 20, step: 5, startWeight: 30, equipmentClass: 'plateLoaded' }, { name: "Leg Press Calf Raise", repMin: 12, repMax: 20, step: 5, startWeight: 80, equipmentClass: 'plateLoaded' }] },
+        { area: 'Hip Hinge', sets: 4, order: 1, options: [{ name: "Barbell RDL", repMin: 6, repMax: 10, step: 5, startWeight: 60, equipmentClass: 'barbell', barWeight: 20 }, { name: "DB RDL", repMin: 6, repMax: 10, step: 2.5, startWeight: 20, perSide: true, equipmentClass: 'dumbbell' }, { name: "Single-Leg RDL", repMin: 8, repMax: 12, step: 1, startWeight: 10, perSide: true, equipmentClass: 'dumbbell' }, { name: "Machine Back Extension", repMin: 12, repMax: 20, step: 5, startWeight: 20, equipmentClass: 'pin' }] },
+        { area: 'Hip Thrust', sets: 3, order: 2, options: [{ name: "Machine Hip Thrust", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'pin' }, { name: "Barbell Hip Thrust", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Single-Leg Machine Hip Thrust", repMin: 8, repMax: 12, step: 5, startWeight: 20, perSide: true, equipmentClass: 'pin' }] },
+        { area: 'Copenhagen Plank', sets: 3, order: 3, options: [{ name: "Copenhagen Plank", repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight', progressionType: 'ladder' }] },
+        { area: 'Knee Flexion', sets: 3, order: 4, options: [{ name: "Seated Hamstring Curl", repMin: 10, repMax: 15, step: 5, startWeight: 30, equipmentClass: 'pin' }, { name: "Lying Leg Curl", repMin: 10, repMax: 15, step: 5, startWeight: 25, equipmentClass: 'pin' }, { name: "Nordic Curl or GHR", repMin: 6, repMax: 10, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Adductor', sets: 3, order: 5, options: [{ name: "Machine Hip Adductor", repMin: 10, repMax: 15, step: 2.5, startWeight: 30, equipmentClass: 'cable' }] },
+        { area: 'Calf', sets: 3, order: 6, options: [{ name: "Standing Calf Raise", repMin: 12, repMax: 20, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }, { name: "Smith Calf Raise", repMin: 12, repMax: 20, step: 5, startWeight: 30, equipmentClass: 'plateLoaded' }, { name: "Leg Press Calf Raise", repMin: 12, repMax: 20, step: 5, startWeight: 80, equipmentClass: 'plateLoaded' }] },
       ]
     },
     'Lower B': {
       accent: '--day-lowerb', accentDim: '--day-lowerb-dim',
       img: 'assets/squat-cutout-v2.png',
       muscles: ['Quads', 'Hamstrings', 'Calves'],
-      warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10'],
+      warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10', 'Walking lunges × 10/side', 'Ankle mobility rocks × 10/side'],
       areas: [
-        { area: 'Squat Pattern', sets: 4, options: [{ name: "Hack Squat", repMin: 8, repMax: 12, step: 5, startWeight: 80, perSide: true, equipmentClass: 'plateLoaded' }, { name: "Smith Squat", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }, { name: "Front Squat", repMin: 6, repMax: 10, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Goblet Squat", repMin: 6, repMax: 10, step: 2.5, startWeight: 20, equipmentClass: 'dumbbell' }] },
-        { area: 'Unilateral', sets: 3, options: [{ name: "Bulgarian Split Squat", repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Rear-Foot-Flat Split Squat", repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Step-Up", repMin: 8, repMax: 12, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Reverse Lunge", repMin: 10, repMax: 12, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }] },
-        { area: 'Copenhagen Plank', sets: 3, options: [{ name: "Copenhagen Plank", repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight', progressionType: 'ladder' }] },
-        { area: 'Leg Press', sets: 3, options: [{ name: "Leg Press", repMin: 10, repMax: 15, step: 5, startWeight: 100, equipmentClass: 'plateLoaded' }, { name: "Single-Leg Leg Press", repMin: 10, repMax: 15, step: 5, startWeight: 60, perSide: true, equipmentClass: 'plateLoaded' }] },
-        { area: 'Abduction', sets: 3, options: [{ name: "Hip Abduction Machine", repMin: 12, repMax: 20, step: 2.5, startWeight: 0, equipmentClass: 'cable' }, { name: "Banded Lateral Walk", repMin: 12, repMax: 20, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
-        { area: 'Knee Extension', sets: 3, options: [{ name: "Leg Extension", repMin: 10, repMax: 15, step: 5, startWeight: 30, equipmentClass: 'pin' }] },
-        { area: 'Calf', sets: 3, options: [{ name: "Seated Calf Raise", repMin: 12, repMax: 20, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }] },
+        { area: 'Squat Pattern', sets: 4, order: 1, options: [{ name: "Hack Squat", repMin: 8, repMax: 12, step: 5, startWeight: 80, perSide: true, equipmentClass: 'plateLoaded' }, { name: "Smith Squat", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }, { name: "Front Squat", repMin: 6, repMax: 10, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Goblet Squat", repMin: 6, repMax: 10, step: 2.5, startWeight: 20, equipmentClass: 'dumbbell' }] },
+        { area: 'Unilateral', sets: 3, order: 2, options: [{ name: "Bulgarian Split Squat", repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Rear-Foot-Flat Split Squat", repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Step-Up", repMin: 8, repMax: 12, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Reverse Lunge", repMin: 10, repMax: 12, step: 2.5, startWeight: 12.5, perSide: true, equipmentClass: 'dumbbell' }] },
+        { area: 'Copenhagen Plank', sets: 3, order: 3, options: [{ name: "Copenhagen Plank", repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight', progressionType: 'ladder' }] },
+        { area: 'Leg Press', sets: 3, order: 4, options: [{ name: "Leg Press", repMin: 10, repMax: 15, step: 5, startWeight: 100, equipmentClass: 'plateLoaded' }, { name: "Single-Leg Leg Press", repMin: 10, repMax: 15, step: 5, startWeight: 60, perSide: true, equipmentClass: 'plateLoaded' }] },
+        { area: 'Abduction', sets: 3, order: 5, options: [{ name: "Hip Abduction Machine", repMin: 12, repMax: 20, step: 2.5, startWeight: 0, equipmentClass: 'cable' }, { name: "Banded Lateral Walk", repMin: 12, repMax: 20, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Knee Extension', sets: 3, order: 6, options: [{ name: "Leg Extension", repMin: 10, repMax: 15, step: 5, startWeight: 30, equipmentClass: 'pin' }] },
+        { area: 'Calf', sets: 3, order: 7, options: [{ name: "Seated Calf Raise", repMin: 12, repMax: 20, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }] },
       ]
     }
   };
@@ -553,10 +596,13 @@ button { font-family: inherit; }
   function rebuildDayMeta() {
     DAY_ORDER.forEach(function (day) {
       var base = BASE_DAY_META[day];
-      var areas = base.areas.map(function (a) { return { area: a.area, sets: a.sets, options: a.options.slice() }; });
+      var areas = base.areas.map(function (a) { return { area: a.area, sets: a.sets, order: a.order, options: a.options.slice() }; });
       (customExercises[day] || []).forEach(function (entry) {
         var area = areas.find(function (a) { return a.area === entry.area; });
-        if (!area) { area = { area: entry.area, sets: entry.sets || 3, options: [] }; areas.push(area); }
+        // A custom exercise added into a brand new area has no authored
+        // fatigue-order value — placed after every built-in area (order
+        // 99) rather than guessing where it belongs in the sequence.
+        if (!area) { area = { area: entry.area, sets: entry.sets || 3, order: 99, options: [] }; areas.push(area); }
         if (!area.options.some(function (o) { return o.name === entry.name; })) area.options.push(entry);
       });
       DAY_META[day] = { accent: base.accent, accentDim: base.accentDim, img: base.img, muscles: base.muscles, warmup: base.warmup, areas: areas };
@@ -908,11 +954,50 @@ button { font-family: inherit; }
     }
     return uiState.picks[day];
   }
+  // Sorted by each exercise's AREA's authored fatigue order (1 = do
+  // first), not catalog/pick order — heaviest compound patterns first,
+  // isolation and core work last, matching how the session should
+  // actually be sequenced. Areas sharing an order value (e.g. two
+  // exercises picked from the same area) keep their relative pick order.
   function exercisesForDay(day) {
-    return getPicks(day).map(function (name) { return EX_INDEX[name]; }).filter(Boolean);
+    var orderByName = {};
+    DAY_META[day].areas.forEach(function (a) {
+      a.options.forEach(function (o) { orderByName[o.name] = a.order != null ? a.order : 99; });
+    });
+    return getPicks(day).map(function (name) { return EX_INDEX[name]; }).filter(Boolean)
+      .map(function (ex, i) { return { ex: ex, i: i }; })
+      .sort(function (a, b) { var d = (orderByName[a.ex.name] || 99) - (orderByName[b.ex.name] || 99); return d !== 0 ? d : a.i - b.i; })
+      .map(function (x) { return x.ex; });
   }
 
-  var activeDay = DAY_ORDER[0];
+  // ---------- weekly schedule (Sun..Sat -> day type, or 'Rest') ----------
+  // Reads/writes po_coach_v1.weekdaySplit — the exact field gym-preview.html
+  // and the main dashboard's Fitness tile already read/write, so editing
+  // it here updates it everywhere. The correct real rotation (confirmed
+  // against actual logged sessions) is Rest/Push/LowerA/Pull/Push/LowerB/
+  // LowerB — used as the fallback default only if nothing's stored yet.
+  var WEEKDAY_SPLIT = ['Rest', 'Push', 'Lower A', 'Pull', 'Push', 'Lower B', 'Lower B']; // Sun..Sat
+  (function loadSchedule() {
+    try {
+      var raw = localStorage.getItem('po_coach_v1');
+      if (raw) {
+        var live = JSON.parse(raw);
+        if (live && Array.isArray(live.weekdaySplit) && live.weekdaySplit.length === 7) WEEKDAY_SPLIT = live.weekdaySplit;
+      }
+    } catch (e) {}
+  })();
+  function saveSchedule() {
+    try {
+      var raw = localStorage.getItem('po_coach_v1');
+      var live = raw ? JSON.parse(raw) : { exercises: [], logs: {} };
+      live.weekdaySplit = WEEKDAY_SPLIT;
+      localStorage.setItem('po_coach_v1', JSON.stringify(live));
+    } catch (e) {}
+  }
+  function todayDayLabel() { return WEEKDAY_SPLIT[new Date().getDay()]; }
+
+  var activeDay = todayDayLabel();
+  if (activeDay !== 'Rest' && !DAY_META[activeDay]) activeDay = DAY_ORDER[0];
 
   // ---------- day pills ----------
   function renderPills() {
@@ -928,12 +1013,59 @@ button { font-family: inherit; }
     });
   }
 
+  // ---------- edit weekly schedule ----------
+  var WEEK_DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var scheduleDraft = null;
+  function openScheduleModal() {
+    scheduleDraft = WEEKDAY_SPLIT.slice();
+    renderScheduleRows();
+    document.getElementById('scheduleModal').hidden = false;
+  }
+  function renderScheduleRows() {
+    var todayDow = new Date().getDay();
+    var options = DAY_ORDER.concat(['Rest']);
+    document.getElementById('scheduleRows').innerHTML = WEEK_DOW_LABELS.map(function (label, i) {
+      var opts = options.map(function (d) {
+        var active = scheduleDraft[i] === d;
+        var meta = d === 'Rest' ? null : DAY_META[d];
+        var style = active && meta ? ' style="background:var(' + meta.accent + ');border-color:var(' + meta.accent + ')"' : (active ? ' style="background:var(--border-strong);border-color:var(--border-strong)"' : '');
+        return '<button type="button" class="schedule-opt' + (active ? ' active' : '') + '" data-dow="' + i + '" data-val="' + d + '"' + style + '>' + d + '</button>';
+      }).join('');
+      return '<div class="schedule-row"><div class="schedule-day-label">' + label + (i === todayDow ? '<span class="schedule-today-tag">TODAY</span>' : '') + '</div>' +
+        '<div class="schedule-opts">' + opts + '</div></div>';
+    }).join('');
+    document.querySelectorAll('.schedule-opt').forEach(function (btn) {
+      btn.addEventListener('click', function () { scheduleDraft[+btn.dataset.dow] = btn.dataset.val; renderScheduleRows(); });
+    });
+  }
+  document.getElementById('scheduleBtn').addEventListener('click', openScheduleModal);
+  document.getElementById('scheduleClose').addEventListener('click', function () { document.getElementById('scheduleModal').hidden = true; });
+  document.getElementById('scheduleCancelBtn').addEventListener('click', function () { document.getElementById('scheduleModal').hidden = true; });
+  document.getElementById('scheduleModal').addEventListener('click', function (ev) { if (ev.target.id === 'scheduleModal') document.getElementById('scheduleModal').hidden = true; });
+  document.getElementById('scheduleSaveBtn').addEventListener('click', function () {
+    WEEKDAY_SPLIT = scheduleDraft.slice();
+    saveSchedule();
+    document.getElementById('scheduleModal').hidden = true;
+    // Today's split may have just changed — resync to it like a fresh
+    // load would ('Rest' is a real, valid choice here too, not a
+    // fallback-to-DAY_ORDER[0] bug).
+    activeDay = todayDayLabel();
+    if (activeDay !== 'Rest' && !DAY_META[activeDay]) activeDay = DAY_ORDER[0];
+    renderAll();
+  });
+
   // ---------- header: day/date + workout name ----------
   var DAY_FULL_NAME = { 'Push': 'Push Day', 'Pull': 'Pull Day', 'Lower A': 'Lower Body — A', 'Lower B': 'Lower Body — B' };
   function renderHeader() {
-    var meta = DAY_META[activeDay];
     var today = new Date();
     document.getElementById('hdrDow').textContent = today.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    if (activeDay === 'Rest') {
+      document.getElementById('hdrName').textContent = 'Rest Day';
+      document.getElementById('hdrName').style.color = 'var(--text-1)';
+      document.getElementById('hdrMuscles').textContent = 'No training planned';
+      return;
+    }
+    var meta = DAY_META[activeDay];
     document.getElementById('hdrName').textContent = DAY_FULL_NAME[activeDay];
     // Light mode keeps the heading a strong neutral (near-black) rather
     // than tinting it with the day's accent — reads cleaner against the
@@ -1077,7 +1209,17 @@ button { font-family: inherit; }
     }, 1000);
   });
 
-  function renderAll() { renderHeader(); renderPills(); renderHero(); renderWarmup(); renderChecklist(); }
+  function renderAll() {
+    var resting = activeDay === 'Rest';
+    document.getElementById('restCard').hidden = !resting;
+    document.getElementById('heroTile').style.display = resting ? 'none' : '';
+    document.getElementById('warmupRow').style.display = resting ? 'none' : '';
+    document.getElementById('twSection').style.display = resting ? 'none' : '';
+    renderHeader();
+    renderPills();
+    if (!resting) { renderHero(); renderWarmup(); renderChecklist(); }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  }
 
   // ---------- theme toggle — same key topbar.js's shared toggle uses
   // elsewhere in the app ('sage' = light), so flipping it here stays

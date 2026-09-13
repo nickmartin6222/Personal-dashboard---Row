@@ -909,7 +909,7 @@ button { font-family: inherit; }
   // "fixed" exercises, and you can tick more than one option in the
   // same area (e.g. both Pull-Ups AND Lat Pulldown on Pull day).
   // ------------------------------------------------------------------
-  var WEEKDAY_SPLIT = ['Rest', 'Push', 'Lower A', 'Rest', 'Pull', 'Lower B', 'Rest']; // Sun..Sat
+  var WEEKDAY_SPLIT = ['Rest', 'Push', 'Lower A', 'Pull', 'Push', 'Lower B', 'Lower B']; // Sun..Sat — matches the real confirmed rotation
   var DAY_ORDER = ['Lower A', 'Push', 'Lower B', 'Pull'];
   // Reads/writes po_coach_v1.weekdaySplit directly (the exact array
   // gym.html itself uses, and what the home dashboard's Fitness tile
@@ -970,7 +970,7 @@ button { font-family: inherit; }
   var DAY_META = {
     'Lower A': {
       muscles: 'Hamstrings · Glutes · Adductors',
-      warmup: ['5 min bike or brisk walk', 'Leg swings — front-back & side-side, 10/side'],
+      warmup: ['5 min bike or brisk walk', 'Leg swings — front-back & side-side, 10/side', 'Glute bridges × 15', 'Hip flexor stretch — 30s/side'],
       areas: [
         { area: 'Hip Hinge', sets: 4, tier: 1, options: [
           { name: 'Barbell RDL', muscle: 'Hamstrings', repMin: 6, repMax: 10, step: 5, startWeight: 60, equipmentClass: 'barbell', barWeight: 20 },
@@ -999,7 +999,7 @@ button { font-family: inherit; }
     },
     'Push': {
       muscles: 'Chest · Shoulders · Triceps',
-      warmup: ['5 min bike or rower', 'Band pull-aparts × 15'],
+      warmup: ['5 min bike or rower', 'Band pull-aparts × 15', 'Arm circles + shoulder dislocates × 10', 'Push-ups × 10-12'],
       areas: [
         { area: 'Horizontal Press', sets: 4, tier: 1, options: [
           { name: 'Barbell Bench Press', muscle: 'Chest', repMin: 5, repMax: 8, step: 5, startWeight: 50, equipmentClass: 'barbell', barWeight: 20 },
@@ -1042,7 +1042,7 @@ button { font-family: inherit; }
     },
     'Lower B': {
       muscles: 'Quads · Hamstrings · Calves',
-      warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10'],
+      warmup: ['5 min bike or brisk walk', 'Bodyweight squats × 10', 'Walking lunges × 10/side', 'Ankle mobility rocks × 10/side'],
       areas: [
         { area: 'Squat Pattern', sets: 4, tier: 1, options: [
           { name: 'Hack Squat', muscle: 'Quads', repMin: 8, repMax: 12, step: 5, startWeight: 80, perSide: true, equipmentClass: 'plateLoaded' },
@@ -1071,7 +1071,7 @@ button { font-family: inherit; }
     },
     'Pull': {
       muscles: 'Back · Biceps · Rear Delts · Lower Back',
-      warmup: ['5 min row machine or bike', 'Band pull-aparts × 15'],
+      warmup: ['5 min row machine or bike', 'Band pull-aparts × 15', 'Dead hangs × 20-30s', 'Cat-cow × 10'],
       areas: [
         { area: 'Vertical Pull', sets: 4, tier: 1, options: [
           { name: 'Lat Pulldown', muscle: 'Back', repMin: 8, repMax: 12, step: 5, startWeight: 50, equipmentClass: 'pin' },
