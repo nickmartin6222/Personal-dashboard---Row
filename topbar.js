@@ -84,26 +84,38 @@
   z-index: 110; display: flex; gap: 8px;
 }
 
-/* Bottom tab bar — Instagram-style */
+/* Bottom tab bar — same treatment as the Fitness sub-app's bar
+   (blurred, blends into the page instead of a solid slab; the active
+   tab gets a colour-tinted rounded pill rather than just a text-colour
+   change). The bar itself still spans the full width like it always
+   did — only .bottombar-inner is capped, via JS in alignChromeToContent(),
+   to match (and slightly exceed) the page's own content container so
+   it doesn't shrink into a narrow centred cluster on a wide screen. */
 .bottombar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
-  display: flex; justify-content: space-around; align-items: stretch;
-  padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
-  background: #0a0a0b;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex; justify-content: center; align-items: stretch;
+  padding: 8px max(12px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-right));
+  background: linear-gradient(180deg, transparent, #0a0a0b 45%);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
   font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+}
+.bottombar-inner {
+  width: 100%; max-width: 720px;
+  display: flex; justify-content: space-around; align-items: stretch; gap: 4px;
 }
 .bottombar-tab {
   flex: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px;
-  padding: 6px 0 4px;
+  padding: 7px 6px 6px;
+  border-radius: 12px;
+  border: 1px solid transparent;
   text-decoration: none;
   color: rgba(255, 255, 255, 0.45);
   font-size: 10px; font-weight: 600;
   letter-spacing: 0.04em;
   -webkit-tap-highlight-color: transparent;
-  transition: color 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
 .bottombar-tab-icon {
   font-size: 24px; line-height: 1;
@@ -112,7 +124,9 @@
 }
 .bottombar-tab-icon svg { width: 24px; height: 24px; display: block; }
 .bottombar-tab.active {
-  color: #FAFAFA;
+  color: #6EE3A4;
+  background: rgba(110, 227, 164, 0.12);
+  border-color: rgba(110, 227, 164, 0.3);
 }
 .bottombar-tab.active .bottombar-tab-icon {
   opacity: 1;
@@ -175,11 +189,14 @@ body.has-bottombar {
   filter: grayscale(100%) brightness(0.7);
 }
 [data-theme="light"] .bottombar {
-  background: #FFFFFF;
-  border-top-color: rgba(20,18,15,0.10);
+  background: linear-gradient(180deg, transparent, #F4EFE3 45%);
 }
-[data-theme="light"] .bottombar-tab { color: rgba(20,18,15,0.45); }
-[data-theme="light"] .bottombar-tab.active { color: #1C1B17; }
+[data-theme="light"] .bottombar-tab { color: rgba(46,46,46,0.5); }
+[data-theme="light"] .bottombar-tab.active {
+  color: #003B2F;
+  background: rgba(0,59,47,0.08);
+  border-color: rgba(0,59,47,0.25);
+}
 
 /* === Global mobile lockdown ===
    1) Hide the right-side scrollbar on phones (iOS uses overlay scrollbars anyway).
@@ -240,26 +257,28 @@ body.topbar-modal-open {
 
   const bottombarHtml = `
 <nav class="bottombar" id="bottombar" role="navigation" aria-label="Main tabs">
-  <a href="index.html" class="bottombar-tab" data-page="main">
-    <span class="bottombar-tab-icon"><i data-lucide="house"></i></span>
-    <span>Main</span>
-  </a>
-  <a href="gym-workouts-tab-preview.html" class="bottombar-tab" data-page="fitness">
-    <span class="bottombar-tab-icon"><i data-lucide="dumbbell"></i></span>
-    <span>Fitness</span>
-  </a>
-  <a href="golf.html" class="bottombar-tab" data-page="golf">
-    <span class="bottombar-tab-icon"><i data-lucide="flag"></i></span>
-    <span>Golf</span>
-  </a>
-  <a href="health.html" class="bottombar-tab" data-page="health">
-    <span class="bottombar-tab-icon"><i data-lucide="heart-pulse"></i></span>
-    <span>Health</span>
-  </a>
-  <a href="FROK-finance-standalone.html#net" class="bottombar-tab" data-page="finance">
-    <span class="bottombar-tab-icon"><i data-lucide="wallet"></i></span>
-    <span>Finance</span>
-  </a>
+  <div class="bottombar-inner" id="bottombarInner">
+    <a href="index.html" class="bottombar-tab" data-page="main">
+      <span class="bottombar-tab-icon"><i data-lucide="house"></i></span>
+      <span>Main</span>
+    </a>
+    <a href="gym-workouts-tab-preview.html" class="bottombar-tab" data-page="fitness">
+      <span class="bottombar-tab-icon"><i data-lucide="dumbbell"></i></span>
+      <span>Fitness</span>
+    </a>
+    <a href="golf.html" class="bottombar-tab" data-page="golf">
+      <span class="bottombar-tab-icon"><i data-lucide="flag"></i></span>
+      <span>Golf</span>
+    </a>
+    <a href="health.html" class="bottombar-tab" data-page="health">
+      <span class="bottombar-tab-icon"><i data-lucide="heart-pulse"></i></span>
+      <span>Health</span>
+    </a>
+    <a href="FROK-finance-standalone.html#net" class="bottombar-tab" data-page="finance">
+      <span class="bottombar-tab-icon"><i data-lucide="wallet"></i></span>
+      <span>Finance</span>
+    </a>
+  </div>
 </nav>
 `;
 
@@ -354,6 +373,14 @@ body.topbar-modal-open {
       // accounts for its max-width + side padding), so flex-end inside
       // it lines up with the content's right edge exactly.
       inner.style.maxWidth = Math.round(rect.width) + 'px';
+    }
+    const bottomInner = document.getElementById('bottombarInner');
+    if (bottomInner) {
+      // Same idea as the topbar, but a touch WIDER than the page's own
+      // content column rather than an exact match — a tab bar pinned
+      // exactly to content width reads as cramped/narrow; a little
+      // overhang reads as a deliberate nav bar.
+      bottomInner.style.maxWidth = Math.round(rect.width + 48) + 'px';
     }
     const floating = document.getElementById('floatingChrome');
     if (floating) {
