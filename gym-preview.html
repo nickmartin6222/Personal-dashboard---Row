@@ -3184,7 +3184,14 @@ button { font-family: inherit; }
   const SUPABASE_URL = (window.DASH_SUPABASE_URL) || 'https://srajryooffirbroltjmg.supabase.co';
   const SUPABASE_KEY = (window.DASH_SUPABASE_KEY) || 'sb_publishable_5142ZwTLF_DkSVRzciNuRA_bHwRAu4c';
   const APP_KEY = 'po-coach';
-  const PC_SYNCED_KEYS = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos'];
+  // po_coach_custom_exercises is written by the Workouts tab's "Add a
+  // custom exercise" feature — this page never writes it, but it MUST
+  // be in this list anyway: pcPushNow() below replaces the whole remote
+  // row's data with pcCollectState()'s result, so any key missing from
+  // this list would get silently stripped out of the cloud copy (and
+  // then deleted back out of every OTHER device) the next time this
+  // page pushes anything.
+  const PC_SYNCED_KEYS = ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_custom_exercises'];
 
   let pcSupa = null;
   let pcPushTimer = null;

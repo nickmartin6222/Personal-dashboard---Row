@@ -268,6 +268,27 @@ button { font-family: inherit; }
 [data-theme="light"] .pick-opt.active { background: var(--hero-accent, var(--lime)); border-color: var(--hero-accent, var(--lime)); color: #F4EFE3; }
 .sheet-confirm { width: 100%; padding: 14px; border-radius: 14px; border: none; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 14px; cursor: pointer; margin-top: 4px; }
 
+/* ---------- add a custom exercise (inside the picker sheet) ---------- */
+.add-ex-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 11px; border-radius: 12px; border: 1px dashed var(--border-strong); background: transparent; color: var(--text-2); font-weight: 700; font-size: 12.5px; cursor: pointer; margin: 4px 0 14px; }
+.add-ex-toggle i { width: 15px; height: 15px; }
+.add-ex-toggle:hover { color: var(--text-1); border-color: var(--hero-accent, var(--lime)); }
+.add-ex-form { margin-bottom: 14px; }
+.add-ex-form[hidden] { display: none; }
+.add-ex-field-label { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 6px; display: block; }
+.add-ex-input, .add-ex-select {
+  width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg-raised); color: var(--text-1); font-size: 15px; margin-bottom: 12px;
+  font-family: inherit; -webkit-appearance: none; appearance: none;
+}
+.add-ex-input.field-invalid, .add-ex-select.field-invalid { border-color: #C4366B; }
+[data-theme="light"] .add-ex-input.field-invalid, [data-theme="light"] .add-ex-select.field-invalid { border-color: #6B3B3B; }
+.add-ex-error { color: #C4366B; font-size: 11.5px; margin: -6px 0 10px; min-height: 14px; }
+[data-theme="light"] .add-ex-error { color: #6B3B3B; }
+.add-ex-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.add-ex-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); margin: 2px 0 14px; }
+.add-ex-check input { width: 18px; height: 18px; flex: none; }
+.add-ex-save { width: 100%; padding: 12px; border-radius: 12px; border: none; background: var(--hero-accent, var(--lime)); color: var(--lime-ink); font-weight: 800; font-size: 13.5px; cursor: pointer; }
+
 /* ---------- exercise log modal ---------- */
 .log-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .log-title { font-family: var(--font-heading); font-size: 20px; font-weight: 700; }
@@ -406,6 +427,8 @@ button { font-family: inherit; }
   <div class="sheet">
     <div class="sheet-head"><span class="sheet-title" id="pickerTitle">—</span><button class="sheet-close" id="pickerClose">✕</button></div>
     <div id="pickerBody"></div>
+    <button type="button" class="add-ex-toggle" id="addExToggle"><i data-lucide="plus"></i>Add a custom exercise</button>
+    <div class="add-ex-form" id="addExForm" hidden></div>
     <button class="sheet-confirm" id="pickerConfirm">Confirm today's picks</button>
   </div>
 </div>
@@ -438,8 +461,10 @@ button { font-family: inherit; }
   'use strict';
 
   // ===== Real catalog, ported from gym-preview.html (trimmed to the
-  // fields this prototype needs) so exercises/rep-ranges are authentic. =====
-  var DAY_META = {
+  // fields this prototype needs) so exercises/rep-ranges are authentic.
+  // This is the built-in base only — DAY_META (below, after the custom-
+  // exercise merge) is what the rest of the page actually reads. =====
+  var BASE_DAY_META = {
     'Push': {
       accent: '--day-push', accentDim: '--day-push-dim',
       img: 'assets/shoulder-press-cutout.png',
@@ -503,6 +528,41 @@ button { font-family: inherit; }
   };
   var DAY_ORDER = ['Push', 'Pull', 'Lower A', 'Lower B'];
   var DAY_TAG_TEXT = { 'Push': 'Push Day', 'Pull': 'Pull Day', 'Lower A': 'Lower Body — A', 'Lower B': 'Lower Body — B' };
+
+  // ===== Custom exercises — user-added, layered on top of the built-in
+  // catalog above. Stored under their own key so they ride the same
+  // cloud sync as the real logged history further down (the shared
+  // 'po-coach' app row) — added on one device, pickable on every other
+  // device right away, unlike gym-preview.html's older "+ Add exercise"
+  // (po_preview_program_v2), which never left the device that added it. =====
+  var CUSTOM_EX_KEY = 'po_coach_custom_exercises';
+  var customExercises = {};
+  try { var rawCustom = localStorage.getItem(CUSTOM_EX_KEY); if (rawCustom) customExercises = JSON.parse(rawCustom) || {}; } catch (e) {}
+  function saveCustomExercises() { try { localStorage.setItem(CUSTOM_EX_KEY, JSON.stringify(customExercises)); } catch (e) {} }
+  // Kept in sync with Statistics' MUSCLE_COLORS table so a custom
+  // exercise colours correctly in the Exercise Library / Muscles
+  // Trained anatomy the moment it's actually logged there.
+  var CUSTOM_EX_MUSCLES = ['Chest', 'Shoulders', 'Triceps', 'Back', 'Biceps', 'Rear Delts', 'Lower Back', 'Hamstrings', 'Glutes', 'Adductors', 'Hips', 'Quads', 'Calves', 'Core'];
+
+  // DAY_META (what the rest of the page reads) is BASE_DAY_META plus
+  // customExercises layered in — recomputed instead of mutated in
+  // place, so re-running this after adding a new exercise (or after a
+  // remote sync pulls someone else's addition) can never duplicate an
+  // already-merged entry.
+  var DAY_META = {};
+  function rebuildDayMeta() {
+    DAY_ORDER.forEach(function (day) {
+      var base = BASE_DAY_META[day];
+      var areas = base.areas.map(function (a) { return { area: a.area, sets: a.sets, options: a.options.slice() }; });
+      (customExercises[day] || []).forEach(function (entry) {
+        var area = areas.find(function (a) { return a.area === entry.area; });
+        if (!area) { area = { area: entry.area, sets: entry.sets || 3, options: [] }; areas.push(area); }
+        if (!area.options.some(function (o) { return o.name === entry.name; })) area.options.push(entry);
+      });
+      DAY_META[day] = { accent: base.accent, accentDim: base.accentDim, img: base.img, muscles: base.muscles, warmup: base.warmup, areas: areas };
+    });
+  }
+  rebuildDayMeta();
   // Lucide has no literal muscle-group icons — these are the closest
   // confirmed-real ones (checked against lucide.dev), reused across
   // related muscles where there's no better match.
@@ -514,7 +574,11 @@ button { font-family: inherit; }
   };
 
   var EX_INDEX = {};
-  DAY_ORDER.forEach(function (d) { DAY_META[d].areas.forEach(function (a) { a.options.forEach(function (o) { EX_INDEX[o.name] = o; }); }); });
+  function buildExIndex() {
+    EX_INDEX = {};
+    DAY_ORDER.forEach(function (d) { DAY_META[d].areas.forEach(function (a) { a.options.forEach(function (o) { EX_INDEX[o.name] = o; }); }); });
+  }
+  buildExIndex();
 
   // ===== Real data engine — same po_coach_v1 store and same
   // progressive-overload engine gym-preview.html uses. Checking an
@@ -936,7 +1000,7 @@ button { font-family: inherit; }
     document.documentElement.style.setProperty('--hero-accent', 'var(' + meta.accent + ')');
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
-  document.getElementById('heroTile').addEventListener('click', function () { openPicker(); });
+  document.getElementById('heroTile').addEventListener('click', function () { addExFormOpen = false; openPicker(); });
 
   // ---------- warm-up ----------
   function renderWarmup() {
@@ -1063,10 +1127,90 @@ button { font-family: inherit; }
         saveUi(); openPicker();
       });
     });
+    document.getElementById('addExForm').hidden = !addExFormOpen;
+    if (addExFormOpen) renderAddExForm();
     document.getElementById('pickerModal').hidden = false;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
   }
   document.getElementById('pickerClose').addEventListener('click', function () { document.getElementById('pickerModal').hidden = true; });
   document.getElementById('pickerConfirm').addEventListener('click', function () { document.getElementById('pickerModal').hidden = true; renderChecklist(); });
+
+  // ---------- add a custom exercise (inside the picker sheet) ----------
+  var addExFormOpen = false;
+  document.getElementById('addExToggle').addEventListener('click', function () {
+    addExFormOpen = !addExFormOpen;
+    document.getElementById('addExForm').hidden = !addExFormOpen;
+    if (addExFormOpen) renderAddExForm();
+  });
+  function renderAddExForm() {
+    var meta = DAY_META[activeDay];
+    var areaOpts = meta.areas.map(function (a) { return '<option value="' + a.area + '">' + a.area + '</option>'; }).join('');
+    var muscleOpts = CUSTOM_EX_MUSCLES.map(function (m) { return '<option value="' + m + '">' + m + '</option>'; }).join('');
+    document.getElementById('addExForm').innerHTML =
+      '<span class="add-ex-field-label">Exercise name</span>' +
+      '<input type="text" class="add-ex-input" id="addExName" placeholder="e.g. Cable Crossover" maxlength="40">' +
+      '<div class="add-ex-error" id="addExNameErr"></div>' +
+      '<span class="add-ex-field-label">Area (' + activeDay + ')</span>' +
+      '<select class="add-ex-select" id="addExArea">' + areaOpts + '<option value="__new__">+ New area…</option></select>' +
+      '<input type="text" class="add-ex-input" id="addExNewArea" placeholder="New area name, e.g. Rear Delts" maxlength="24" style="display:none">' +
+      '<div class="add-ex-error" id="addExAreaErr"></div>' +
+      '<span class="add-ex-field-label">Muscle group</span>' +
+      '<select class="add-ex-select" id="addExMuscle">' + muscleOpts + '</select>' +
+      '<div class="add-ex-row"><div><span class="add-ex-field-label">Sets</span><input type="number" class="add-ex-input" id="addExSets" value="3" min="1" max="8"></div>' +
+      '<div><span class="add-ex-field-label">Step (' + UNITS + ')</span><input type="number" class="add-ex-input" id="addExStep" value="2.5" step="0.5" min="0"></div></div>' +
+      '<div class="add-ex-row"><div><span class="add-ex-field-label">Rep min</span><input type="number" class="add-ex-input" id="addExRepMin" value="8" min="1"></div>' +
+      '<div><span class="add-ex-field-label">Rep max</span><input type="number" class="add-ex-input" id="addExRepMax" value="12" min="1"></div></div>' +
+      '<label class="add-ex-check"><input type="checkbox" id="addExBw"> Bodyweight (track reps only, no weight)</label>' +
+      '<div id="addExWeightRow"><span class="add-ex-field-label">Starting weight (' + UNITS + ')</span><input type="number" class="add-ex-input" id="addExStartWeight" value="20" step="0.5" min="0"></div>' +
+      '<button type="button" class="add-ex-save" id="addExSave">Add to ' + activeDay + '</button>';
+    document.getElementById('addExArea').addEventListener('change', function () {
+      document.getElementById('addExNewArea').style.display = this.value === '__new__' ? '' : 'none';
+    });
+    document.getElementById('addExBw').addEventListener('change', function () {
+      document.getElementById('addExWeightRow').style.display = this.checked ? 'none' : '';
+    });
+    document.getElementById('addExSave').addEventListener('click', saveCustomExercise);
+  }
+  function saveCustomExercise() {
+    var nameInput = document.getElementById('addExName');
+    var name = (nameInput.value || '').trim();
+    var nameErr = document.getElementById('addExNameErr');
+    if (!name) { nameInput.classList.add('field-invalid'); nameErr.textContent = 'Enter an exercise name.'; return; }
+    if (EX_INDEX[name]) { nameInput.classList.add('field-invalid'); nameErr.textContent = 'An exercise called "' + name + '" already exists.'; return; }
+    nameInput.classList.remove('field-invalid'); nameErr.textContent = '';
+
+    var areaSel = document.getElementById('addExArea').value;
+    var newAreaInput = document.getElementById('addExNewArea');
+    var areaErr = document.getElementById('addExAreaErr');
+    var areaName = areaSel === '__new__' ? (newAreaInput.value || '').trim() : areaSel;
+    if (!areaName) { newAreaInput.classList.add('field-invalid'); areaErr.textContent = 'Enter a name for the new area.'; return; }
+    newAreaInput.classList.remove('field-invalid'); areaErr.textContent = '';
+
+    var bw = document.getElementById('addExBw').checked;
+    var entry = {
+      area: areaName,
+      sets: +document.getElementById('addExSets').value || 3,
+      name: name,
+      muscle: document.getElementById('addExMuscle').value,
+      repMin: +document.getElementById('addExRepMin').value || 8,
+      repMax: +document.getElementById('addExRepMax').value || 12,
+      step: bw ? 1 : (+document.getElementById('addExStep').value || 2.5),
+      startWeight: bw ? 0 : (+document.getElementById('addExStartWeight').value || 20),
+      bw: bw,
+      equipmentClass: bw ? 'bodyweight' : 'cable'
+    };
+    if (!customExercises[activeDay]) customExercises[activeDay] = [];
+    customExercises[activeDay].push(entry);
+    saveCustomExercises();
+    rebuildDayMeta();
+    buildExIndex();
+    // Picked immediately so it shows up in today's checklist without a
+    // second trip back into the picker to select it.
+    var current = getPicks(activeDay);
+    if (current.indexOf(name) === -1) { uiState.picks[activeDay] = current.concat([name]); saveUi(); }
+    addExFormOpen = false;
+    openPicker();
+  }
 
   // ---------- log modal ----------
   var logCtx = null; // { name, weight, reps, sets }
@@ -1144,7 +1288,33 @@ button { font-family: inherit; }
   renderCalendar();
   renderBackdateBanner();
   if (typeof lucide !== 'undefined') lucide.createIcons();
-  document.addEventListener('DOMContentLoaded', function () { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    // This page loads sync.js but never actually called initCloudSync —
+    // writes here (a logged set, a custom exercise) stayed local to
+    // this device/browser until gym-preview.html happened to be opened
+    // too, since ITS bespoke sync only pushes/pulls while it's the page
+    // loaded. Same shared 'po-coach' Supabase row gym-preview.html
+    // already syncs (po_coach_v1 + friends), plus the new custom-
+    // exercise list, so an exercise added here shows up everywhere.
+    if (typeof initCloudSync === 'function') {
+      initCloudSync({
+        appKey: 'po-coach',
+        syncedKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_custom_exercises'],
+        onApplied: function () {
+          try {
+            var rawCustom2 = localStorage.getItem(CUSTOM_EX_KEY);
+            customExercises = rawCustom2 ? (JSON.parse(rawCustom2) || {}) : {};
+          } catch (e) {}
+          rebuildDayMeta();
+          buildExIndex();
+          refreshRealData();
+          renderAll();
+          renderCalendar();
+        }
+      });
+    }
+  });
 })();
 </script>
 </body>

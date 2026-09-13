@@ -1314,7 +1314,30 @@ section { margin-bottom: 22px; }
   });
 
   renderAll();
-  document.addEventListener('DOMContentLoaded', function () { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    // This page loads sync.js but never actually called initCloudSync
+    // — edits/deletes made here (and the bodyweight log) stayed local
+    // to this device until gym-preview.html happened to be open too.
+    // Same shared 'po-coach' row every fitness page now syncs — the key
+    // list MUST match exactly what the other two pages sync, since a
+    // push from any one of them replaces the whole remote row.
+    if (typeof initCloudSync === 'function') {
+      initCloudSync({
+        appKey: 'po-coach',
+        syncedKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_custom_exercises'],
+        onApplied: function () {
+          try {
+            var rawW2 = localStorage.getItem('po_coach_weights');
+            var arrW2 = rawW2 ? JSON.parse(rawW2) : [];
+            WEIGHTS = (Array.isArray(arrW2) ? arrW2 : []).slice().sort(function (a, b) { return (a.dateKey || '').localeCompare(b.dateKey || ''); });
+          } catch (e) {}
+          refreshRealData();
+          renderAll();
+        }
+      });
+    }
+  });
 })();
 </script>
 </body>
