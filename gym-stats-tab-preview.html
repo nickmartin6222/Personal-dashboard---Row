@@ -116,6 +116,33 @@ button { font-family: inherit; }
 }
 .icon-btn i, .icon-btn svg { width: 17px; height: 17px; }
 
+/* ---------- calendar (same design used everywhere on the site) ---------- */
+.cal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 22px 20px; margin-bottom: 16px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.cal-month { font-size: 23px; font-weight: 800; color: var(--text-1); letter-spacing: -0.01em; }
+.cal-nav { display: flex; background: var(--bg-raised); border-radius: 999px; padding: 3px; gap: 2px; }
+.cal-nav button {
+  width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--bg-card);
+  color: var(--text-2); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+}
+.cal-week { display: flex; gap: 4px; }
+.cal-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: 14px; background: none; border: none; font-family: inherit; }
+.cal-day-name { font-size: 12px; font-weight: 700; font-family: var(--font-mono); color: var(--text-3); letter-spacing: 0.02em; }
+.cal-day-num { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--text-1); transition: background 0.15s, box-shadow 0.15s; }
+.cal-day.is-today .cal-day-num { background: var(--lime); color: var(--lime-ink); }
+:root:not([data-theme="light"]) .cal-day.is-today .cal-day-num { box-shadow: 0 0 14px 0 var(--lime); }
+.cal-day.is-selected:not(.is-today) .cal-day-num { box-shadow: inset 0 0 0 2px var(--lime); color: var(--lime); }
+.cal-day-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--lime); margin-top: -4px; opacity: 0; }
+.cal-day.has-session .cal-day-dot { opacity: 1; }
+.cal-day.is-today .cal-day-dot { background: var(--lime-ink); }
+.cal-day[disabled] { opacity: 0.35; cursor: default; }
+
+/* ---------- Recent Activity date filter (set by tapping the calendar above) ---------- */
+.ra-filter { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg-raised); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; font-size: 12.5px; font-weight: 700; color: var(--text-1); }
+.ra-filter[hidden] { display: none; }
+.ra-filter button { font-family: inherit; font-size: 11.5px; font-weight: 700; color: var(--lime); background: none; border: none; cursor: pointer; }
+
 /* ---------- range pills ---------- */
 .range-pills { display: flex; gap: 6px; margin-bottom: 16px; }
 .range-pill {
@@ -335,6 +362,14 @@ section { margin-bottom: 22px; }
     <button type="button" class="theme-toggle" id="themeBtn" aria-label="Toggle light/dark"><span class="theme-toggle-dot"></span></button>
   </div>
 
+  <div class="cal-card">
+    <div class="cal-head">
+      <div class="cal-month" id="statsCalMonth">—</div>
+      <div class="cal-nav"><button type="button" id="statsCalPrev">‹</button><button type="button" id="statsCalNext">›</button></div>
+    </div>
+    <div class="cal-week" id="statsCalWeek"></div>
+  </div>
+
   <div class="range-pills" id="rangePills"></div>
 
   <section>
@@ -367,14 +402,6 @@ section { margin-bottom: 22px; }
           </div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-label-row"><span class="sec-label">Recent Activity</span><span class="sec-note" id="raCount">—</span></div>
-    <div class="card ra-card">
-      <ul class="session-list" id="sessionList"></ul>
-      <button type="button" class="view-all-btn" id="viewAllBtn">View all</button>
     </div>
   </section>
 
@@ -412,6 +439,21 @@ section { margin-bottom: 22px; }
   <section>
     <div class="sec-label-row"><span class="sec-label">Nutrition &amp; Recovery</span></div>
     <div class="nr-grid" id="nrGrid"></div>
+  </section>
+
+  <section>
+    <div class="sec-label-row">
+      <span class="sec-label">Recent Activity</span>
+      <span class="sec-note" id="raCount">—</span>
+    </div>
+    <div class="card ra-card">
+      <div class="ra-filter" id="raFilter" hidden>
+        <span id="raFilterLabel">—</span>
+        <button type="button" id="raFilterClear">Clear</button>
+      </div>
+      <ul class="session-list" id="sessionList"></ul>
+      <button type="button" class="view-all-btn" id="viewAllBtn">View all</button>
+    </div>
   </section>
 
   <div class="attribution">Estimated 1RM via Epley (weight × (1 + reps ÷ 30)). Deload sets are excluded from volume, PRs and lift progression, but still count as a session logged.</div>
@@ -1098,6 +1140,7 @@ section { margin-bottom: 22px; }
     renderPRs();
     renderLibrary();
     renderAnatomy();
+    renderStatsCalendar();
   }
   function bindSessionRows(el, redraw) {
     el.querySelectorAll('.session-head').forEach(function (h) {
@@ -1148,13 +1191,66 @@ section { margin-bottom: 22px; }
       });
     });
   }
+  // ---------- calendar — filters Recent Activity by a tapped date, so
+  // a session doesn't just silently fall out of the "recent 3" list
+  // the moment 3 more-recent sessions happen after it. ----------
+  var statsCalWeekOffset = 0;
+  var statsFilterDate = null; // dateKey string, or null for the normal "recent 3" view
+  function renderStatsCalendar() {
+    var today = new Date();
+    var dow = today.getDay();
+    var mondayOffset = dow === 0 ? -6 : 1 - dow;
+    var monday = new Date(today); monday.setDate(today.getDate() + mondayOffset + statsCalWeekOffset * 7);
+    document.getElementById('statsCalMonth').textContent = monday.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    var loggedDates = {};
+    ALL_ENTRIES.forEach(function (e) { loggedDates[e.dateKey] = true; });
+    var names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    var html = '';
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(monday); d.setDate(monday.getDate() + i);
+      var dk = keyOf(d);
+      var isToday = dk === keyOf(today);
+      var isSelected = dk === statsFilterDate;
+      var isFuture = d > today && !isToday;
+      html += '<button type="button" class="cal-day' + (isToday ? ' is-today' : '') + (isSelected ? ' is-selected' : '') + (loggedDates[dk] ? ' has-session' : '') + '"' +
+        (isFuture ? ' disabled' : ' data-date="' + dk + '"') + '>' +
+        '<div class="cal-day-name">' + names[i] + '</div>' +
+        '<div class="cal-day-num">' + d.getDate() + '</div>' +
+        '<div class="cal-day-dot"></div>' +
+        '</button>';
+    }
+    document.getElementById('statsCalWeek').innerHTML = html;
+    document.querySelectorAll('.cal-day[data-date]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var dk = btn.dataset.date;
+        statsFilterDate = statsFilterDate === dk ? null : dk; // tap the same day again to clear
+        renderStatsCalendar();
+        renderActivity();
+      });
+    });
+  }
+  document.getElementById('statsCalPrev').addEventListener('click', function () { statsCalWeekOffset--; renderStatsCalendar(); });
+  document.getElementById('statsCalNext').addEventListener('click', function () { statsCalWeekOffset++; renderStatsCalendar(); });
+  document.getElementById('raFilterClear').addEventListener('click', function () { statsFilterDate = null; renderStatsCalendar(); renderActivity(); });
+
   function renderActivity() {
     SESSIONS = buildSessions();
     pruneStaleSelection();
-    var recent = SESSIONS.slice(0, 3);
     var el = document.getElementById('sessionList');
-    el.innerHTML = recent.length ? recent.map(sessionRowHtml).join('') : '<div class="act-empty">Nothing logged yet.</div>';
-    bindSessionRows(el, renderActivity);
+    var filterEl = document.getElementById('raFilter');
+    if (statsFilterDate) {
+      var match = SESSIONS.filter(function (s) { return s.dateKey === statsFilterDate; });
+      var d = new Date(statsFilterDate + 'T12:00:00');
+      filterEl.hidden = false;
+      document.getElementById('raFilterLabel').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      el.innerHTML = match.length ? match.map(sessionRowHtml).join('') : '<div class="act-empty">Nothing logged this day.</div>';
+      bindSessionRows(el, renderActivity);
+    } else {
+      filterEl.hidden = true;
+      var recent = SESSIONS.slice(0, 3);
+      el.innerHTML = recent.length ? recent.map(sessionRowHtml).join('') : '<div class="act-empty">Nothing logged yet.</div>';
+      bindSessionRows(el, renderActivity);
+    }
     document.getElementById('raCount').textContent = SESSIONS.length + (SESSIONS.length === 1 ? ' session total' : ' sessions total');
   }
   document.getElementById('viewAllBtn').addEventListener('click', function () {
@@ -1287,6 +1383,7 @@ section { margin-bottom: 22px; }
   function renderAll() {
     renderRangePills();
     renderHeaderSub();
+    renderStatsCalendar();
     renderSummary();
     renderWeeklyProgress();
     renderActivity();
