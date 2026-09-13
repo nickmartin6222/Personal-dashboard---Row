@@ -32,7 +32,7 @@
   --sage-deep: #1C3B2C;
   --sage-pale: rgba(110,227,164,0.14);
   --positive: #6EE3A4;
-  --negative: #FF8A8A;
+  --negative: #C4366B;
   --gold: #F2C063;
   --blue: #7DD3FC;
   --shadow-sm: rgba(0,0,0,0.35);
@@ -41,7 +41,7 @@
   --blob-warm: rgba(224,118,88,0.16);
   --blob-cool: rgba(180,180,200,0.06);
   --dot-texture: rgba(255,255,255,0.014);
-  --on-accent: #06120C;
+  --on-accent: #06140F;
   --vty-aurora-1: rgba(110, 231, 183, 0.11);
   --vty-aurora-2: rgba(255, 226, 181, 0.05);
   --vty-fade-1: rgba(14, 38, 30, 0.4);
@@ -53,39 +53,39 @@
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: dark;
 }
-/* ===== Theme toggle — sage-green + white, matching the sage
-   Finance draft's exact palette, so Gym/Golf/Nutrition mini-tiles
-   here read as one consistent system with it when toggled on. ===== */
+/* ===== Theme toggle — cream/forest "Wellness" palette, the same
+   signal palette now live on Golf, Health and Fitness, so every mini-
+   tile here reads as one consistent system with them when toggled on. ===== */
 :root[data-theme="light"] {
-  --bg: #EDEEE9;
+  --bg: #F4EFE3;
   --card: #FFFFFF;
-  --card-soft: #F5F6F1;
+  --card-soft: #F8F4E9;
   --card-solid: #FFFFFF;
-  --border: rgba(28,30,27,0.08);
-  --border-strong: rgba(28,30,27,0.14);
-  --text-primary: #1C1E1B;
-  --text-secondary: #63675F;
-  --text-tertiary: #9A9E93;
-  --sage: #5F7A63;
-  --sage-deep: #3F5443;
-  --sage-pale: #E4EBE1;
-  --positive: #4C7A5B;
-  --negative: #C2554B;
-  --gold: #C99A44;
+  --border: rgba(46,46,46,0.08);
+  --border-strong: rgba(46,46,46,0.16);
+  --text-primary: #2E2E2E;
+  --text-secondary: #5A5A54;
+  --text-tertiary: #8C8C86;
+  --sage: #003B2F;
+  --sage-deep: #0F2A24;
+  --sage-pale: rgba(0,59,47,0.10);
+  --positive: #2F6B52;
+  --negative: #6B3B3B;
+  --gold: #C2A46F;
   --blue: #4F7FBF;
-  --shadow-sm: rgba(28,30,27,0.10);
-  --shadow-md: rgba(28,30,27,0.08);
-  --shadow-lg: rgba(28,30,27,0.14);
-  --blob-warm: rgba(217,139,95,0.14);
-  --blob-cool: rgba(28,30,27,0.05);
-  --dot-texture: rgba(28,30,27,0.05);
-  --on-accent: #FFFFFF;
-  --vty-aurora-1: rgba(201, 154, 68, 0.14);
-  --vty-aurora-2: rgba(201, 154, 68, 0.05);
-  --vty-fade-1: rgba(27, 47, 34, 0.14);
-  --vty-fade-2: rgba(27, 47, 34, 0);
-  --vty-particle: rgba(28,30,27, 0.30);
-  --vty-particle-glow: rgba(185, 214, 107, 0.35);
+  --shadow-sm: rgba(46,46,46,0.10);
+  --shadow-md: rgba(46,46,46,0.08);
+  --shadow-lg: rgba(46,46,46,0.14);
+  --blob-warm: rgba(194,164,111,0.16);
+  --blob-cool: rgba(46,46,46,0.05);
+  --dot-texture: rgba(46,46,46,0.05);
+  --on-accent: #F4EFE3;
+  --vty-aurora-1: rgba(194, 164, 111, 0.14);
+  --vty-aurora-2: rgba(194, 164, 111, 0.05);
+  --vty-fade-1: rgba(0, 59, 47, 0.14);
+  --vty-fade-2: rgba(0, 59, 47, 0);
+  --vty-particle: rgba(46, 46, 46, 0.30);
+  --vty-particle-glow: rgba(47, 107, 82, 0.35);
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -777,18 +777,18 @@ body::after {
   // mode uses the brighter palette (matching Finance's own per-item
   // swatch colors); light mode keeps the muted palette already
   // established for the rest of the light theme.
-  const PALETTE_DARK = ['#7DD3FC','#6EE7B7','#C9B8FF','#F2C063','#FF8A8A','#F472B6','#FCD34D','#34D399','#A78BFA','#60A5FA','#FB923C','#4ADE80'];
-  const PALETTE_LIGHT = ['#4C7A5B', '#4F7FBF', '#8A6BB5', '#C99A44', '#C2554B', '#5F7A63', '#7A9A4A', '#3F5443'];
+  const PALETTE_DARK = ['#7DD3FC','#6EE3A4','#C9B8FF','#F2C063','#F97066','#F472B6','#FCD34D','#34D399','#B794F4','#60A5FA','#FB923C','#4ADE80'];
+  const PALETTE_LIGHT = ['#2F6B52', '#4F7FBF', '#6B4A54', '#C2A46F', '#A9673D', '#003B2F', '#7A9A4A', '#0F2A24'];
   // Explicit colors for known holdings — a hash-based default can't
   // guarantee "S&P 500 = green" specifically, just "some distinct
   // color". Keyed by ticker (stocks) or lowercased name (everything
   // else, which has no ticker). Same color identity in both themes,
   // just the matching bright/muted shade.
   const NAMED_COLORS = {
-    green:  { dark: '#6EE7B7', light: '#4C7A5B' },
-    orange: { dark: '#FB923C', light: '#C99A44' },
+    green:  { dark: '#6EE3A4', light: '#2F6B52' },
+    orange: { dark: '#FB923C', light: '#C2A46F' },
     pink:   { dark: '#F472B6', light: '#B5568F' },
-    purpleLight: { dark: '#C9B8FF', light: '#8A6BB5' },
+    purpleLight: { dark: '#C9B8FF', light: '#6B4A54' },
     blue:   { dark: '#60A5FA', light: '#4F7FBF' }
   };
   const ITEM_COLOR_OVERRIDES = {

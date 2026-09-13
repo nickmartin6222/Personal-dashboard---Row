@@ -47,7 +47,7 @@
   --day-push: #F2C063; --day-push-dim: rgba(242,192,99,0.16);
   --day-pull: #7DD3FC; --day-pull-dim: rgba(125,211,252,0.16);
   --day-lowera: #6EE3A4; --day-lowera-dim: rgba(110,227,164,0.16);
-  --day-lowerb: #A78BFA; --day-lowerb-dim: rgba(167,139,250,0.16);
+  --day-lowerb: #B794F4; --day-lowerb-dim: rgba(183,148,244,0.16);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-heading: 'Fraunces', Georgia, serif;
   --font-mono: ui-monospace, SF Mono, Menlo, Consolas, monospace;
@@ -72,9 +72,9 @@
   --gold-dim: rgba(194,164,111,0.18);
   --blue: #4F7FBF;
   --day-push: #C2A46F; --day-push-dim: rgba(194,164,111,0.18);
-  --day-pull: #0F2A24; --day-pull-dim: rgba(15,42,36,0.14);
-  --day-lowera: #003B2F; --day-lowera-dim: rgba(0,59,47,0.14);
-  --day-lowerb: #2E2E2E; --day-lowerb-dim: rgba(46,46,46,0.12);
+  --day-pull: #4F7FBF; --day-pull-dim: rgba(79,127,191,0.14);
+  --day-lowera: #2F6B52; --day-lowera-dim: rgba(47,107,82,0.14);
+  --day-lowerb: #6B4A54; --day-lowerb-dim: rgba(107,74,84,0.14);
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -401,10 +401,10 @@ section { margin-bottom: 22px; }
   // colour audit — used wherever a chart needs a literal hex rather
   // than a CSS var() (SVG gradients / stroke attrs don't reliably
   // resolve custom properties the way element styles do). =====
-  var ACCENT_DARK = { push: '#F2C063', pull: '#7DD3FC', lowerA: '#6EE3A4', lowerB: '#A78BFA', primary: '#6EE3A4', gold: '#F2C063' };
-  var ACCENT_LIGHT = { push: '#C2A46F', pull: '#0F2A24', lowerA: '#003B2F', lowerB: '#2E2E2E', primary: '#003B2F', gold: '#C2A46F' };
-  var CAT_DARK = ['#6EE3A4', '#7DD3FC', '#F2C063', '#A78BFA', '#E07658', '#F97066', '#4DD6C4'];
-  var CAT_LIGHT = ['#003B2F', '#4F7FBF', '#C2A46F', '#6B4F8A', '#A9673D', '#8B4340', '#4A6B5C'];
+  var ACCENT_DARK = { push: '#F2C063', pull: '#7DD3FC', lowerA: '#6EE3A4', lowerB: '#B794F4', primary: '#6EE3A4', gold: '#F2C063' };
+  var ACCENT_LIGHT = { push: '#C2A46F', pull: '#4F7FBF', lowerA: '#2F6B52', lowerB: '#6B4A54', primary: '#003B2F', gold: '#C2A46F' };
+  var CAT_DARK = ['#6EE3A4', '#7DD3FC', '#F2C063', '#B794F4', '#F97066', '#C4366B', '#4DD6C4'];
+  var CAT_LIGHT = ['#003B2F', '#4F7FBF', '#C2A46F', '#6B4A54', '#A9673D', '#6B3B3B', '#2F6B52'];
   var DAY_LABEL = { push: 'Push', pull: 'Pull', lowerA: 'Lower A', lowerB: 'Lower B' };
   function isLight() { return document.documentElement.getAttribute('data-theme') === 'light'; }
   function accents() { return isLight() ? ACCENT_LIGHT : ACCENT_DARK; }
