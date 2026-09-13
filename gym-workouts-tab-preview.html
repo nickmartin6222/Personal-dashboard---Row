@@ -817,9 +817,30 @@ button { font-family: inherit; }
   try { var rawUi = localStorage.getItem(UI_KEY); if (rawUi) uiState = Object.assign(uiState, JSON.parse(rawUi)); } catch (e) {}
   function saveUi() { try { localStorage.setItem(UI_KEY, JSON.stringify(uiState)); } catch (e) {} }
 
+  // Self-heals stale picks instead of trusting the cache blindly: this
+  // file's DAY_META has been restructured more than once this session
+  // (areas renamed/merged/moved between days, the full catalog reseed),
+  // and localStorage survives every one of those deploys untouched — so
+  // a pick made under an older catalog can end up naming an exercise
+  // that no longer belongs to that day at all (or doesn't exist any
+  // more), and would otherwise show up frozen in the checklist forever.
+  // gym-preview.html's getPicksForDay() already does this same
+  // validate-against-current-catalog check; this just brings this file
+  // up to the same standard.
   function getPicks(day) {
-    if (!uiState.picks[day]) {
-      uiState.picks[day] = DAY_META[day].areas.map(function (a) { return a.options[0].name; });
+    var validNames = {};
+    DAY_META[day].areas.forEach(function (a) { a.options.forEach(function (o) { validNames[o.name] = true; }); });
+    var defaults = function () { return DAY_META[day].areas.map(function (a) { return a.options[0].name; }); };
+    var stored = uiState.picks[day];
+    if (!Array.isArray(stored)) {
+      uiState.picks[day] = defaults();
+      saveUi();
+      return uiState.picks[day];
+    }
+    var cleaned = stored.filter(function (n) { return validNames[n]; });
+    if (cleaned.length !== stored.length) {
+      uiState.picks[day] = cleaned.length ? cleaned : defaults();
+      saveUi();
     }
     return uiState.picks[day];
   }

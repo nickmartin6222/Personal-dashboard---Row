@@ -1864,7 +1864,11 @@ button { font-family: inherit; }
       if (!Array.isArray(current)) {
         picks[day][i] = names.length ? [names[0]] : [];
       } else {
-        picks[day][i] = current.filter(function (n) { return names.indexOf(n) !== -1; });
+        var kept = current.filter(function (n) { return names.indexOf(n) !== -1; });
+        // If every cached pick for this area was stale (area/options
+        // changed since it was picked), fall back to the area's default
+        // rather than leaving it silently empty.
+        picks[day][i] = kept.length ? kept : (names.length ? [names[0]] : []);
       }
     });
     return picks[day];
