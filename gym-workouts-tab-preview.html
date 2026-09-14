@@ -878,6 +878,12 @@ button { font-family: inherit; }
   }
   refreshRealData();
   function realExByName(name) { return REAL_EXERCISES.find(function (e) { return e.name === name; }); }
+  // Catalog config for name, falling back to the real logged record
+  // itself when the exercise has since fallen out of the catalog (a
+  // reseed removed/renamed it) but still has real history under this
+  // exact name — so a genuinely logged exercise never becomes
+  // un-openable just because it's no longer a pickable catalog option.
+  function exConfig(name) { return EX_INDEX[name] || realExByName(name); }
   function realLogsForName(name) {
     var ex = realExByName(name);
     if (!ex) return [];
@@ -964,7 +970,19 @@ button { font-family: inherit; }
     DAY_META[day].areas.forEach(function (a) {
       a.options.forEach(function (o) { orderByName[o.name] = a.order != null ? a.order : 99; });
     });
-    return getPicks(day).map(function (name) { return EX_INDEX[name]; }).filter(Boolean)
+    var names = getPicks(day).slice();
+    // Anything with a REAL log on the active date must always show in
+    // the checklist, even if it's not (or no longer) in this device's
+    // local picks list — picks are local-only/unsynced by design, but
+    // what you've actually logged is real, synced data, and the two
+    // drifting apart is exactly what made Today's Workout disagree
+    // with Recent Activity.
+    if (day === activeDay) {
+      REAL_EXERCISES.forEach(function (ex) {
+        if (activeDateRealLogsForName(ex.name).length > 0 && names.indexOf(ex.name) === -1) names.push(ex.name);
+      });
+    }
+    return names.map(exConfig).filter(Boolean)
       .map(function (ex, i) { return { ex: ex, i: i }; })
       .sort(function (a, b) { var d = (orderByName[a.ex.name] || 99) - (orderByName[b.ex.name] || 99); return d !== 0 ? d : a.i - b.i; })
       .map(function (x) { return x.ex; });
@@ -1157,7 +1175,9 @@ button { font-family: inherit; }
       var areaDef = meta.areas.find(function (a) { return a.options.some(function (o) { return o.name === ex.name; }); });
       var logged = todaySetsFor(ex.name);
       var done = logged.length > 0;
-      var metaStr = areaDef.sets + ' × ' + ex.repMin + '-' + ex.repMax;
+      // areaDef is missing for a real-logged exercise that's since
+      // fallen out of the catalog entirely (see exConfig/exercisesForDay).
+      var metaStr = areaDef ? (areaDef.sets + ' × ' + ex.repMin + '-' + ex.repMax) : (ex.repMin + '-' + ex.repMax + ' reps');
       if (done) {
         metaStr = logged.length + '×' + logged[logged.length - 1].reps + (ex.bw ? '' : ' @ ' + logged[logged.length - 1].weight + 'kg');
       }
@@ -1377,7 +1397,8 @@ button { font-family: inherit; }
     return { weight: last.weight, reps: ex.repMin, tag: 'Repeat', txt: last.reps + ' reps short of ' + ex.repMin + '-' + upgradeAt + '. Repeat ' + last.weight + 'kg until you hit ' + ex.repMin + '+ clean.' };
   }
   function openLogModal(name) {
-    var ex = EX_INDEX[name];
+    var ex = exConfig(name);
+    if (!ex) return;
     var meta = DAY_META[activeDay];
     var sug = suggestionFor(ex);
     var areaDef = areaDefFor(activeDay, name);
@@ -1401,7 +1422,7 @@ button { font-family: inherit; }
     document.getElementById('logModal').hidden = false;
   }
   function renderLogFields() {
-    var ex = EX_INDEX[logCtx.name];
+    var ex = exConfig(logCtx.name);
     document.getElementById('wVal').textContent = ex.bw ? 'BW' : logCtx.weight;
     document.getElementById('wUnit').textContent = ex.bw ? 'bodyweight' : ('kg' + (ex.perSide ? ' / side' : ''));
     var repsOpts = [];

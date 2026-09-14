@@ -31,7 +31,19 @@
     let supa = null;
     let pushTimer = null;
     let suppressSync = false;
+    // Persisted across page loads (not just this session) — the JSON of
+    // the synced keys as of the last CONFIRMED successful push from
+    // THIS browser. Lets init() below tell "local matches what I last
+    // know was pushed" apart from "local has changes nothing has ever
+    // pushed" — the second case covers a page that just got sync wired
+    // up for the first time (or was offline/crashed before its last
+    // push completed): without this, its initial pull would treat the
+    // empty in-memory lastSyncedJson as "nothing local to protect" and
+    // blindly overwrite real unsynced local data with a stale remote
+    // copy that never had it.
+    const LAST_PUSHED_KEY = '__sync_lastPushed_' + appKey;
     let lastSyncedJson = null;
+    try { lastSyncedJson = localStorage.getItem(LAST_PUSHED_KEY); } catch (e) {}
     // Set the instant any local write happens after boot. The initial
     // remote pull below is async (a network round-trip) — if the user
     // logs something before it resolves, applying that stale pull would
@@ -102,6 +114,10 @@
       return changed;
     }
 
+    function rememberPushed(json) {
+      lastSyncedJson = json;
+      try { origSet(LAST_PUSHED_KEY, json); } catch (e) {}
+    }
     async function pushNow() {
       if (!supa) return;
       const state = collect();
@@ -112,7 +128,7 @@
           { key: appKey, data: state, updated_at: new Date().toISOString() },
           { onConflict: 'key' }
         );
-        if (!error) lastSyncedJson = json;
+        if (!error) rememberPushed(json);
       } catch (e) {}
     }
     function schedulePush() {
@@ -146,17 +162,32 @@
           body: JSON.stringify({ key: appKey, data: state, updated_at: new Date().toISOString() }),
           keepalive: true,
         }).catch(() => {});
-        lastSyncedJson = json;
+        // Best-effort — the request is fire-and-forget (can't await in
+        // an unload handler), so this optimistically assumes it lands.
+        rememberPushed(json);
       } catch (e) {}
     }
 
     (async function init() {
       supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       try {
+        const currentLocalJson = JSON.stringify(collect());
+        // Local differs from the last CONFIRMED push from this browser
+        // (persisted across page loads, not just this session) — real
+        // unsynced changes are sitting here, most likely from a push
+        // that never completed (crash, closed too fast, offline).
+        const hasUnsyncedLocalChanges = lastSyncedJson != null && currentLocalJson !== lastSyncedJson;
+        // Nothing has EVER been confirmed pushed from this browser for
+        // this appKey, but there's real local data — the exact rollout
+        // scenario where sync just got wired up on a page that was
+        // already holding real, never-synced data (a logged workout, an
+        // edited goal). Without this, the pull below would treat remote
+        // as authoritative and silently overwrite it.
+        const isFirstSyncWithData = lastSyncedJson == null && currentLocalJson !== '{}';
         const { data, error } = await supa
           .from('app_state').select('data').eq('key', appKey).maybeSingle();
         if (!error && data && data.data && Object.keys(data.data).length > 0) {
-          if (localChangedSinceBoot) {
+          if (localChangedSinceBoot || hasUnsyncedLocalChanges || isFirstSyncWithData) {
             schedulePush();
           } else {
             lastSyncedJson = JSON.stringify(data.data);
