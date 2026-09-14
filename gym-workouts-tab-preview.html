@@ -1019,6 +1019,14 @@ button { font-family: inherit; }
     } catch (e) {}
   }
   function todayDayLabel() { return WEEKDAY_SPLIT[new Date().getDay()]; }
+  // Same fallback the boot-time activeDay init already uses: 'Rest' is
+  // a real, valid value; anything else that doesn't match a real day
+  // in DAY_META falls back to the first day rather than crashing.
+  function dayLabelFor(d) {
+    var label = WEEKDAY_SPLIT[d.getDay()];
+    if (label !== 'Rest' && !DAY_META[label]) label = DAY_ORDER[0];
+    return label;
+  }
 
   var activeDay = todayDayLabel();
   if (activeDay !== 'Rest' && !DAY_META[activeDay]) activeDay = DAY_ORDER[0];
@@ -1132,7 +1140,13 @@ button { font-family: inherit; }
       btn.addEventListener('click', function () {
         var parts = btn.dataset.date.split('-').map(Number);
         activeLogDate = new Date(parts[0], parts[1] - 1, parts[2]);
-        renderCalendar(); renderBackdateBanner(); renderChecklist();
+        // Jump the day-type tab (and hero/warmup/pills) to whatever was
+        // actually scheduled for the selected date, not whatever tab
+        // happened to be open — so picking Sep 12 shows that day's real
+        // split (Lower B) instead of leaving Push's checklist on screen
+        // with a different day's picks underneath it.
+        activeDay = dayLabelFor(activeLogDate);
+        renderCalendar(); renderBackdateBanner(); renderAll();
       });
     });
   }
@@ -1145,7 +1159,8 @@ button { font-family: inherit; }
   document.getElementById('backdateReturn').addEventListener('click', function () {
     activeLogDate = new Date();
     calWeekOffset = 0;
-    renderCalendar(); renderBackdateBanner(); renderChecklist();
+    activeDay = todayDayLabel();
+    renderCalendar(); renderBackdateBanner(); renderAll();
   });
   document.getElementById('calPrev').addEventListener('click', function () { calWeekOffset--; renderCalendar(); });
   document.getElementById('calNext').addEventListener('click', function () { calWeekOffset++; renderCalendar(); });
