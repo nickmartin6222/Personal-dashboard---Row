@@ -1,29 +1,40 @@
 // ============================================================
 // POST /api/health-import
-// Receives a webhook payload from the "Health Auto Export" iPhone app
-// (healthyapps.dev), which reads Apple Health/HealthKit on the phone —
-// including whatever Google Health / MyFitnessPal have written into it
-// (steps, nutrition, etc.) — and POSTs it here on a schedule.
+// Receives a webhook payload either from the "Health Auto Export" iPhone
+// app (healthyapps.dev, its paid "Automations" tier) or from a free
+// Apple Shortcuts personal automation built to hit this same endpoint —
+// both read Apple Health/HealthKit on the phone (steps, nutrition, etc.)
+// and POST it here on a schedule. Two accepted body shapes:
 //
-// Payload shape (help.healthyapps.dev/en/health-auto-export/export-format):
+// 1) Health Auto Export's own shape
+//    (help.healthyapps.dev/en/health-auto-export/export-format):
 //   { "data": { "metrics": [
 //       { "name": "step_count", "units": "count",
 //         "data": [ { "qty": 8500, "date": "2024-02-06 14:30:00 -0800" } ] },
 //       { "name": "dietary_energy", "units": "kcal", "data": [ {...} ] },
 //       ... one metric object per health metric the automation is set to send
 //   ] } }
-// Each `date` string is the phone's own local wall-clock time with its
-// UTC offset already applied, so the date portion (first 10 chars) is
-// the local calendar day directly — no timezone math needed here.
+//   Each `date` string is the phone's own local wall-clock time with its
+//   UTC offset already applied, so the date portion (first 10 chars) is
+//   the local calendar day directly — no timezone math needed here.
 //
-// A batch may resend the same day (e.g. an hourly automation re-covers
-// today repeatedly) — every metric+date pair is summed WITHIN this one
-// call, then that sum REPLACES whatever was stored for that metric+date,
-// so overlapping/resent batches never double-count.
+// 2) A flat shape — much easier to hand-build inside the Shortcuts app's
+//    own JSON body editor (no nested arrays/dictionaries required):
+//   { "date": "2026-09-14", "steps": 8500, "calories": 2200,
+//     "proteinG": 150, "carbsG": 240, "fatG": 70, "fiberG": 28 }
+//   `date` is required (must be the phone's own local YYYY-MM-DD — the
+//   server has no reliable way to know the phone's timezone) and every
+//   other field is optional; only the fields present get written.
+//
+// Either shape: a batch may resend the same day (e.g. a 3x/day
+// automation re-covers today repeatedly) — every metric+date pair is
+// summed WITHIN this one call, then that sum REPLACES whatever was
+// stored for that metric+date, so overlapping/resent batches never
+// double-count. Send today's running total each time, not a delta.
 //
 // Auth: requires an `x-api-key` header matching HEALTH_IMPORT_SECRET
-// (a Vercel env var) — set the same value as a custom header on the
-// REST API automation in the app so nobody else can post fake data here.
+// (a Vercel env var) — set the same value as a custom header on
+// whatever's posting here so nobody else can post fake data.
 //
 // Writes straight into the same Supabase app_state table sync.js uses,
 // under appKey 'health-metrics', as health:steps / health:nutrition —
@@ -72,7 +83,14 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body); } catch (e) { return res.status(400).json({ error: 'invalid JSON body' }); }
   }
   const metrics = (body && body.data && Array.isArray(body.data.metrics)) ? body.data.metrics : null;
-  if (!metrics) return res.status(400).json({ error: 'expected { data: { metrics: [...] } } body' });
+  const FLAT_FIELDS = ['steps', 'calories', 'proteinG', 'carbsG', 'fatG', 'fiberG'];
+  const isFlat = !metrics && body && typeof body === 'object' && FLAT_FIELDS.some(k => body[k] != null);
+  if (!metrics && !isFlat) {
+    return res.status(400).json({ error: 'expected { data: { metrics: [...] } } or a flat { date, steps, calories, proteinG, carbsG, fatG, fiberG } body' });
+  }
+  if (isFlat && !/^\d{4}-\d{2}-\d{2}$/.test(String(body.date || ''))) {
+    return res.status(400).json({ error: 'flat body requires "date" as YYYY-MM-DD (the phone\'s own local date — the server cannot infer your timezone)' });
+  }
 
   const restHeaders = {
     apikey: SUPABASE_KEY,
@@ -97,44 +115,57 @@ export default async function handler(req, res) {
     const distanceThisCall = {};
     let distanceUnit = state['health:distanceUnit'] || 'mi';
 
-    metrics.forEach(m => {
-      if (!m || !m.name || !Array.isArray(m.data)) return;
-      const name = String(m.name);
+    if (isFlat) {
+      // Flat shape: one day's worth of already-summed numbers straight
+      // from the request body, no HealthKit-export point-list to reduce.
+      const day = body.date;
+      if (body.steps != null) stepsThisCall[day] = Number(body.steps) || 0;
+      const flatNutritionMap = { calories: 'calories', proteinG: 'proteinG', carbsG: 'carbsG', fatG: 'fatG', fiberG: 'fiberG' };
+      Object.keys(flatNutritionMap).forEach(k => {
+        if (body[k] == null) return;
+        if (!nutritionThisCall[day]) nutritionThisCall[day] = {};
+        nutritionThisCall[day][flatNutritionMap[k]] = Number(body[k]) || 0;
+      });
+    } else {
+      metrics.forEach(m => {
+        if (!m || !m.name || !Array.isArray(m.data)) return;
+        const name = String(m.name);
 
-      if (/step_count|^steps$/i.test(name)) {
-        m.data.forEach(pt => {
-          if (!pt || pt.qty == null || !pt.date) return;
-          const day = localDateKey(pt.date);
-          stepsThisCall[day] = (stepsThisCall[day] || 0) + (Number(pt.qty) || 0);
-        });
-        return;
-      }
+        if (/step_count|^steps$/i.test(name)) {
+          m.data.forEach(pt => {
+            if (!pt || pt.qty == null || !pt.date) return;
+            const day = localDateKey(pt.date);
+            stepsThisCall[day] = (stepsThisCall[day] || 0) + (Number(pt.qty) || 0);
+          });
+          return;
+        }
 
-      if (DISTANCE_MATCH(name)) {
-        if (m.units) distanceUnit = m.units;
-        m.data.forEach(pt => {
-          if (!pt || pt.qty == null || !pt.date) return;
-          const day = localDateKey(pt.date);
-          distanceThisCall[day] = (distanceThisCall[day] || 0) + (Number(pt.qty) || 0);
-        });
-        return;
-      }
+        if (DISTANCE_MATCH(name)) {
+          if (m.units) distanceUnit = m.units;
+          m.data.forEach(pt => {
+            if (!pt || pt.qty == null || !pt.date) return;
+            const day = localDateKey(pt.date);
+            distanceThisCall[day] = (distanceThisCall[day] || 0) + (Number(pt.qty) || 0);
+          });
+          return;
+        }
 
-      const matcher = NUTRITION_MATCHERS.find(x => x.test(name));
-      if (matcher) {
-        // Apple Health (and this app's Whoop card) can report energy in
-        // kilojoules rather than kcal depending on the device's region/
-        // units setting — convert to kcal so "calories" is always kcal.
-        const isEnergyInKJ = matcher.key === 'calories' && /kj|kilojoule/i.test(m.units || '');
-        m.data.forEach(pt => {
-          if (!pt || pt.qty == null || !pt.date) return;
-          const day = localDateKey(pt.date);
-          if (!nutritionThisCall[day]) nutritionThisCall[day] = {};
-          const qty = (Number(pt.qty) || 0) / (isEnergyInKJ ? 4.184 : 1);
-          nutritionThisCall[day][matcher.key] = (nutritionThisCall[day][matcher.key] || 0) + qty;
-        });
-      }
-    });
+        const matcher = NUTRITION_MATCHERS.find(x => x.test(name));
+        if (matcher) {
+          // Apple Health (and this app's Whoop card) can report energy in
+          // kilojoules rather than kcal depending on the device's region/
+          // units setting — convert to kcal so "calories" is always kcal.
+          const isEnergyInKJ = matcher.key === 'calories' && /kj|kilojoule/i.test(m.units || '');
+          m.data.forEach(pt => {
+            if (!pt || pt.qty == null || !pt.date) return;
+            const day = localDateKey(pt.date);
+            if (!nutritionThisCall[day]) nutritionThisCall[day] = {};
+            const qty = (Number(pt.qty) || 0) / (isEnergyInKJ ? 4.184 : 1);
+            nutritionThisCall[day][matcher.key] = (nutritionThisCall[day][matcher.key] || 0) + qty;
+          });
+        }
+      });
+    }
 
     Object.keys(stepsThisCall).forEach(day => { steps[day] = Math.round(stepsThisCall[day]); });
     Object.keys(distanceThisCall).forEach(day => { distance[day] = Math.round(distanceThisCall[day] * 100) / 100; });
