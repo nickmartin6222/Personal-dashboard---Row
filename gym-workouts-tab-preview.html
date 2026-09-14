@@ -186,9 +186,10 @@ button { font-family: inherit; }
    the background, so Push/Pull/Lower A/Lower B read as "same white
    card, different line colour" rather than four different-coloured
    tiles. Cutout bleeds off the right edge, name/tag sit bottom-left. ---------- */
+.hero-tile-wrap { position: relative; margin-bottom: 14px; }
 .hero-tile {
   position: relative; height: 230px; border-radius: 22px; overflow: hidden; cursor: pointer;
-  margin-bottom: 14px; -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: transparent;
   background: var(--bg-card); border: 1px solid var(--border);
 }
 /* Topographic contour-line texture in the day's accent colour, on the
@@ -213,21 +214,22 @@ button { font-family: inherit; }
   font-size: 10.5px; font-weight: 700; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em;
 }
 .hero-tap-hint i, .hero-tap-hint svg { width: 12px; height: 12px; flex-shrink: 0; }
-/* Live session-length estimate — digs into the top-right corner (opposite
-   the "Choose exercises" pill, now bottom-right, so neither ever needs to
-   move for the other). Snug against the corner with a small gap, never
-   overhanging past the tile edge. Colour communicates the 45-60min
-   target band independently of the day's accent colour. */
+/* Live session-length estimate — sits on `.hero-tile-wrap` (not
+   `.hero-tile`, which stays `overflow:hidden` for the pattern's rounded
+   corners) so it can dig into and overhang the top-right corner like the
+   reference badge, instead of being clipped away. Solid fill in the
+   day's own accent colour (same var the pattern lines/tag pill use), not
+   a separate status colour. */
 .hero-duration {
-  position: absolute; top: 14px; right: 14px; z-index: 2;
+  position: absolute; top: -14px; right: -14px; z-index: 3;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 44px; height: 44px; border-radius: 50%; font-family: var(--font-mono);
-  background: color-mix(in srgb, var(--hero-duration-color, var(--lime)) 20%, var(--bg-card));
-  border: 1px solid color-mix(in srgb, var(--hero-duration-color, var(--lime)) 45%, transparent);
-  color: color-mix(in srgb, var(--hero-duration-color, var(--lime)) 80%, black);
+  width: 56px; height: 56px; border-radius: 50%; font-family: var(--font-mono);
+  background: var(--hero-accent, var(--lime));
+  box-shadow: 0 8px 16px rgba(0,0,0,0.22);
+  color: var(--lime-ink);
 }
-.hero-duration-val { font-size: 13px; font-weight: 800; line-height: 1; }
-.hero-duration-unit { font-size: 7px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.85; margin-top: 1px; }
+.hero-duration-val { font-size: 15px; font-weight: 800; line-height: 1; }
+.hero-duration-unit { font-size: 7.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.9; margin-top: 1px; }
 
 /* ---------- warm-up ---------- */
 .warmup-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
@@ -400,6 +402,7 @@ button { font-family: inherit; }
 
   <div class="day-pills" id="dayPills"></div>
 
+  <div class="hero-tile-wrap">
   <div class="hero-tile" id="heroTile">
     <svg class="hero-pattern" viewBox="0 0 600 230" preserveAspectRatio="xMidYMid slice">
       <defs>
@@ -467,12 +470,13 @@ button { font-family: inherit; }
     </svg>
     <img class="hero-cutout" id="heroImg" src="" alt="">
     <div class="hero-tap-hint"><i data-lucide="pencil"></i>Choose exercises</div>
-    <div class="hero-duration" id="heroDuration" title="Estimated session length"><span class="hero-duration-val" id="heroDurationVal">—</span><span class="hero-duration-unit">min</span></div>
     <div class="hero-body">
       <span class="hero-tag" id="heroTag">—</span>
       <div class="hero-title" id="heroTitle">—</div>
       <div class="hero-muscles" id="heroMuscles"></div>
     </div>
+  </div>
+  <div class="hero-duration" id="heroDuration" title="Estimated session length"><span class="hero-duration-val" id="heroDurationVal">—</span><span class="hero-duration-unit">min</span></div>
   </div>
 
   <div class="warmup-row" id="warmupRow"></div>
@@ -1105,9 +1109,7 @@ button { font-family: inherit; }
     var badge = document.getElementById('heroDuration');
     if (!badge) return;
     var mins = estimateSessionMinutes(activeDay);
-    document.getElementById('heroDurationVal').textContent = mins;
-    var color = mins > 70 ? '#F0685C' : (mins >= 60 ? '#F5B942' : '#6EE3A4');
-    badge.style.setProperty('--hero-duration-color', color);
+    document.getElementById('heroDurationVal').textContent = '~' + mins;
   }
 
   // ---------- weekly schedule (Sun..Sat -> day type, or 'Rest') ----------
