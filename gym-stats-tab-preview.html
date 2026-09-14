@@ -1381,6 +1381,17 @@ section { margin-bottom: 22px; }
   }
 
   function renderAll() {
+    // Weekly Progress (and anything else reading the SESSIONS global)
+    // used to only ever see a correct value on the SECOND render of a
+    // page load — SESSIONS starts as [] and was only ever rebuilt
+    // inside renderActivity(), which ran AFTER renderWeeklyProgress()
+    // below. Switching the range pill (which re-runs renderAll a
+    // second time, by which point SESSIONS was finally populated from
+    // the first pass) "fixed" it, which is exactly the symptom
+    // reported — rebuilding it here first makes every render correct,
+    // not just the second one.
+    SESSIONS = buildSessions();
+    pruneStaleSelection();
     renderRangePills();
     renderHeaderSub();
     renderStatsCalendar();

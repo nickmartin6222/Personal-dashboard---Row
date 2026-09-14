@@ -576,6 +576,26 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     renderCreatine();
   });
 
+  // A goal you just set is a deliberate decision, not a casual value —
+  // it should stick until YOU change it again, never get quietly
+  // reverted by a sync race. GOALS_PENDING_KEY remembers the exact
+  // goals object as of your last edit (local-only, never synced
+  // itself); onApplied below re-asserts it against any remote pull
+  // that disagrees, for as long as it's still the most recent edit.
+  // Tradeoff worth knowing: this makes THIS device's last edit sticky
+  // and authoritative — if you ever edit goals from a different
+  // device, opening health.html here again will push this device's
+  // older pending edit back over that change. Real per-field conflict
+  // resolution (e.g. last-edit-wins per field, with timestamps) would
+  // remove that tradeoff but is more than this needed for now.
+  const GOALS_PENDING_KEY = 'health:goals:pendingEdit';
+  function saveGoalEdit(g) {
+    storeSet('health:goals', g);
+    try { localStorage.setItem(GOALS_PENDING_KEY, JSON.stringify(g)); } catch (e) {}
+    renderCalories();
+    if (healthSync) healthSync.flush();
+  }
+
   // Tap the pencil in a tile's corner to edit its goal — simple
   // prompt-based for this draft; a proper settings modal can replace
   // this once the layout itself is signed off.
@@ -583,7 +603,7 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     e.stopPropagation();
     const g = goals();
     const v = prompt('Daily calorie goal:', g.calories);
-    if (v && !isNaN(v)) { g.calories = Number(v); storeSet('health:goals', g); renderCalories(); if (healthSync) healthSync.flush(); }
+    if (v && !isNaN(v)) { g.calories = Number(v); saveGoalEdit(g); }
   });
   document.querySelectorAll('[data-edit-macro]').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -593,7 +613,7 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
       const label = card.querySelector('.macro-name').textContent;
       const g = goals();
       const v = prompt(label + ' goal (g):', g[key]);
-      if (v && !isNaN(v)) { g[key] = Number(v); storeSet('health:goals', g); renderCalories(); if (healthSync) healthSync.flush(); }
+      if (v && !isNaN(v)) { g[key] = Number(v); saveGoalEdit(g); }
     });
   });
 
@@ -605,7 +625,20 @@ main { max-width: 560px; margin: 0 auto; padding: 20px 16px 90px; padding-top: m
     healthSync = initCloudSync({
       appKey: 'health-metrics',
       syncedKeys: ['health:steps', 'health:nutrition', 'health:distance', 'health:distanceUnit', 'health:goals', 'health:creatine'],
-      onApplied: function () { window.dispatchEvent(new Event('storage')); }
+      onApplied: function () {
+        try {
+          const pendingRaw = localStorage.getItem(GOALS_PENDING_KEY);
+          if (pendingRaw) {
+            const pending = JSON.parse(pendingRaw);
+            const current = storeGet('health:goals', {});
+            if (JSON.stringify(pending) !== JSON.stringify(current)) {
+              storeSet('health:goals', pending);
+              if (healthSync) healthSync.flush();
+            }
+          }
+        } catch (e) {}
+        window.dispatchEvent(new Event('storage'));
+      }
     });
   });
 })();
