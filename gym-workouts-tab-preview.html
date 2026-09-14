@@ -971,16 +971,21 @@ button { font-family: inherit; }
       a.options.forEach(function (o) { orderByName[o.name] = a.order != null ? a.order : 99; });
     });
     var names = getPicks(day).slice();
-    // Anything with a REAL log on the active date must always show in
-    // the checklist, even if it's not (or no longer) in this device's
-    // local picks list — picks are local-only/unsynced by design, but
-    // what you've actually logged is real, synced data, and the two
-    // drifting apart is exactly what made Today's Workout disagree
-    // with Recent Activity.
     if (day === activeDay) {
-      REAL_EXERCISES.forEach(function (ex) {
-        if (activeDateRealLogsForName(ex.name).length > 0 && names.indexOf(ex.name) === -1) names.push(ex.name);
-      });
+      var loggedNames = REAL_EXERCISES.filter(function (ex) { return activeDateRealLogsForName(ex.name).length > 0; }).map(function (ex) { return ex.name; });
+      if (loggedNames.length) {
+        // Once you've actually logged anything for this date, Today's
+        // Workout switches from "the plan" to "what you did" — showing
+        // ONLY the logged exercises, not every other still-unchecked
+        // pick. picks[day] is a standing list reused across every
+        // instance of that day-type (not reset per date), so once real
+        // logging starts, leftover picks from a previous session just
+        // clutter the view instead of reflecting today.
+        names = loggedNames;
+      }
+      // Before anything's logged, the picks list is still shown as-is
+      // (the plan for today) — this branch only kicks in once logging
+      // has actually started.
     }
     return names.map(exConfig).filter(Boolean)
       .map(function (ex, i) { return { ex: ex, i: i }; })
@@ -1199,14 +1204,20 @@ button { font-family: inherit; }
     document.querySelectorAll('.ex-card').forEach(function (card) {
       card.addEventListener('click', function () { openLogModal(card.dataset.name); });
     });
+    // "Done" is measured against the full PLAN (picks), not the
+    // possibly-filtered display list above — once logging starts, list
+    // only shows what's logged (trivially "all done"), which would
+    // otherwise make this button claim you're finished after just one
+    // exercise.
     var markBtn = document.getElementById('markDoneBtn');
-    var allDone = list.length > 0 && list.every(function (ex) { return activeDateRealLogsForName(ex.name).length > 0; });
+    var planned = getPicks(activeDay);
+    var allDone = planned.length > 0 && planned.every(function (name) { return activeDateRealLogsForName(name).length > 0; });
     markBtn.textContent = allDone ? '✓ Done' : 'Mark done';
     markBtn.classList.toggle('is-done', allDone);
   }
   document.getElementById('markDoneBtn').addEventListener('click', function () {
-    exercisesForDay(activeDay).forEach(function (ex) {
-      if (activeDateRealLogsForName(ex.name).length === 0) quickLogExercise(ex.name);
+    getPicks(activeDay).forEach(function (name) {
+      if (activeDateRealLogsForName(name).length === 0) quickLogExercise(name);
     });
     refreshRealData(); renderChecklist();
   });
