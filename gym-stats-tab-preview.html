@@ -1226,12 +1226,13 @@ section { margin-bottom: 22px; }
         statsFilterDate = statsFilterDate === dk ? null : dk; // tap the same day again to clear
         renderStatsCalendar();
         renderActivity();
+        renderAnatomy();
       });
     });
   }
   document.getElementById('statsCalPrev').addEventListener('click', function () { statsCalWeekOffset--; renderStatsCalendar(); });
   document.getElementById('statsCalNext').addEventListener('click', function () { statsCalWeekOffset++; renderStatsCalendar(); });
-  document.getElementById('raFilterClear').addEventListener('click', function () { statsFilterDate = null; renderStatsCalendar(); renderActivity(); });
+  document.getElementById('raFilterClear').addEventListener('click', function () { statsFilterDate = null; renderStatsCalendar(); renderActivity(); renderAnatomy(); });
 
   function renderActivity() {
     SESSIONS = buildSessions();
@@ -1357,16 +1358,25 @@ section { margin-bottom: 22px; }
       renderAnatomy();
     });
   });
+  // When the calendar filter above has a day selected, everything
+  // date-sensitive on this page follows THAT day instead of literal
+  // "today" — so tapping Sep 12 shows what was actually trained on
+  // Sep 12, not today's (probably empty) muscle map. Cleared filter =
+  // real today, same as before.
   function renderAnatomy() {
+    var refDate = statsFilterDate ? new Date(statsFilterDate + 'T12:00:00') : new Date();
+    var refKey = keyOf(refDate);
+    var weekMon = mondayOf(refDate);
+    var weekStart = keyOf(weekMon);
+    var weekEnd = keyOf(new Date(weekMon.getFullYear(), weekMon.getMonth(), weekMon.getDate() + 6));
     var active = new Set();
-    var todayKey = keyOf(new Date());
-    var weekStart = keyOf(mondayOf(new Date()));
     ALL_ENTRIES.forEach(function (e) {
       if (e.deload || !e.ex.muscle) return;
-      if (anatomyMode === 'today' && e.dateKey === todayKey) active.add(e.ex.muscle);
-      if (anatomyMode === 'week' && e.dateKey >= weekStart) active.add(e.ex.muscle);
+      if (anatomyMode === 'today' && e.dateKey === refKey) active.add(e.ex.muscle);
+      if (anatomyMode === 'week' && e.dateKey >= weekStart && e.dateKey <= weekEnd) active.add(e.ex.muscle);
     });
-    document.getElementById('anatomyTitle').textContent = 'MUSCLES TRAINED — ' + (anatomyMode === 'today' ? 'TODAY' : 'THIS WEEK');
+    var dayLabel = statsFilterDate ? refDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase() : 'TODAY';
+    document.getElementById('anatomyTitle').textContent = 'MUSCLES TRAINED — ' + (anatomyMode === 'today' ? dayLabel : 'THIS WEEK');
     var mc = muscleColors();
     document.querySelectorAll('.abody-region[data-muscle]').forEach(function (el) {
       var m = el.dataset.muscle;
@@ -1374,7 +1384,7 @@ section { margin-bottom: 22px; }
       else { el.style.fill = ''; el.classList.remove('is-active'); }
     });
     var legend = document.getElementById('anatomyLegend');
-    if (!active.size) { legend.innerHTML = '<div class="anatomy-empty">Nothing logged ' + (anatomyMode === 'today' ? 'today' : 'this week') + ' yet.</div>'; return; }
+    if (!active.size) { legend.innerHTML = '<div class="anatomy-empty">Nothing logged ' + (anatomyMode === 'today' ? (statsFilterDate ? 'that day' : 'today') : 'that week') + ' yet.</div>'; return; }
     legend.innerHTML = Array.from(active).sort().map(function (m) {
       return '<span class="anatomy-legend-item"><span class="anatomy-legend-dot" style="background:' + (mc[m] || '#888') + '"></span>' + m + '</span>';
     }).join('');

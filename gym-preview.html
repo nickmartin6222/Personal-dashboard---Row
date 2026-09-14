@@ -1157,7 +1157,15 @@ button { font-family: inherit; }
           'Cable Woodchop': 'Cable Chop',
           'Calf Press on Leg Press': 'Leg Press Calf Raise',
           'Goblet / Front Squat': 'Goblet Squat',
-          'Close-Grip Bench or Dip': 'Close-Grip Bench Press'
+          'Close-Grip Bench or Dip': 'Close-Grip Bench Press',
+          // Old logged history used the plural "Dips" — the reseed's
+          // catalog name is singular "Dip". This patches cached picks
+          // only; a real Supabase exercise record literally named
+          // "Dips" still exists as its own separate progression thread
+          // and needs a one-time data migration (rename + merge logs)
+          // to actually join up with "Dip" — not something this cache
+          // patch can do.
+          'Dips': 'Dip'
         };
         Object.keys(DAY_META).forEach(function (day) {
           (DAY_META[day].areas || []).forEach(function (a) {
@@ -1844,7 +1852,8 @@ button { font-family: inherit; }
       'Cable Woodchop': 'Cable Chop',
       'Calf Press on Leg Press': 'Leg Press Calf Raise',
       'Goblet / Front Squat': 'Goblet Squat',
-      'Close-Grip Bench or Dip': 'Close-Grip Bench Press'
+      'Close-Grip Bench or Dip': 'Close-Grip Bench Press',
+      'Dips': 'Dip'
     };
     Object.keys(picks).forEach(function (day) {
       Object.keys(picks[day] || {}).forEach(function (i) {
