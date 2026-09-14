@@ -406,6 +406,21 @@ section { margin-bottom: 22px; }
   </section>
 
   <section>
+    <div class="sec-label-row">
+      <span class="sec-label">Recent Activity</span>
+      <span class="sec-note" id="raCount">—</span>
+    </div>
+    <div class="card ra-card">
+      <div class="ra-filter" id="raFilter" hidden>
+        <span id="raFilterLabel">—</span>
+        <button type="button" id="raFilterClear">Clear</button>
+      </div>
+      <ul class="session-list" id="sessionList"></ul>
+      <button type="button" class="view-all-btn" id="viewAllBtn">View all</button>
+    </div>
+  </section>
+
+  <section>
     <div class="stats-widget-grid">
       <div class="card lib-card">
         <div class="sec-label" style="margin-bottom:10px">Exercise Library</div>
@@ -439,21 +454,6 @@ section { margin-bottom: 22px; }
   <section>
     <div class="sec-label-row"><span class="sec-label">Nutrition &amp; Recovery</span></div>
     <div class="nr-grid" id="nrGrid"></div>
-  </section>
-
-  <section>
-    <div class="sec-label-row">
-      <span class="sec-label">Recent Activity</span>
-      <span class="sec-note" id="raCount">—</span>
-    </div>
-    <div class="card ra-card">
-      <div class="ra-filter" id="raFilter" hidden>
-        <span id="raFilterLabel">—</span>
-        <button type="button" id="raFilterClear">Clear</button>
-      </div>
-      <ul class="session-list" id="sessionList"></ul>
-      <button type="button" class="view-all-btn" id="viewAllBtn">View all</button>
-    </div>
   </section>
 
   <div class="attribution">Estimated 1RM via Epley (weight × (1 + reps ÷ 30)). Deload sets are excluded from volume, PRs and lift progression, but still count as a session logged.</div>
