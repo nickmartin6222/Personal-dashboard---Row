@@ -166,6 +166,9 @@ button { font-family: inherit; }
 .cal-day.is-today .cal-day-num { background: var(--lime); color: var(--lime-ink); }
 :root:not([data-theme="light"]) .cal-day.is-today .cal-day-num { box-shadow: 0 0 14px 0 var(--lime); }
 .cal-day.is-selected:not(.is-today) .cal-day-num { box-shadow: inset 0 0 0 2px var(--lime); color: var(--lime); }
+.cal-day-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--lime); margin-top: -8px; opacity: 0; }
+.cal-day.has-session .cal-day-dot { opacity: 1; }
+.cal-day.is-today .cal-day-dot { background: var(--lime-ink); }
 .backdate-banner {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   background: rgba(242,192,99,0.14); border: 1px solid rgba(242,192,99,0.35);
@@ -194,7 +197,7 @@ button { font-family: inherit; }
    so the stroke can pick up --hero-accent directly. */
 .hero-pattern { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .hero-pattern path { fill: none; stroke: var(--hero-accent, var(--lime)); }
-.hero-cutout { position: absolute; right: -4%; bottom: -3%; height: 108%; width: auto; max-width: 62%; object-fit: contain; object-position: bottom right; filter: drop-shadow(0 14px 18px rgba(0,0,0,0.18)); transition: opacity 0.3s ease; }
+.hero-cutout { display: none; position: absolute; right: -4%; bottom: -3%; height: 108%; width: auto; max-width: 62%; object-fit: contain; object-position: bottom right; filter: drop-shadow(0 14px 18px rgba(0,0,0,0.18)); transition: opacity 0.3s ease; }
 .hero-body { position: absolute; left: 20px; right: 46%; bottom: 18px; }
 .hero-tag { display: inline-block; font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; background: color-mix(in srgb, var(--hero-accent, var(--lime)) 30%, var(--bg-card)); color: color-mix(in srgb, var(--hero-accent, var(--lime)) 75%, black); }
 .hero-title { font-family: var(--font-heading); font-size: 27px; font-weight: 700; color: var(--text-1); letter-spacing: -0.005em; }
@@ -1106,16 +1109,22 @@ button { font-family: inherit; }
     var monday = new Date(today); monday.setDate(today.getDate() + mondayOffset + calWeekOffset * 7);
     document.getElementById('calMonth').textContent = monday.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     var names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    var loggedDates = {};
+    Object.keys(REAL_LOGS).forEach(function (exId) {
+      (REAL_LOGS[exId] || []).forEach(function (l) { if (!l.deload) loggedDates[(l.date || '').slice(0, 10)] = true; });
+    });
     var html = '';
     for (var i = 0; i < 7; i++) {
       var d = new Date(monday); d.setDate(monday.getDate() + i);
+      var dk = wtDateKey(d);
       var isToday = d.toDateString() === today.toDateString();
       var isSelected = d.toDateString() === activeLogDate.toDateString();
       var isFuture = d > today && !isToday;
-      html += '<button type="button" class="cal-day' + (isToday ? ' is-today' : '') + (isSelected ? ' is-selected' : '') + '"' +
-        (isFuture ? ' disabled style="opacity:0.35;cursor:default"' : ' data-date="' + wtDateKey(d) + '"') + '>' +
+      html += '<button type="button" class="cal-day' + (isToday ? ' is-today' : '') + (isSelected ? ' is-selected' : '') + (loggedDates[dk] ? ' has-session' : '') + '"' +
+        (isFuture ? ' disabled style="opacity:0.35;cursor:default"' : ' data-date="' + dk + '"') + '>' +
         '<div class="cal-day-name">' + names[i] + '</div>' +
         '<div class="cal-day-num">' + d.getDate() + '</div>' +
+        '<div class="cal-day-dot"></div>' +
         '</button>';
     }
     document.getElementById('calWeek').innerHTML = html;
@@ -1196,7 +1205,7 @@ button { font-family: inherit; }
         var currentlyDone = activeDateRealLogsForName(name).length > 0;
         if (!currentlyDone) quickLogExercise(name);
         else removeLogForActiveDate(name);
-        refreshRealData(); renderChecklist();
+        refreshRealData(); renderChecklist(); renderCalendar();
       });
     });
     document.querySelectorAll('.ex-card').forEach(function (card) {
@@ -1217,7 +1226,7 @@ button { font-family: inherit; }
     getPicks(activeDay).forEach(function (name) {
       if (activeDateRealLogsForName(name).length === 0) quickLogExercise(name);
     });
-    refreshRealData(); renderChecklist();
+    refreshRealData(); renderChecklist(); renderCalendar();
   });
 
   // ---------- start/finish timer — visual only in this prototype, same
@@ -1454,6 +1463,7 @@ button { font-family: inherit; }
     refreshRealData();
     document.getElementById('logModal').hidden = true;
     renderChecklist();
+    renderCalendar();
   });
 
   renderAll();
