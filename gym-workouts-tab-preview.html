@@ -204,7 +204,7 @@ button { font-family: inherit; }
 .hero-sub { font-size: 12.5px; color: var(--text-2); margin-top: 3px; }
 .hero-muscles { font-size: 12.5px; color: var(--text-2); margin-top: 3px; }
 .hero-tap-hint {
-  position: absolute; top: 16px; right: 18px; z-index: 2;
+  position: absolute; bottom: 18px; right: 18px; z-index: 2;
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 12px 5px 9px; border-radius: 999px;
   background: color-mix(in srgb, var(--hero-accent, var(--lime)) 30%, var(--bg-card));
@@ -213,12 +213,13 @@ button { font-family: inherit; }
   font-size: 10.5px; font-weight: 700; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em;
 }
 .hero-tap-hint i, .hero-tap-hint svg { width: 12px; height: 12px; flex-shrink: 0; }
-/* Live session-length estimate — opposite corner from the "Choose
-   exercises" pill so neither ever needs to move for the other. Contained
-   fully inside the tile (never overhangs), colour communicates the
-   45-60min target band independently of the day's accent colour. */
+/* Live session-length estimate — digs into the top-right corner (opposite
+   the "Choose exercises" pill, now bottom-right, so neither ever needs to
+   move for the other). Snug against the corner with a small gap, never
+   overhanging past the tile edge. Colour communicates the 45-60min
+   target band independently of the day's accent colour. */
 .hero-duration {
-  position: absolute; top: 16px; left: 18px; z-index: 2;
+  position: absolute; top: 14px; right: 14px; z-index: 2;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   width: 44px; height: 44px; border-radius: 50%; font-family: var(--font-mono);
   background: color-mix(in srgb, var(--hero-duration-color, var(--lime)) 20%, var(--bg-card));
@@ -410,10 +411,15 @@ button { font-family: inherit; }
           <stop offset="0%" stop-color="#000"/>
           <stop offset="100%" stop-color="#fff"/>
         </radialGradient>
+        <radialGradient id="heroFadeHint2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#000"/>
+          <stop offset="100%" stop-color="#fff"/>
+        </radialGradient>
         <mask id="heroLineFade" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="230">
           <rect x="0" y="0" width="600" height="230" fill="#fff"/>
           <ellipse cx="70" cy="235" rx="300" ry="155" fill="url(#heroFadeText)"/>
           <ellipse cx="555" cy="15" rx="170" ry="80" fill="url(#heroFadeHint)"/>
+          <ellipse cx="540" cy="235" rx="180" ry="95" fill="url(#heroFadeHint2)"/>
         </mask>
       </defs>
       <g mask="url(#heroLineFade)">
@@ -1093,7 +1099,7 @@ button { font-family: inherit; }
       }
     });
     Object.keys(areaTime).forEach(function (order) { if (!used[order]) total += areaTime[order]; });
-    return Math.round(total);
+    return Math.round(total / 5) * 5;
   }
   function updateHeroDuration() {
     var badge = document.getElementById('heroDuration');
