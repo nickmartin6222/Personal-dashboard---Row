@@ -970,22 +970,20 @@ button { font-family: inherit; }
     DAY_META[day].areas.forEach(function (a) {
       a.options.forEach(function (o) { orderByName[o.name] = a.order != null ? a.order : 99; });
     });
+    // Reverted the "hide unticked picks once anything is logged" rule
+    // from moments ago — it silently swallowed exercises freshly picked
+    // via Choose Exercises + Confirm whenever anything else was already
+    // logged for the day, since there's no way to tell "freshly
+    // reselected" apart from "stale leftover" picks at the data level
+    // (Confirm always fully rewrites picks[day] to exactly what's
+    // toggled, so the picks list IS the current intent, always). Back
+    // to a straight union: your picks (ticked if logged, unticked if
+    // not) plus anything logged that isn't even in picks.
     var names = getPicks(day).slice();
     if (day === activeDay) {
-      var loggedNames = REAL_EXERCISES.filter(function (ex) { return activeDateRealLogsForName(ex.name).length > 0; }).map(function (ex) { return ex.name; });
-      if (loggedNames.length) {
-        // Once you've actually logged anything for this date, Today's
-        // Workout switches from "the plan" to "what you did" — showing
-        // ONLY the logged exercises, not every other still-unchecked
-        // pick. picks[day] is a standing list reused across every
-        // instance of that day-type (not reset per date), so once real
-        // logging starts, leftover picks from a previous session just
-        // clutter the view instead of reflecting today.
-        names = loggedNames;
-      }
-      // Before anything's logged, the picks list is still shown as-is
-      // (the plan for today) — this branch only kicks in once logging
-      // has actually started.
+      REAL_EXERCISES.forEach(function (ex) {
+        if (activeDateRealLogsForName(ex.name).length > 0 && names.indexOf(ex.name) === -1) names.push(ex.name);
+      });
     }
     return names.map(exConfig).filter(Boolean)
       .map(function (ex, i) { return { ex: ex, i: i }; })
