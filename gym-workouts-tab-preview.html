@@ -307,6 +307,17 @@ button { font-family: inherit; }
 .pick-opt.active { border-color: var(--hero-accent, var(--lime)); background: color-mix(in srgb, var(--hero-accent, var(--lime)) 16%, transparent); color: var(--text-1); font-weight: 700; }
 .pick-opt.active::before { content: '✓ '; }
 [data-theme="light"] .pick-opt.active { background: var(--hero-accent, var(--lime)); border-color: var(--hero-accent, var(--lime)); color: #F4EFE3; }
+.pick-search-wrap { margin-bottom: 10px; }
+.pick-search { width: 100%; box-sizing: border-box; font-size: 13.5px; padding: 11px 13px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-1); }
+.pick-search::placeholder { color: var(--text-3); }
+.pick-search-hint { font-size: 10.5px; color: var(--text-3); }
+.pick-search-results { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.pick-search-results:empty { margin-bottom: 0; }
+.pick-search-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; padding: 9px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; text-align: left; width: 100%; }
+.pick-search-row-name { font-weight: 700; color: var(--text-1); }
+.pick-search-row-meta { font-size: 10.5px; color: var(--text-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.03em; flex-shrink: 0; }
+.pick-search-row.active { border-color: var(--hero-accent, var(--lime)); background: color-mix(in srgb, var(--hero-accent, var(--lime)) 16%, transparent); }
+.pick-search-row.active .pick-search-row-name::before { content: '✓ '; }
 .sheet-confirm { width: 100%; padding: 14px; border-radius: 14px; border: none; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 14px; cursor: pointer; margin-top: 4px; }
 
 /* ---------- add a custom exercise (inside the picker sheet) ---------- */
@@ -510,6 +521,8 @@ button { font-family: inherit; }
 <div class="modal-bg" id="pickerModal" hidden>
   <div class="sheet">
     <div class="sheet-head"><span class="sheet-title" id="pickerTitle">—</span><button class="sheet-close" id="pickerClose">✕</button></div>
+    <div class="pick-search-wrap"><input type="text" id="pickerSearch" class="pick-search" placeholder="Search any exercise, any day…" autocomplete="off"></div>
+    <div id="pickerSearchResults"></div>
     <div id="pickerBody"></div>
     <button type="button" class="add-ex-toggle" id="addExToggle"><i data-lucide="plus"></i>Add a custom exercise</button>
     <div class="add-ex-form" id="addExForm" hidden></div>
@@ -674,9 +687,24 @@ button { font-family: inherit; }
   };
 
   var EX_INDEX = {};
+  // Flat, cross-day list backing the picker's search box — every
+  // exercise from every day's catalog (not just activeDay's own areas),
+  // so "add pull-ups on a Push day" is a search away instead of needing
+  // a separate custom-exercise entry. Rebuilt alongside EX_INDEX so a
+  // custom exercise addition (which also calls buildExIndex()) shows up
+  // in search immediately.
+  var ALL_EX_LIST = [];
   function buildExIndex() {
     EX_INDEX = {};
-    DAY_ORDER.forEach(function (d) { DAY_META[d].areas.forEach(function (a) { a.options.forEach(function (o) { EX_INDEX[o.name] = o; }); }); });
+    ALL_EX_LIST = [];
+    DAY_ORDER.forEach(function (d) {
+      DAY_META[d].areas.forEach(function (a) {
+        a.options.forEach(function (o) {
+          EX_INDEX[o.name] = o;
+          ALL_EX_LIST.push({ name: o.name, day: d, area: a.area });
+        });
+      });
+    });
   }
   buildExIndex();
 
@@ -998,14 +1026,18 @@ button { font-family: inherit; }
   // (areas renamed/merged/moved between days, the full catalog reseed),
   // and localStorage survives every one of those deploys untouched — so
   // a pick made under an older catalog can end up naming an exercise
-  // that no longer belongs to that day at all (or doesn't exist any
-  // more), and would otherwise show up frozen in the checklist forever.
-  // gym-preview.html's getPicksForDay() already does this same
-  // validate-against-current-catalog check; this just brings this file
-  // up to the same standard.
+  // that no longer exists anywhere, and would otherwise show up frozen
+  // in the checklist forever. gym-preview.html's getPicksForDay() already
+  // does this same validate-against-current-catalog check; this just
+  // brings this file up to the same standard.
+  //
+  // Validates against the GLOBAL catalog (EX_INDEX, every day), not just
+  // day's own areas — picker search lets you add an exercise from any
+  // day onto today (e.g. Pull-Ups while on Push), and this must not
+  // silently strip those back out the instant they're added just
+  // because they aren't one of today's own areas.
   function getPicks(day) {
-    var validNames = {};
-    DAY_META[day].areas.forEach(function (a) { a.options.forEach(function (o) { validNames[o.name] = true; }); });
+    var validNames = EX_INDEX;
     var defaults = function () { return DAY_META[day].areas.map(function (a) { return a.options[0].name; }); };
     var stored = uiState.picks[day];
     if (!Array.isArray(stored)) {
@@ -1424,39 +1456,84 @@ button { font-family: inherit; }
   });
 
   // ---------- picker modal ----------
+  function togglePick(name) {
+    var current = getPicks(activeDay);
+    var idx = current.indexOf(name);
+    uiState.picks[activeDay] = idx !== -1
+      ? current.slice(0, idx).concat(current.slice(idx + 1))
+      : current.concat([name]);
+    saveUi(); updateHeroDuration();
+  }
   function openPicker() {
     var meta = DAY_META[activeDay];
     document.getElementById('pickerTitle').textContent = activeDay + ' exercises';
     var picks = getPicks(activeDay);
-    document.getElementById('pickerBody').innerHTML = meta.areas.map(function (a, i) {
+    var homeNames = {};
+    var body = meta.areas.map(function (a, i) {
       var opts = a.options.map(function (o) {
+        homeNames[o.name] = true;
         var active = picks.indexOf(o.name) !== -1;
         return '<button type="button" class="pick-opt' + (active ? ' active' : '') + '" data-area="' + i + '" data-name="' + o.name + '">' + o.name + '</button>';
       }).join('');
       return '<div class="pick-area"><div class="pick-area-label">' + a.area + ' · ' + a.sets + ' sets</div><div class="pick-opts">' + opts + '</div></div>';
     }).join('');
+    // Anything picked that isn't one of today's own areas got here via
+    // the cross-day search box below — shown as its own group (still a
+    // plain .pick-opt, so the same toggle handler below removes it) so
+    // it's visible and removable without having to search for it again.
+    var extra = picks.filter(function (n) { return !homeNames[n]; });
+    if (extra.length) {
+      var extraOpts = extra.map(function (n) {
+        return '<button type="button" class="pick-opt active" data-name="' + n + '">' + n + '</button>';
+      }).join('');
+      body += '<div class="pick-area"><div class="pick-area-label">Added from other days</div><div class="pick-opts">' + extraOpts + '</div></div>';
+    }
+    document.getElementById('pickerBody').innerHTML = body;
     // Multi-select per area: tapping an unpicked option adds it, tapping
     // an already-picked one removes it — an area can end up with zero,
     // one, or several exercises picked, which is how the checklist
     // length (and so how long the session runs) gets customized.
     document.querySelectorAll('.pick-opt').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var name = btn.dataset.name;
-        var current = getPicks(activeDay);
-        var idx = current.indexOf(name);
-        uiState.picks[activeDay] = idx !== -1
-          ? current.slice(0, idx).concat(current.slice(idx + 1))
-          : current.concat([name]);
-        saveUi(); updateHeroDuration(); openPicker();
-      });
+      btn.addEventListener('click', function () { togglePick(btn.dataset.name); openPicker(); });
     });
     document.getElementById('addExForm').hidden = !addExFormOpen;
     if (addExFormOpen) renderAddExForm();
     document.getElementById('pickerModal').hidden = false;
+    renderPickerSearchResults();
     if (typeof lucide !== 'undefined') lucide.createIcons();
   }
   document.getElementById('pickerClose').addEventListener('click', function () { document.getElementById('pickerModal').hidden = true; });
   document.getElementById('pickerConfirm').addEventListener('click', function () { document.getElementById('pickerModal').hidden = true; renderChecklist(); });
+
+  // ---------- picker search — cross-day exercise lookup ----------
+  // Lives outside #pickerBody so re-rendering the per-area toggle
+  // buttons (openPicker() runs on every tap) never clears what's typed
+  // here or steals focus mid-search.
+  function renderPickerSearchResults() {
+    var box = document.getElementById('pickerSearchResults');
+    var q = (document.getElementById('pickerSearch').value || '').trim().toLowerCase();
+    if (!q) { box.innerHTML = ''; box.className = ''; return; }
+    box.className = 'pick-search-results';
+    var picks = getPicks(activeDay);
+    var seen = {};
+    var matches = ALL_EX_LIST.filter(function (e) {
+      if (seen[e.name]) return false;
+      if (e.name.toLowerCase().indexOf(q) === -1) return false;
+      seen[e.name] = true;
+      return true;
+    }).slice(0, 8);
+    if (!matches.length) { box.innerHTML = '<div class="pick-search-hint">No matches.</div>'; return; }
+    box.innerHTML = matches.map(function (e) {
+      var active = picks.indexOf(e.name) !== -1;
+      return '<button type="button" class="pick-search-row' + (active ? ' active' : '') + '" data-name="' + e.name + '">' +
+        '<span class="pick-search-row-name">' + e.name + '</span>' +
+        '<span class="pick-search-row-meta">' + e.day + ' · ' + e.area + '</span></button>';
+    }).join('');
+    box.querySelectorAll('.pick-search-row').forEach(function (btn) {
+      btn.addEventListener('click', function () { togglePick(btn.dataset.name); openPicker(); });
+    });
+  }
+  document.getElementById('pickerSearch').addEventListener('input', renderPickerSearchResults);
 
   // ---------- add a custom exercise (inside the picker sheet) ----------
   var addExFormOpen = false;
