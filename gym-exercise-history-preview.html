@@ -87,15 +87,15 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
 /* Horizontally-scrolling strip (same mechanic as the day-pills row on
    gym-workouts-tab-preview.html) instead of a wrapping multi-row cloud —
    scroll left/right to browse groups, matching the updated reference. */
-.lib2-cloud { display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; overflow-x: auto; padding-bottom: 2px; }
+.lib2-cloud { display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; overflow-x: auto; padding-bottom: 2px; margin-bottom: 12px; }
 .lib2-cloud::-webkit-scrollbar { display: none; }
 /* Bubbles styled like the plain exercise chips elsewhere on this page
    (.lib-chip) — a subtle neutral pill by default, with a small coloured
    dot carrying the muscle identity, rather than a loud fully-coloured
    pill. Colour only shows up boldly once a group is actually selected. */
-.lib2-pill { font-family: inherit; font-size: 13.5px; font-weight: 700; padding: 9px 15px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: opacity 0.15s ease, transform 0.1s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease; line-height: 1.2; display: inline-flex; align-items: center; gap: 6px; }
+.lib2-pill { font-family: inherit; font-size: 17px; font-weight: 700; padding: 14px 22px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: opacity 0.15s ease, transform 0.1s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease; line-height: 1.2; display: inline-flex; align-items: center; gap: 8px; }
 .lib2-pill:active { transform: scale(0.96); }
-.lib2-pill-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.lib2-pill-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
 .lib2-pill-count { opacity: 0.6; font-weight: 600; }
 .lib2-pill.is-dim { opacity: 0.3; }
 .lib2-pill.is-active { color: var(--text-1); }
@@ -173,8 +173,8 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
 
   <span class="sec-label">New concept — scroll to browse, or search (per your updated reference)</span>
   <div class="card lib2-card">
-    <div class="lib2-search-wrap"><input type="text" id="lib2Search" class="lib2-search" placeholder="Search a muscle group or an exercise…" autocomplete="off"></div>
     <div class="lib2-cloud" id="lib2Cloud"></div>
+    <div class="lib2-search-wrap"><input type="text" id="lib2Search" class="lib2-search" placeholder="Search a muscle group or an exercise…" autocomplete="off"></div>
     <div class="lib2-results" id="lib2Results"></div>
   </div>
 
