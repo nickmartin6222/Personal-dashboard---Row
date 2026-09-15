@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<title>Exercise History — demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+<style>
+/* ===== Same tokens as gym-stats-tab-preview.html — copied verbatim so
+   this demo previews true-to-brand, not an approximation. ===== */
+:root {
+  --bg: #050506;
+  --bg-card: rgba(255,255,255,0.04);
+  --bg-raised: rgba(255,255,255,0.06);
+  --bg-sheet: #0d0d0e;
+  --border: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.16);
+  --text-1: #FAFAFA;
+  --text-2: #B8B6B0;
+  --text-3: #76746E;
+  --lime: #6EE3A4;
+  --lime-dim: rgba(110,227,164,0.14);
+  --lime-ink: #06140F;
+  --down: #F0685C;
+  --down-dim: rgba(240,104,92,0.14);
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Fraunces', Georgia, serif;
+  --font-mono: ui-monospace, SF Mono, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F4EFE3;
+  --bg-card: #FFFFFF;
+  --bg-raised: rgba(46,46,46,0.05);
+  --bg-sheet: #FFFFFF;
+  --border: rgba(46,46,46,0.10);
+  --border-strong: rgba(46,46,46,0.20);
+  --text-1: #2E2E2E;
+  --text-2: #5A5A54;
+  --text-3: #8C8C86;
+  --lime: #003B2F;
+  --lime-dim: rgba(0,59,47,0.12);
+  --lime-ink: #F4EFE3;
+  --down: #B3392F;
+  --down-dim: rgba(179,57,47,0.12);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(--font); padding: 0 0 40px; -webkit-tap-highlight-color: transparent; }
+.page { max-width: 480px; margin: 0 auto; padding: 18px 18px 0; }
+.demo-banner { background: var(--lime-dim); color: var(--text-1); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 16px; }
+.demo-banner b { color: var(--lime); }
+.hdr-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.hdr-title { font-family: var(--font-heading); font-size: 22px; font-weight: 700; }
+.theme-toggle { width: 44px; height: 24px; border-radius: 999px; background: var(--bg-raised); border: 1px solid var(--border); position: relative; cursor: pointer; flex-shrink: 0; }
+.theme-toggle-dot { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--lime); transition: transform 0.2s ease; }
+[data-theme="light"] .theme-toggle-dot { transform: translateX(20px); }
+
+.sec-label { font-family: var(--font-mono); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 10px; display: block; }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 20px; }
+
+/* ---------- exercise library (unchanged from the real page — just
+   context so tapping into an exercise below feels like the real flow) ---------- */
+.lib-group { border-bottom: 1px solid var(--border); }
+.lib-group:last-child { border-bottom: none; }
+.lib-group-head { display: flex; align-items: center; gap: 9px; padding: 10px 0; cursor: pointer; }
+.lib-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.lib-group-name { font-size: 13px; font-weight: 700; flex: 1; }
+.lib-group-count { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); }
+.lib-chevron { color: var(--text-3); font-size: 13px; transition: transform 0.2s ease; }
+.lib-chevron.is-open { transform: rotate(180deg); }
+.lib-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 0 12px; }
+.lib-chip { font-family: inherit; font-size: 11.5px; padding: 6px 10px; border-radius: 999px; background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-2); cursor: pointer; }
+.lib-chip:hover { border-color: var(--border-strong); color: var(--text-1); }
+
+/* ---------- exercise history sheet (the new screen) ---------- */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-bg.open { display: flex; }
+.eh-sheet { background: var(--bg-sheet); border: 1px solid var(--border-strong); border-radius: 22px; width: 100%; max-width: 420px; max-height: 88vh; overflow-y: auto; padding: 18px 18px max(18px, env(safe-area-inset-bottom)); }
+.eh-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.eh-eyebrow { font-family: var(--font-mono); font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); margin-bottom: 3px; }
+.eh-title { font-family: var(--font-heading); font-size: 21px; font-weight: 700; line-height: 1.1; }
+.eh-close { width: 30px; height: 30px; border-radius: 50%; background: var(--bg-raised); border: none; color: var(--text-2); font-size: 15px; cursor: pointer; flex-shrink: 0; }
+
+.eh-range-row { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.eh-range-opt { font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; }
+.eh-range-opt.active { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+
+.eh-chart-wrap { position: relative; margin-bottom: 4px; }
+.eh-chart { width: 100%; height: 150px; display: block; overflow: visible; }
+.eh-pt { cursor: pointer; }
+.eh-pt-hit { fill: transparent; }
+.eh-pt-dot { fill: var(--lime); stroke: var(--bg-sheet); stroke-width: 2.5; }
+.eh-pt-dot.is-active { r: 6.5; }
+.eh-popup { position: absolute; transform: translate(-50%, -100%); background: var(--text-1); color: var(--bg-sheet); font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; padding: 5px 9px; border-radius: 8px; white-space: nowrap; pointer-events: none; box-shadow: 0 6px 14px rgba(0,0,0,0.25); }
+.eh-popup::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--text-1); }
+.eh-popup-sub { opacity: 0.65; font-weight: 500; margin-left: 4px; }
+
+.eh-improve { font-size: 12.5px; color: var(--text-2); margin: 10px 0 18px; }
+.eh-improve b { color: var(--lime); font-weight: 800; }
+
+.eh-stat-row { display: flex; gap: 8px; margin-bottom: 18px; }
+.eh-stat { flex: 1; background: var(--bg-raised); border-radius: 12px; padding: 11px 6px; text-align: center; }
+.eh-stat-val { font-size: 16px; font-weight: 800; color: var(--text-1); }
+.eh-stat-val.is-up { color: var(--lime); }
+.eh-stat-val.is-down { color: var(--down); }
+.eh-stat-label { font-size: 9px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-3); margin-top: 3px; }
+
+.eh-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.eh-table th { text-align: left; font-family: var(--font-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); font-weight: 700; padding: 0 6px 8px; border-bottom: 1px solid var(--border); }
+.eh-table th:last-child, .eh-table td:last-child { text-align: right; }
+.eh-table td { padding: 9px 6px; border-bottom: 1px solid var(--border); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.eh-table tr:last-child td { border-bottom: none; }
+.eh-table td.eh-weight { color: var(--text-1); font-weight: 700; }
+.eh-delta { font-weight: 700; }
+.eh-delta.is-up { color: var(--lime); }
+.eh-delta.is-down { color: var(--down); }
+.eh-delta.is-flat { color: var(--text-3); }
+
+.eh-log-btn { width: 100%; padding: 14px; border-radius: 14px; border: none; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 13.5px; cursor: pointer; margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.eh-log-btn i { width: 15px; height: 15px; }
+.eh-demo-note { text-align: center; font-size: 10.5px; color: var(--text-3); margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="demo-banner"><b>Demo</b> — this previews the upgraded exercise-history screen (per your reference layout) on real design tokens. It's not wired into the live Statistics page yet. Tap an exercise below to open it, and try the time-range toggle + tapping a point on the chart.</div>
+
+  <div class="hdr-row">
+    <span class="hdr-title">Exercise Library</span>
+    <button type="button" class="theme-toggle" id="themeBtn" aria-label="Toggle light/dark"><span class="theme-toggle-dot"></span></button>
+  </div>
+
+  <span class="sec-label">Muscle groups</span>
+  <div class="card" id="libraryCard"></div>
+</div>
+
+<!-- Exercise history sheet -->
+<div class="modal-bg" id="ehModal">
+  <div class="eh-sheet">
+    <div class="eh-head">
+      <div>
+        <div class="eh-eyebrow">History</div>
+        <div class="eh-title" id="ehTitle">—</div>
+      </div>
+      <button type="button" class="eh-close" id="ehClose">✕</button>
+    </div>
+
+    <div class="eh-range-row" id="ehRangeRow"></div>
+
+    <div class="eh-chart-wrap" id="ehChartWrap"></div>
+
+    <div class="eh-improve" id="ehImprove"></div>
+
+    <div class="eh-stat-row" id="ehStatRow"></div>
+
+    <table class="eh-table" id="ehTable"></table>
+
+    <button type="button" class="eh-log-btn"><i data-lucide="plus"></i>Log session</button>
+    <div class="eh-demo-note">Demo only — logging isn't wired up on this page.</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- theme ----------
+  function applyTheme() {
+    var saved = localStorage.getItem('eh_demo_theme');
+    if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  applyTheme();
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    localStorage.setItem('eh_demo_theme', isLight ? 'dark' : 'light');
+    applyTheme();
+    renderChart();
+  });
+
+  var MUSCLE_COLORS_DARK = { 'Chest': '#38bdf8', 'Adductors': '#c084fc', 'Quads': '#f2a93b', 'Shoulders': '#a78bfa', 'Back': '#34d399' };
+  var MUSCLE_COLORS_LIGHT = { 'Chest': '#4F7FBF', 'Adductors': '#6B4A54', 'Quads': '#C2A46F', 'Shoulders': '#5B7A99', 'Back': '#003B2F' };
+  function muscleColors() { return document.documentElement.getAttribute('data-theme') === 'light' ? MUSCLE_COLORS_LIGHT : MUSCLE_COLORS_DARK; }
+  function accent() { return getComputedStyle(document.documentElement).getPropertyValue('--lime').trim(); }
+
+  // ---------- mock data — a plausible multi-month progression per
+  // exercise, so W/M/3M/6M/Y/All actually show different slices ----------
+  function genLog(startKg, sessions, stepKg, startDaysAgo, gapDays) {
+    var out = [], kg = startKg;
+    for (var i = 0; i < sessions; i++) {
+      var daysAgo = startDaysAgo - i * gapDays;
+      if (daysAgo < 0) break;
+      var d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - daysAgo);
+      var jitter = (i % 4 === 3) ? -stepKg * 1.5 : 0; // occasional deload-ish dip, like real training
+      kg = Math.round((kg + stepKg + jitter) * 2) / 2;
+      var reps = 5 + (i % 3);
+      out.push({ date: d, weight: kg, sets: 4, reps: reps });
+    }
+    return out; // already oldest -> newest: daysAgo shrinks as i grows
+  }
+  var EXERCISES = {
+    'Barbell Bench Press': { muscle: 'Chest', log: genLog(50, 24, 1.25, 210, 9) },
+    'Pec Deck':             { muscle: 'Chest', log: genLog(40, 16, 2.5, 150, 9) },
+    'Incline DB Press':     { muscle: 'Chest', log: genLog(25, 12, 1.25, 110, 9) },
+    'Machine Hip Adductor': { muscle: 'Adductors', log: genLog(25, 10, 2.5, 95, 9) },
+    'Hack Squat':           { muscle: 'Quads', log: genLog(70, 18, 2.5, 160, 9) },
+    'DB Shoulder Press':    { muscle: 'Shoulders', log: genLog(15, 14, 1.25, 130, 9) },
+    'Lat Pulldown':         { muscle: 'Back', log: genLog(45, 20, 2.5, 190, 9) }
+  };
+
+  // ---------- exercise library list ----------
+  var libOpen = { 'Chest': true };
+  function renderLibrary() {
+    var groups = {};
+    Object.keys(EXERCISES).forEach(function (name) {
+      var m = EXERCISES[name].muscle;
+      (groups[m] = groups[m] || []).push(name);
+    });
+    var colors = muscleColors();
+    var el = document.getElementById('libraryCard');
+    el.innerHTML = Object.keys(groups).map(function (m) {
+      var open = !!libOpen[m];
+      return '<div class="lib-group"><div class="lib-group-head" data-m="' + m + '">' +
+        '<span class="lib-dot" style="background:' + (colors[m] || '#888') + '"></span>' +
+        '<span class="lib-group-name">' + m + '</span>' +
+        '<span class="lib-group-count">' + groups[m].length + '</span>' +
+        '<span class="lib-chevron' + (open ? ' is-open' : '') + '">⌄</span></div>' +
+        (open ? '<div class="lib-chips">' + groups[m].map(function (n) {
+          return '<button type="button" class="lib-chip" data-ex="' + n + '">' + n + '</button>';
+        }).join('') + '</div>' : '') + '</div>';
+    }).join('');
+    el.querySelectorAll('.lib-group-head').forEach(function (h) {
+      h.addEventListener('click', function () { libOpen[h.dataset.m] = !libOpen[h.dataset.m]; renderLibrary(); });
+    });
+    el.querySelectorAll('.lib-chip').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) { ev.stopPropagation(); openExerciseHistory(btn.dataset.ex); });
+    });
+  }
+  renderLibrary();
+
+  // ---------- exercise history sheet ----------
+  var RANGES = [
+    { key: 'W', label: 'W', days: 7 },
+    { key: 'M', label: 'M', days: 30 },
+    { key: '3M', label: '3M', days: 90 },
+    { key: '6M', label: '6M', days: 180 },
+    { key: 'Y', label: 'Y', days: 365 },
+    { key: 'ALL', label: 'All', days: null }
+  ];
+  var currentExercise = null;
+  var currentRange = 'ALL';
+  var activePointIdx = null;
+
+  function daysAgo(date) {
+    var now = new Date(); now.setHours(0,0,0,0);
+    return Math.round((now - date) / 86400000);
+  }
+  function fmtDate(d) { return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }); }
+
+  function filteredLog() {
+    var full = EXERCISES[currentExercise].log;
+    var range = RANGES.find(function (r) { return r.key === currentRange; });
+    if (!range.days) return full;
+    return full.filter(function (l) { return daysAgo(l.date) <= range.days; });
+  }
+
+  function openExerciseHistory(name) {
+    currentExercise = name;
+    currentRange = 'ALL';
+    activePointIdx = null;
+    document.getElementById('ehTitle').textContent = name;
+    renderRangeRow();
+    renderChart();
+    renderStats();
+    renderTable();
+    document.getElementById('ehModal').classList.add('open');
+  }
+  function renderRangeRow() {
+    var row = document.getElementById('ehRangeRow');
+    row.innerHTML = RANGES.map(function (r) {
+      return '<button type="button" class="eh-range-opt' + (r.key === currentRange ? ' active' : '') + '" data-r="' + r.key + '">' + r.label + '</button>';
+    }).join('');
+    row.querySelectorAll('.eh-range-opt').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        currentRange = btn.dataset.r;
+        activePointIdx = null;
+        renderRangeRow(); renderChart(); renderStats();
+      });
+    });
+  }
+
+  function renderChart() {
+    var wrap = document.getElementById('ehChartWrap');
+    var log = filteredLog();
+    var acc = accent();
+    if (log.length < 2) {
+      wrap.innerHTML = '<div style="font-size:12.5px;color:var(--text-3);text-align:center;padding:30px 0;">Not enough logged sets in this range yet.</div>';
+      return;
+    }
+    var W = 360, H = 150, padX = 14, padY = 16;
+    var vals = log.map(function (l) { return l.weight; });
+    var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+    if (mx === mn) { mx += 1; mn -= 1; }
+    var pts = log.map(function (l, i) {
+      var x = padX + (i / (log.length - 1)) * (W - padX * 2);
+      var y = H - padY - ((l.weight - mn) / (mx - mn)) * (H - padY * 2);
+      return { x: x, y: y, l: l };
+    });
+    var linePath = pts.map(function (p, i) { return (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+    var areaPath = linePath + ' L' + pts[pts.length - 1].x.toFixed(1) + ',' + H + ' L' + pts[0].x.toFixed(1) + ',' + H + ' Z';
+    var gradId = 'ehGrad';
+    var circles = pts.map(function (p, i) {
+      var isActive = i === activePointIdx;
+      return '<circle class="eh-pt-hit" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="14" data-i="' + i + '"/>' +
+        '<circle class="eh-pt-dot' + (isActive ? ' is-active' : '') + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="4.5" data-i="' + i + '"/>';
+    }).join('');
+    wrap.innerHTML =
+      '<svg class="eh-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+      '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="' + acc + '" stop-opacity="0.28"/>' +
+      '<stop offset="100%" stop-color="' + acc + '" stop-opacity="0"/></linearGradient></defs>' +
+      '<path d="' + areaPath + '" fill="url(#' + gradId + ')" stroke="none"/>' +
+      '<path d="' + linePath + '" fill="none" stroke="' + acc + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<g class="eh-pt">' + circles + '</g>' +
+      '</svg>';
+    wrap.querySelectorAll('.eh-pt-hit, .eh-pt-dot').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var i = +el.dataset.i;
+        activePointIdx = (activePointIdx === i) ? null : i;
+        renderChart();
+        renderPopup(pts);
+      });
+    });
+    renderPopup(pts);
+
+    // "+Xkg all time" — always the FULL log's first-to-latest change,
+    // independent of the range toggle above (the toggle scopes the
+    // chart/points; this stat is the lifetime headline).
+    var full = EXERCISES[currentExercise].log;
+    var lifetime = full[full.length - 1].weight - full[0].weight;
+    var sign = lifetime > 0 ? '+' : (lifetime < 0 ? '' : '±');
+    document.getElementById('ehImprove').innerHTML =
+      '<b>' + sign + lifetime + 'kg</b> all time — from ' + full[0].weight + 'kg (' + fmtDate(full[0].date) + ') to ' + full[full.length - 1].weight + 'kg (' + fmtDate(full[full.length - 1].date) + ')';
+  }
+  function renderPopup(pts) {
+    var wrap = document.getElementById('ehChartWrap');
+    var old = wrap.querySelector('.eh-popup');
+    if (old) old.remove();
+    if (activePointIdx == null) return;
+    var p = pts[activePointIdx];
+    var svgEl = wrap.querySelector('svg');
+    var vb = svgEl.viewBox.baseVal;
+    var pctX = (p.x / vb.width) * 100, pctY = (p.y / vb.height) * 100;
+    var popup = document.createElement('div');
+    popup.className = 'eh-popup';
+    popup.style.left = pctX + '%';
+    popup.style.top = pctY + '%';
+    popup.innerHTML = p.l.weight + 'kg<span class="eh-popup-sub">' + fmtDate(p.l.date) + '</span>';
+    wrap.appendChild(popup);
+  }
+
+  function renderStats() {
+    var full = EXERCISES[currentExercise].log;
+    var sessions = full.length;
+    var best = Math.max.apply(null, full.map(function (l) { return l.weight; }));
+    var last30 = full.filter(function (l) { return daysAgo(l.date) <= 30; });
+    var last30Delta = null;
+    if (last30.length >= 2) last30Delta = last30[last30.length - 1].weight - last30[0].weight;
+    else if (last30.length === 1) last30Delta = 0;
+    var last30Html = last30Delta == null ? '—' :
+      (last30Delta > 0 ? '+' + last30Delta : last30Delta) + 'kg';
+    var last30Cls = last30Delta == null ? '' : (last30Delta > 0 ? ' is-up' : (last30Delta < 0 ? ' is-down' : ''));
+    document.getElementById('ehStatRow').innerHTML =
+      '<div class="eh-stat"><div class="eh-stat-val">' + sessions + '</div><div class="eh-stat-label">Sessions</div></div>' +
+      '<div class="eh-stat"><div class="eh-stat-val' + last30Cls + '">' + last30Html + '</div><div class="eh-stat-label">Last 30 days</div></div>' +
+      '<div class="eh-stat"><div class="eh-stat-val">' + best + 'kg</div><div class="eh-stat-label">Best</div></div>';
+  }
+
+  function renderTable() {
+    var full = EXERCISES[currentExercise].log.slice().reverse(); // newest first
+    var rows = full.map(function (l, i) {
+      var prev = full[i + 1]; // chronologically previous session
+      var delta = prev ? Math.round((l.weight - prev.weight) * 10) / 10 : null;
+      var deltaHtml = delta == null ? '—' : (delta > 0 ? '+' + delta : (delta === 0 ? '0' : delta));
+      var deltaCls = delta == null ? 'is-flat' : (delta > 0 ? 'is-up' : (delta < 0 ? 'is-down' : 'is-flat'));
+      return '<tr><td>' + fmtDate(l.date) + '</td><td>' + l.sets + '</td><td>' + l.reps + '</td>' +
+        '<td class="eh-weight">' + l.weight + 'kg</td>' +
+        '<td><span class="eh-delta ' + deltaCls + '">' + deltaHtml + '</span></td></tr>';
+    }).join('');
+    document.getElementById('ehTable').innerHTML =
+      '<thead><tr><th>Date</th><th>Sets</th><th>Reps</th><th>Weight</th><th>Progress</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>';
+  }
+
+  document.getElementById('ehClose').addEventListener('click', function () {
+    document.getElementById('ehModal').classList.remove('open');
+  });
+  document.getElementById('ehModal').addEventListener('click', function (ev) {
+    if (ev.target.id === 'ehModal') document.getElementById('ehModal').classList.remove('open');
+  });
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  document.addEventListener('DOMContentLoaded', function () { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+})();
+</script>
+</body>
+</html>
