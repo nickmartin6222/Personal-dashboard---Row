@@ -120,6 +120,10 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
 .eh-delta.is-up { color: var(--lime); }
 .eh-delta.is-down { color: var(--down); }
 .eh-delta.is-flat { color: var(--text-3); }
+.eh-pr-star { color: var(--lime); margin-right: 3px; font-size: 11px; vertical-align: 1px; }
+
+.eh-viewall-btn { width: 100%; padding: 11px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); font-weight: 700; font-size: 12px; cursor: pointer; margin-top: 4px; }
+.eh-viewall-btn:hover { border-color: var(--border-strong); color: var(--text-1); }
 
 .eh-log-btn { width: 100%; padding: 14px; border-radius: 14px; border: none; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 13.5px; cursor: pointer; margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .eh-log-btn i { width: 15px; height: 15px; }
@@ -160,6 +164,7 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
     <div class="eh-stat-row" id="ehStatRow"></div>
 
     <table class="eh-table" id="ehTable"></table>
+    <button type="button" class="eh-viewall-btn" id="ehViewAllBtn" hidden>View all</button>
 
     <button type="button" class="eh-log-btn"><i data-lucide="plus"></i>Log session</button>
     <div class="eh-demo-note">Demo only — logging isn't wired up on this page.</div>
@@ -256,6 +261,8 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
   var currentExercise = null;
   var currentRange = 'ALL';
   var activePointIdx = null;
+  var tableExpanded = false;
+  var TABLE_COLLAPSE_LIMIT = 5;
 
   function daysAgo(date) {
     var now = new Date(); now.setHours(0,0,0,0);
@@ -274,6 +281,7 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
     currentExercise = name;
     currentRange = 'ALL';
     activePointIdx = null;
+    tableExpanded = false;
     document.getElementById('ehTitle').textContent = name;
     renderRangeRow();
     renderChart();
@@ -345,8 +353,7 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
     var full = EXERCISES[currentExercise].log;
     var lifetime = full[full.length - 1].weight - full[0].weight;
     var sign = lifetime > 0 ? '+' : (lifetime < 0 ? '' : '±');
-    document.getElementById('ehImprove').innerHTML =
-      '<b>' + sign + lifetime + 'kg</b> all time — from ' + full[0].weight + 'kg (' + fmtDate(full[0].date) + ') to ' + full[full.length - 1].weight + 'kg (' + fmtDate(full[full.length - 1].date) + ')';
+    document.getElementById('ehImprove').innerHTML = '<b>' + sign + lifetime + 'kg</b> all time';
   }
   function renderPopup(pts) {
     var wrap = document.getElementById('ehChartWrap');
@@ -384,20 +391,34 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
 
   function renderTable() {
     var full = EXERCISES[currentExercise].log.slice().reverse(); // newest first
-    var rows = full.map(function (l, i) {
+    var best = Math.max.apply(null, full.map(function (l) { return l.weight; }));
+    var visible = tableExpanded ? full : full.slice(0, TABLE_COLLAPSE_LIMIT);
+    var rows = visible.map(function (l, i) {
       var prev = full[i + 1]; // chronologically previous session
       var delta = prev ? Math.round((l.weight - prev.weight) * 10) / 10 : null;
       var deltaHtml = delta == null ? '—' : (delta > 0 ? '+' + delta : (delta === 0 ? '0' : delta));
       var deltaCls = delta == null ? 'is-flat' : (delta > 0 ? 'is-up' : (delta < 0 ? 'is-down' : 'is-flat'));
-      return '<tr><td>' + fmtDate(l.date) + '</td><td>' + l.sets + '</td><td>' + l.reps + '</td>' +
+      var star = l.weight === best ? '<span class="eh-pr-star" title="Personal best">★</span>' : '';
+      return '<tr><td>' + star + fmtDate(l.date) + '</td><td>' + l.sets + '</td><td>' + l.reps + '</td>' +
         '<td class="eh-weight">' + l.weight + 'kg</td>' +
         '<td><span class="eh-delta ' + deltaCls + '">' + deltaHtml + '</span></td></tr>';
     }).join('');
     document.getElementById('ehTable').innerHTML =
       '<thead><tr><th>Date</th><th>Sets</th><th>Reps</th><th>Weight</th><th>Progress</th></tr></thead>' +
       '<tbody>' + rows + '</tbody>';
+    var viewAllBtn = document.getElementById('ehViewAllBtn');
+    if (full.length <= TABLE_COLLAPSE_LIMIT) {
+      viewAllBtn.hidden = true;
+    } else {
+      viewAllBtn.hidden = false;
+      viewAllBtn.textContent = tableExpanded ? 'Show less' : 'View all (' + full.length + ')';
+    }
   }
 
+  document.getElementById('ehViewAllBtn').addEventListener('click', function () {
+    tableExpanded = !tableExpanded;
+    renderTable();
+  });
   document.getElementById('ehClose').addEventListener('click', function () {
     document.getElementById('ehModal').classList.remove('open');
   });
