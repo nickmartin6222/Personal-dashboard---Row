@@ -255,24 +255,24 @@ body.topbar-modal-open {
 </header>
 `;
 
+  // Fitness and Health used to be two separate tabs here — merged into
+  // one "Health" tab that opens the Workouts flow (which now has its
+  // own Nutrition tab covering what health.html used to be its own
+  // destination for). Down from 5 tabs to 4.
   const bottombarHtml = `
 <nav class="bottombar" id="bottombar" role="navigation" aria-label="Main tabs">
   <div class="bottombar-inner" id="bottombarInner">
     <a href="index.html" class="bottombar-tab" data-page="main">
       <span class="bottombar-tab-icon"><i data-lucide="house"></i></span>
-      <span>Main</span>
+      <span>Home</span>
     </a>
-    <a href="gym-workouts-tab-preview.html" class="bottombar-tab" data-page="fitness">
-      <span class="bottombar-tab-icon"><i data-lucide="dumbbell"></i></span>
-      <span>Fitness</span>
+    <a href="gym-workouts-tab-preview.html" class="bottombar-tab" data-page="health">
+      <span class="bottombar-tab-icon"><i data-lucide="heart-pulse"></i></span>
+      <span>Health</span>
     </a>
     <a href="golf.html" class="bottombar-tab" data-page="golf">
       <span class="bottombar-tab-icon"><i data-lucide="flag"></i></span>
       <span>Golf</span>
-    </a>
-    <a href="health.html" class="bottombar-tab" data-page="health">
-      <span class="bottombar-tab-icon"><i data-lucide="heart-pulse"></i></span>
-      <span>Health</span>
     </a>
     <a href="FROK-finance-standalone.html#net" class="bottombar-tab" data-page="finance">
       <span class="bottombar-tab-icon"><i data-lucide="wallet"></i></span>
@@ -297,9 +297,15 @@ body.topbar-modal-open {
   }
   function currentPageKey() {
     const p = (window.location.pathname || '').toLowerCase();
-    if (p.endsWith('gym.html') || p.endsWith('gym-preview.html') || p.endsWith('gym-workouts-tab-preview.html') || p.endsWith('gym-stats-tab-preview.html')) return 'fitness';
+    // Fitness + Health are one merged "Health" tab now. In practice this
+    // branch only ever fires for the legacy gym.html/gym-preview.html —
+    // gym-workouts/gym-stats/health.html all supply their own
+    // `id="bottombar"` now (the shared 4-tab Home/Workouts/Nutrition/
+    // Statistics bar), so this file's bottombar/active-highlighting
+    // never actually renders on them; kept so those two legacy pages
+    // still land on the right tab if opened directly.
+    if (p.endsWith('gym.html') || p.endsWith('gym-preview.html') || p.endsWith('gym-workouts-tab-preview.html') || p.endsWith('gym-stats-tab-preview.html') || p.endsWith('health.html')) return 'health';
     if (p.endsWith('golf.html')) return 'golf';
-    if (p.endsWith('health.html')) return 'health';
     // Finance suppresses this bottombar entirely (its own internal tabs
     // take over instead), so this branch never actually lights up
     // anything today — kept for consistency/future-proofing.
@@ -333,26 +339,39 @@ body.topbar-modal-open {
       document.head.appendChild(style);
     }
 
-    if (document.getElementById('topbar') || document.getElementById('bottombar')) return;
     if (!shouldShowChrome()) return;
 
-    const topWrap = document.createElement('div');
-    topWrap.innerHTML = topbarHtml.trim();
-    document.body.insertBefore(topWrap.firstChild, document.body.firstChild);
+    // Topbar (finance shortcut + the theme toggle/home button injected
+    // separately below) and bottombar are gated independently now — a
+    // page that wants this file's theme toggle but has its OWN bottom
+    // nav (the Fitness/Health family: gym-workouts/gym-stats/health,
+    // all sharing one hand-coded 4-tab bar) hand-codes its own
+    // `id="bottombar"` element to suppress just this file's version,
+    // without losing the topbar. Previously this was one all-or-nothing
+    // guard, which meant a page could only have both or neither.
+    if (!document.getElementById('topbar')) {
+      const topWrap = document.createElement('div');
+      topWrap.innerHTML = topbarHtml.trim();
+      document.body.insertBefore(topWrap.firstChild, document.body.firstChild);
+    }
 
-    const bottomWrap = document.createElement('div');
-    bottomWrap.innerHTML = bottombarHtml.trim();
-    document.body.appendChild(bottomWrap.firstChild);
+    if (!document.getElementById('bottombar')) {
+      const bottomWrap = document.createElement('div');
+      bottomWrap.innerHTML = bottombarHtml.trim();
+      document.body.appendChild(bottomWrap.firstChild);
 
-    // Highlight the active bottom tab.
-    const active = currentPageKey();
-    document.querySelectorAll('.bottombar-tab').forEach((t) => {
-      t.classList.toggle('active', t.getAttribute('data-page') === active);
-    });
+      // Highlight the active bottom tab.
+      const active = currentPageKey();
+      document.querySelectorAll('.bottombar-tab').forEach((t) => {
+        t.classList.toggle('active', t.getAttribute('data-page') === active);
+      });
 
-    // Reserve room above the fixed bottom bar so page content can scroll
-    // past it without being hidden.
-    document.body.classList.add('has-bottombar');
+      // Reserve room above the fixed bottom bar so page content can
+      // scroll past it without being hidden — only when THIS file's
+      // bottombar is the one actually on screen; a page with its own
+      // bottom nav already reserves its own room for it.
+      document.body.classList.add('has-bottombar');
+    }
   }
 
   // Finds this page's own content container so the topbar/floating
