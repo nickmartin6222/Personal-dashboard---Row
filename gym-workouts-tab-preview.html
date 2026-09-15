@@ -695,14 +695,20 @@ button { font-family: inherit; }
   // custom exercise addition (which also calls buildExIndex()) shows up
   // in search immediately.
   var ALL_EX_LIST = [];
+  // name -> its home area's `sets` count. The duration estimate needs
+  // this for a cross-day pick (added via search, so it isn't one of
+  // activeDay's own areas and has no `sets` of its own to read).
+  var EX_AREA_SETS = {};
   function buildExIndex() {
     EX_INDEX = {};
     ALL_EX_LIST = [];
+    EX_AREA_SETS = {};
     DAY_ORDER.forEach(function (d) {
       DAY_META[d].areas.forEach(function (a) {
         a.options.forEach(function (o) {
           EX_INDEX[o.name] = o;
           ALL_EX_LIST.push({ name: o.name, day: d, area: a.area });
+          EX_AREA_SETS[o.name] = a.sets;
         });
       });
     });
@@ -1123,9 +1129,11 @@ button { font-family: inherit; }
   function estimateSessionMinutes(day) {
     var names = getPicks(day);
     var areaTime = {};
+    var homeNames = {};
     DAY_META[day].areas.forEach(function (a) {
       var picked = a.options.filter(function (o) { return names.indexOf(o.name) !== -1; });
       if (!picked.length) return;
+      picked.forEach(function (o) { homeNames[o.name] = true; });
       var mins = picked.reduce(function (sum, o) {
         var mult = o.perSide ? UNILATERAL_MULT : 1;
         return sum + MINUTES_PER_SET[repBand(o)] * a.sets * mult;
@@ -1142,6 +1150,18 @@ button { font-family: inherit; }
       }
     });
     Object.keys(areaTime).forEach(function (order) { if (!used[order]) total += areaTime[order]; });
+    // Cross-day picks (added via the picker's search box) aren't part of
+    // any of today's own areas, so the loop above never sees them —
+    // count each on its own, using its home area's `sets`, no superset
+    // discount since it isn't paired with anything today.
+    names.forEach(function (n) {
+      if (homeNames[n]) return;
+      var ex = EX_INDEX[n];
+      if (!ex) return;
+      var sets = EX_AREA_SETS[n] || 3;
+      var mult = ex.perSide ? UNILATERAL_MULT : 1;
+      total += MINUTES_PER_SET[repBand(ex)] * sets * mult + TRANSITION_MIN;
+    });
     return Math.round(total / 5) * 5;
   }
   function updateHeroDuration() {
