@@ -133,6 +133,14 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 .sec-label { font-family: var(--font-mono); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin: 18px 0 10px; display: block; }
 
+/* ---------- protein coverage — trailing 7-day card, same cream tile ---------- */
+.coverage-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cream-ink-faint); margin-bottom: 10px; }
+.coverage-days { font-family: var(--font-heading); font-size: 26px; font-weight: 700; color: var(--cream-ink); margin-bottom: 6px; }
+.coverage-desc { font-size: 12.5px; color: var(--cream-ink-soft); margin-bottom: 14px; }
+.coverage-pill { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 6px 14px; border-radius: 999px; }
+.coverage-pill.is-on { background: color-mix(in srgb, var(--accent) 20%, var(--cream)); color: color-mix(in srgb, var(--accent) 70%, var(--cream-ink)); }
+.coverage-pill.is-off { background: color-mix(in srgb, var(--down) 16%, var(--cream)); color: var(--down); }
+
 /* ---------- desktop: calories on the left, macros as a flush row list on the right ---------- */
 @media (min-width: 760px) {
   .nutrition-grid { grid-template-columns: 3fr 2fr; align-items: stretch; }
@@ -237,6 +245,14 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
         <div class="macro-top"><span class="macro-name">Step Distance</span><span class="macro-val" id="distVal">—</span></div>
       </div>
     </div>
+  </div>
+
+  <span class="sec-label">Nutrition &amp; recovery</span>
+  <div class="cream-tile">
+    <div class="coverage-eyebrow">Protein coverage</div>
+    <div class="coverage-days" id="coverageDays">—/7 days</div>
+    <div class="coverage-desc" id="coverageDesc">—</div>
+    <span class="coverage-pill" id="coveragePill">—</span>
   </div>
 </div>
 
@@ -347,16 +363,34 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     document.getElementById('calLeft').textContent = left >= 0 ? left.toLocaleString() + ' left' : (Math.abs(left)).toLocaleString() + ' over';
     document.getElementById('calBar').style.width = Math.min(100, (cal / effectiveGoal) * 100) + '%';
 
-    // On track: hit protein, or at least ~85% of the calorie target so
-    // far. A simple starting rule (the reference card's own "days
-    // hitting X" language was a 7-day rolling stat — this is the
-    // single-day version of the same idea) — will read as "Off track"
-    // earlier in the day before enough is logged, which is expected,
-    // not a bug.
-    const onTrack = (dayData.proteinG || 0) >= g.proteinG || cal >= effectiveGoal * 0.85;
+    // Protein coverage — trailing 7 days ending on the selected date
+    // (matches the reference card exactly): a day "counts" if it hit
+    // the protein target OR >=85% of THAT day's own calorie target
+    // (gym or rest, whichever weekdaySplit says that date was — the
+    // reference's own app doesn't have a gym/rest split, so its
+    // description just names one fixed number; sourced here per-day
+    // since ours does). On track once >=4 of the 7 days qualify, same
+    // threshold the reference screenshot itself shows as "On track".
+    let hitCount = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(selectedDate);
+      d.setDate(d.getDate() - i);
+      const dData = nutrition[dateKey(d)] || {};
+      const dGoal = autoIsRestDay(d) ? restTarget : gymTarget;
+      if ((dData.proteinG || 0) >= g.proteinG || (dData.calories || 0) >= dGoal * 0.85) hitCount++;
+    }
+    const onTrack = hitCount >= 4;
+    const pillText = onTrack ? 'On track' : 'Off track';
+    const pillClass = onTrack ? 'is-on' : 'is-off';
     const pill = document.getElementById('statusPill');
-    pill.textContent = onTrack ? 'On track' : 'Off track';
-    pill.className = 'status-pill ' + (onTrack ? 'is-on' : 'is-off');
+    pill.textContent = pillText;
+    pill.className = 'status-pill ' + pillClass;
+
+    document.getElementById('coverageDays').textContent = hitCount + '/7 days';
+    document.getElementById('coverageDesc').textContent = 'Days hitting ' + g.proteinG + 'g protein or ≥85% of that day’s calorie target, trailing week.';
+    const covPill = document.getElementById('coveragePill');
+    covPill.textContent = pillText;
+    covPill.className = 'coverage-pill ' + pillClass;
 
     document.querySelectorAll('.macro-card[data-macro]').forEach(function (card) {
       const key = card.dataset.macro;
