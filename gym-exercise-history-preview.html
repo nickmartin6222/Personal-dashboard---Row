@@ -77,6 +77,26 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
 .lib-chip { font-family: inherit; font-size: 11.5px; padding: 6px 10px; border-radius: 999px; background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-2); cursor: pointer; }
 .lib-chip:hover { border-color: var(--border-strong); color: var(--text-1); }
 
+/* ---------- new concept: tag-cloud library browse ---------- */
+.lib2-card { padding-bottom: 14px; }
+.lib2-search-wrap { margin-bottom: 12px; }
+.lib2-search { width: 100%; box-sizing: border-box; font-size: 13.5px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-1); }
+.lib2-search::placeholder { color: var(--text-3); }
+.lib2-cloud { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lib2-pill { font-family: inherit; font-weight: 800; border-radius: 999px; border: 1px solid; cursor: pointer; white-space: nowrap; transition: opacity 0.15s ease, transform 0.1s ease; line-height: 1.2; }
+.lib2-pill:active { transform: scale(0.96); }
+.lib2-pill-count { opacity: 0.6; font-weight: 600; margin-left: 3px; }
+.lib2-pill.is-dim { opacity: 0.25; }
+.lib2-pill.is-active { box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 3.5px currentColor; }
+.lib2-results { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.lib2-results:empty { margin-top: 0; }
+.lib2-results-heading { font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin-bottom: 2px; }
+.lib2-result-row { font-family: inherit; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-raised); cursor: pointer; text-align: left; width: 100%; }
+.lib2-result-row:hover { border-color: var(--border-strong); }
+.lib2-result-name { font-weight: 700; font-size: 13px; color: var(--text-1); }
+.lib2-result-meta { font-size: 10px; font-family: var(--font-mono); font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; flex-shrink: 0; }
+.lib2-empty-hint { font-size: 12px; color: var(--text-3); text-align: center; padding: 10px 0; }
+
 /* ---------- exercise history sheet (the new screen) ---------- */
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
 .modal-bg.open { display: flex; }
@@ -140,7 +160,14 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
     <button type="button" class="theme-toggle" id="themeBtn" aria-label="Toggle light/dark"><span class="theme-toggle-dot"></span></button>
   </div>
 
-  <span class="sec-label">Muscle groups</span>
+  <span class="sec-label">New concept — tag-cloud browse (per your reference)</span>
+  <div class="card lib2-card">
+    <div class="lib2-search-wrap"><input type="text" id="lib2Search" class="lib2-search" placeholder="Search a muscle group or an exercise…" autocomplete="off"></div>
+    <div class="lib2-cloud" id="lib2Cloud"></div>
+    <div class="lib2-results" id="lib2Results"></div>
+  </div>
+
+  <span class="sec-label">Current design — collapsible list, for comparison</span>
   <div class="card" id="libraryCard"></div>
 </div>
 
@@ -187,10 +214,28 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
     localStorage.setItem('eh_demo_theme', isLight ? 'dark' : 'light');
     applyTheme();
     renderChart();
+    renderLibrary();
+    renderLib2Cloud();
+    renderLib2Results();
   });
 
-  var MUSCLE_COLORS_DARK = { 'Chest': '#38bdf8', 'Adductors': '#c084fc', 'Quads': '#f2a93b', 'Shoulders': '#a78bfa', 'Back': '#34d399' };
-  var MUSCLE_COLORS_LIGHT = { 'Chest': '#4F7FBF', 'Adductors': '#6B4A54', 'Quads': '#C2A46F', 'Shoulders': '#5B7A99', 'Back': '#003B2F' };
+  // Same per-muscle palette as gym-stats-tab-preview.html's Exercise
+  // Library / Muscle Anatomy, kept identical so a muscle reads as the
+  // same colour on both pages.
+  var MUSCLE_COLORS_DARK = {
+    'Quads': '#f2a93b', 'Hamstrings': '#fb7185', 'Glutes': '#f472b6',
+    'Adductors': '#c084fc', 'Hips': '#eab308', 'Calves': '#2dd4bf',
+    'Core': '#fde047', 'Chest': '#38bdf8', 'Shoulders': '#a78bfa',
+    'Triceps': '#fb923c', 'Back': '#34d399', 'Rear Delts': '#818cf8',
+    'Biceps': '#22d3ee', 'Lower Back': '#c2a878'
+  };
+  var MUSCLE_COLORS_LIGHT = {
+    'Quads': '#C2A46F', 'Hamstrings': '#A9673D', 'Glutes': '#6B3B3B',
+    'Adductors': '#6B4A54', 'Hips': '#8A6B3F', 'Calves': '#2F6B52',
+    'Core': '#7A9A4A', 'Chest': '#4F7FBF', 'Shoulders': '#5B7A99',
+    'Triceps': '#B5764A', 'Back': '#003B2F', 'Rear Delts': '#7591AD',
+    'Biceps': '#3F8FA6', 'Lower Back': '#8C6F52'
+  };
   function muscleColors() { return document.documentElement.getAttribute('data-theme') === 'light' ? MUSCLE_COLORS_LIGHT : MUSCLE_COLORS_DARK; }
   function accent() { return getComputedStyle(document.documentElement).getPropertyValue('--lime').trim(); }
 
@@ -210,13 +255,26 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
     return out; // already oldest -> newest: daysAgo shrinks as i grows
   }
   var EXERCISES = {
-    'Barbell Bench Press': { muscle: 'Chest', log: genLog(50, 24, 1.25, 210, 9) },
-    'Pec Deck':             { muscle: 'Chest', log: genLog(40, 16, 2.5, 150, 9) },
-    'Incline DB Press':     { muscle: 'Chest', log: genLog(25, 12, 1.25, 110, 9) },
-    'Machine Hip Adductor': { muscle: 'Adductors', log: genLog(25, 10, 2.5, 95, 9) },
-    'Hack Squat':           { muscle: 'Quads', log: genLog(70, 18, 2.5, 160, 9) },
-    'DB Shoulder Press':    { muscle: 'Shoulders', log: genLog(15, 14, 1.25, 130, 9) },
-    'Lat Pulldown':         { muscle: 'Back', log: genLog(45, 20, 2.5, 190, 9) }
+    'Barbell Bench Press':   { muscle: 'Chest', log: genLog(50, 24, 1.25, 210, 9) },
+    'Pec Deck':              { muscle: 'Chest', log: genLog(40, 16, 2.5, 150, 9) },
+    'Incline DB Press':      { muscle: 'Chest', log: genLog(25, 12, 1.25, 110, 9) },
+    'Machine Hip Adductor':  { muscle: 'Adductors', log: genLog(25, 10, 2.5, 95, 9) },
+    'Copenhagen Plank':      { muscle: 'Adductors', log: genLog(20, 8, 1, 70, 9) },
+    'Hack Squat':            { muscle: 'Quads', log: genLog(70, 18, 2.5, 160, 9) },
+    'Leg Extension':         { muscle: 'Quads', log: genLog(30, 9, 2.5, 80, 9) },
+    'DB Shoulder Press':     { muscle: 'Shoulders', log: genLog(15, 14, 1.25, 130, 9) },
+    'Lateral Raise':         { muscle: 'Shoulders', log: genLog(7.5, 10, 1, 90, 9) },
+    'Lat Pulldown':          { muscle: 'Back', log: genLog(45, 20, 2.5, 190, 9) },
+    'Chest-Supported Row':   { muscle: 'Back', log: genLog(40, 13, 2.5, 115, 9) },
+    'Pull-Ups':              { muscle: 'Back', log: genLog(0, 8, 0, 70, 9) },
+    'Barbell RDL':           { muscle: 'Hamstrings', log: genLog(60, 15, 2.5, 135, 9) },
+    'Seated Hamstring Curl': { muscle: 'Hamstrings', log: genLog(30, 9, 2.5, 80, 9) },
+    'Machine Hip Thrust':    { muscle: 'Glutes', log: genLog(40, 11, 2.5, 100, 9) },
+    'Cable Pushdown':        { muscle: 'Triceps', log: genLog(25, 12, 1.25, 110, 9) },
+    'Dip':                   { muscle: 'Triceps', log: genLog(0, 7, 0, 63, 9) },
+    'DB Curl':               { muscle: 'Biceps', log: genLog(12.5, 10, 1, 90, 9) },
+    'Standing Calf Raise':   { muscle: 'Calves', log: genLog(40, 8, 2.5, 72, 9) },
+    'Pallof Press':          { muscle: 'Core', log: genLog(10, 7, 1.25, 63, 9) }
   };
 
   // ---------- exercise library list ----------
@@ -248,6 +306,97 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
     });
   }
   renderLibrary();
+
+  // ---------- new concept: tag-cloud library browse ----------
+  // Groups exercises by muscle the same way renderLibrary() does, but
+  // presents every group as a size-scaled pill (bigger pill = more
+  // exercises in that group, like a word/tag cloud) instead of a
+  // collapsible list — searching either a muscle group name OR a
+  // specific exercise name both work, per the reference: a muscle-group
+  // match reveals every exercise in it, an exercise match reveals just
+  // that one (or every exercise matching the typed substring).
+  var LIB2_GROUPS = {};
+  function buildLib2Groups() {
+    LIB2_GROUPS = {};
+    Object.keys(EXERCISES).forEach(function (name) {
+      var m = EXERCISES[name].muscle;
+      (LIB2_GROUPS[m] = LIB2_GROUPS[m] || []).push(name);
+    });
+  }
+  buildLib2Groups();
+  var lib2ActiveGroup = null;
+
+  function renderLib2Cloud() {
+    var colors = muscleColors();
+    var muscles = Object.keys(LIB2_GROUPS).sort(function (a, b) { return LIB2_GROUPS[b].length - LIB2_GROUPS[a].length; });
+    var maxCount = Math.max.apply(null, muscles.map(function (m) { return LIB2_GROUPS[m].length; }));
+    var q = (document.getElementById('lib2Search').value || '').trim().toLowerCase();
+    var box = document.getElementById('lib2Cloud');
+    box.innerHTML = muscles.map(function (m) {
+      var n = LIB2_GROUPS[m].length;
+      var scale = maxCount > 1 ? (n - 1) / (maxCount - 1) : 0; // 0..1, sizes the pill by how many exercises it holds
+      var fontSize = (12 + scale * 6).toFixed(1);
+      var padY = (8 + scale * 4).toFixed(1);
+      var padX = (14 + scale * 8).toFixed(1);
+      var color = colors[m] || '#888';
+      var groupMatches = q && m.toLowerCase().indexOf(q) !== -1;
+      var exMatches = q && LIB2_GROUPS[m].some(function (ex) { return ex.toLowerCase().indexOf(q) !== -1; });
+      var dim = q && !groupMatches && !exMatches;
+      var active = lib2ActiveGroup === m;
+      return '<button type="button" class="lib2-pill' + (dim ? ' is-dim' : '') + (active ? ' is-active' : '') +
+        '" data-m="' + m + '" style="font-size:' + fontSize + 'px;padding:' + padY + 'px ' + padX + 'px;' +
+        'background:color-mix(in srgb, ' + color + ' 20%, var(--bg-card));border-color:color-mix(in srgb, ' + color + ' 45%, transparent);color:' + color + '">' +
+        m + '<span class="lib2-pill-count">' + n + '</span></button>';
+    }).join('');
+    box.querySelectorAll('.lib2-pill').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        lib2ActiveGroup = (lib2ActiveGroup === btn.dataset.m) ? null : btn.dataset.m;
+        document.getElementById('lib2Search').value = '';
+        renderLib2Cloud();
+        renderLib2Results();
+      });
+    });
+  }
+
+  function renderLib2Results() {
+    var box = document.getElementById('lib2Results');
+    var q = (document.getElementById('lib2Search').value || '').trim().toLowerCase();
+    var names, heading;
+    if (lib2ActiveGroup) {
+      names = LIB2_GROUPS[lib2ActiveGroup].slice();
+      heading = lib2ActiveGroup + ' — ' + names.length + ' exercise' + (names.length === 1 ? '' : 's');
+    } else if (q) {
+      var groupHit = Object.keys(LIB2_GROUPS).find(function (m) { return m.toLowerCase() === q; }) ||
+        Object.keys(LIB2_GROUPS).find(function (m) { return m.toLowerCase().indexOf(q) === 0; });
+      if (groupHit) {
+        names = LIB2_GROUPS[groupHit].slice();
+        heading = groupHit + ' — ' + names.length + ' exercise' + (names.length === 1 ? '' : 's');
+      } else {
+        names = Object.keys(EXERCISES).filter(function (n) { return n.toLowerCase().indexOf(q) !== -1; });
+        heading = names.length ? 'Matching exercises' : '';
+      }
+    } else {
+      box.innerHTML = '';
+      return;
+    }
+    if (!names.length) { box.innerHTML = '<div class="lib2-empty-hint">No matches.</div>'; return; }
+    var colors = muscleColors();
+    box.innerHTML = (heading ? '<div class="lib2-results-heading">' + heading + '</div>' : '') + names.map(function (n) {
+      var m = EXERCISES[n].muscle;
+      var color = colors[m] || '#888';
+      return '<button type="button" class="lib2-result-row" data-ex="' + n + '"><span class="lib2-result-name">' + n + '</span><span class="lib2-result-meta" style="color:' + color + '">' + m + '</span></button>';
+    }).join('');
+    box.querySelectorAll('.lib2-result-row').forEach(function (btn) {
+      btn.addEventListener('click', function () { openExerciseHistory(btn.dataset.ex); });
+    });
+  }
+
+  document.getElementById('lib2Search').addEventListener('input', function () {
+    lib2ActiveGroup = null;
+    renderLib2Cloud();
+    renderLib2Results();
+  });
+  renderLib2Cloud();
 
   // ---------- exercise history sheet ----------
   var RANGES = [
