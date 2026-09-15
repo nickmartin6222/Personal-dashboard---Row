@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050506">
+<title>Nutrition Tab — draft</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+<style>
+/* ===== Same tokens as health.html, copied verbatim ===== */
+:root {
+  --bg: #050506;
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-dark: #0c0c0d;
+  --bg-input: rgba(0, 0, 0, 0.28);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --text-primary: #FAFAFA;
+  --text-secondary: #B8B6B0;
+  --text-tertiary: #76746E;
+  --text-quaternary: #4D4B47;
+  --accent: #6EE3A4;
+  --accent-ink: #04140f;
+  --carbs: #4DD6C4;
+  --fat: #B794F4;
+  --protein: #F2C063;
+  --fiber: #7DD3FC;
+  --steps: #F97066;
+  --distance: #6EE3A4;
+  --down: #F0685C;
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: "Fraunces", Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #F4EFE3;
+  --bg-card: #FFFFFF;
+  --bg-dark: #15382C;
+  --bg-input: rgba(46,46,46,0.06);
+  --border: rgba(46,46,46,0.08);
+  --border-strong: rgba(46,46,46,0.16);
+  --text-primary: #2E2E2E;
+  --text-secondary: #5A5A54;
+  --text-tertiary: #8C8C86;
+  --text-quaternary: #C7C4B8;
+  --accent: #003B2F;
+  --accent-ink: #F4EFE3;
+  --carbs: #C2A46F;
+  --fat: #6B4A54;
+  --protein: #8A6B3F;
+  --fiber: #4F7FBF;
+  --steps: #A9673D;
+  --distance: #4F7FBF;
+  --down: #B3392F;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-secondary); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.page { max-width: 1100px; margin: 0 auto; padding: 18px 18px 60px; }
+
+.demo-banner { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--text-primary); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 16px; }
+.demo-banner b { color: var(--accent); }
+
+.hdr-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.hdr-title { font-family: var(--font-heading); font-size: 24px; font-weight: 700; color: var(--text-primary); }
+.theme-toggle { width: 44px; height: 24px; border-radius: 999px; background: var(--bg-input); border: 1px solid var(--border); position: relative; cursor: pointer; flex-shrink: 0; }
+.theme-toggle-dot { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); transition: transform 0.2s ease; }
+[data-theme="light"] .theme-toggle-dot { transform: translateX(20px); }
+
+/* ---------- status row: on-track pill + gym/rest day target line ---------- */
+.fuel-status-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.status-pill { font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 6px 13px; border-radius: 999px; }
+.status-pill.is-on { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.status-pill.is-off { background: color-mix(in srgb, var(--down) 16%, transparent); color: var(--down); border: 1px solid color-mix(in srgb, var(--down) 40%, transparent); }
+.daytype-label { font-size: 12.5px; color: var(--text-secondary); }
+.daytype-label b { color: var(--text-primary); font-weight: 700; }
+.daytype-both { font-size: 11px; color: var(--text-tertiary); display: block; margin-top: 2px; }
+
+/* ---------- layout: stacked on mobile, calories | macros on desktop ---------- */
+.nutrition-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; position: relative; }
+.cal-label { font-size: 13px; color: var(--text-tertiary); font-weight: 600; margin-bottom: 8px; }
+.cal-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.cal-num { font-size: 30px; font-weight: 800; color: var(--text-primary); }
+.cal-goal { font-size: 14px; color: var(--text-tertiary); font-weight: 500; }
+.cal-left { font-size: 13px; color: var(--text-secondary); text-align: right; }
+.bar-track { height: 8px; border-radius: 999px; background: var(--bg-input); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.3s; }
+
+/* Mobile: 2x2 tile grid. Desktop (see media query below): a vertical
+   list of 4 full-width rows, sitting to the right of the calorie card. */
+.macro-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.macro-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; }
+.macro-name { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.macro-val { font-size: 18px; font-weight: 800; color: var(--text-primary); }
+.macro-goal { font-size: 12px; color: var(--text-tertiary); font-weight: 500; }
+.macro-bar { height: 5px; border-radius: 999px; background: var(--bg-input); overflow: hidden; margin-top: 8px; }
+.macro-bar-fill { height: 100%; border-radius: 999px; }
+
+.dark-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dark-card { background: var(--bg-dark); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+.dark-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.dark-sub { font-size: 11px; color: var(--text-quaternary); margin: 2px 0 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+.dark-val { font-size: 22px; font-weight: 800; }
+[data-theme="light"] .dark-label { color: #FAFAFA; }
+[data-theme="light"] .dark-sub { color: rgba(250,250,250,0.55); }
+
+.sec-label { font-family: var(--font-mono); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin: 18px 0 10px; display: block; }
+
+/* ---------- desktop: calories on the left, macros as a row of 4 on the right ---------- */
+@media (min-width: 760px) {
+  .nutrition-grid { grid-template-columns: 1.1fr 1.4fr; align-items: stretch; }
+  .card#calCard { display: flex; flex-direction: column; justify-content: center; }
+  .macro-panel { grid-template-columns: repeat(4, 1fr); align-content: stretch; }
+  .macro-card { display: flex; flex-direction: column; justify-content: space-between; }
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="demo-banner"><b>Draft</b> — new Nutrition tab layout per your reference. Reads your real logged calories/macros/steps (same <code>health:*</code> data health.html already uses) so the numbers below are real, not mock. Resize the window to see the desktop layout (calories left, macros as a row on the right) vs. the mobile layout (calories on top, 4 tiles below). Not wired into the live app yet.</div>
+
+  <div class="hdr-row">
+    <span class="hdr-title">Today's fuel</span>
+    <button type="button" class="theme-toggle" id="themeBtn" aria-label="Toggle light/dark"><span class="theme-toggle-dot"></span></button>
+  </div>
+
+  <div class="fuel-status-row">
+    <span class="status-pill" id="statusPill">—</span>
+    <div>
+      <div class="daytype-label" id="daytypeLabel">—</div>
+      <span class="daytype-both" id="daytypeBoth"></span>
+    </div>
+  </div>
+
+  <div class="nutrition-grid">
+    <div class="card" id="calCard">
+      <div class="cal-label">Calories</div>
+      <div class="cal-row">
+        <div><span class="cal-num" id="calNum">—</span><span class="cal-goal"> cal / <span id="calGoal">—</span></span></div>
+        <div class="cal-left" id="calLeft">—</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="calBar" style="width:0%"></div></div>
+    </div>
+
+    <div class="macro-panel" id="macroPanel">
+      <div class="macro-card" data-macro="proteinG">
+        <div class="macro-name" style="color:var(--protein)">Protein</div>
+        <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
+        <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--protein)"></div></div>
+      </div>
+      <div class="macro-card" data-macro="carbsG">
+        <div class="macro-name" style="color:var(--carbs)">Carbs</div>
+        <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
+        <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--carbs)"></div></div>
+      </div>
+      <div class="macro-card" data-macro="fatG">
+        <div class="macro-name" style="color:var(--fat)">Fat</div>
+        <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
+        <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--fat)"></div></div>
+      </div>
+      <div class="macro-card" data-macro="fiberG">
+        <div class="macro-name" style="color:var(--fiber)">Fibre</div>
+        <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
+        <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--fiber)"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <span class="sec-label">Steps &amp; distance</span>
+  <div class="dark-grid">
+    <div class="dark-card" id="stepsCard">
+      <div class="dark-label">Step Count</div>
+      <div class="dark-sub">Today</div>
+      <div class="dark-val" style="color:var(--steps)" id="stepsVal">—</div>
+    </div>
+    <div class="dark-card" id="distCard">
+      <div class="dark-label">Step Distance</div>
+      <div class="dark-sub">Today</div>
+      <div class="dark-val" style="color:var(--distance)" id="distVal">—</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  function storeGet(key, fallback) {
+    try { const raw = localStorage.getItem(key); return raw == null ? fallback : JSON.parse(raw); } catch (e) { return fallback; }
+  }
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  // ---------- theme ----------
+  function applyTheme() {
+    const v = localStorage.getItem('dash:colorTheme');
+    if (v === 'sage') document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  applyTheme();
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    localStorage.setItem('dash:colorTheme', isLight ? 'mint' : 'sage');
+    applyTheme();
+    renderAll();
+  });
+
+  // ---------- real goals — same DEFAULT_GOALS / health:goals health.html reads ----------
+  const DEFAULT_GOALS = { calories: 3000, proteinG: 160, carbsG: 410, fatG: 80, fiberG: 35 };
+  function goals() { return Object.assign({}, DEFAULT_GOALS, storeGet('health:goals', {})); }
+
+  // ---------- gym-day vs rest-day target — reads the same weekdaySplit
+  // gym-workouts-tab-preview.html reads/writes, so "today" here always
+  // agrees with what the Workouts tab says today's split is. Rest-day
+  // target is a starting estimate (10% below the gym-day target, a
+  // common rest-day adjustment) — tune the 0.9 below once there's real
+  // data to calibrate against, same caveat as the session-duration
+  // formula this app already ships with one of. ----------
+  const WEEKDAY_FALLBACK = ['Rest', 'Push', 'Lower A', 'Pull', 'Push', 'Lower B', 'Lower B']; // Sun..Sat
+  function weekdaySplit() {
+    try {
+      const raw = localStorage.getItem('po_coach_v1');
+      if (raw) {
+        const live = JSON.parse(raw);
+        if (live && Array.isArray(live.weekdaySplit) && live.weekdaySplit.length === 7) return live.weekdaySplit;
+      }
+    } catch (e) {}
+    return WEEKDAY_FALLBACK;
+  }
+  function isRestDayToday() { return weekdaySplit()[new Date().getDay()] === 'Rest'; }
+  const REST_DAY_FACTOR = 0.9;
+
+  function renderAll() {
+    const g = goals();
+    const gymTarget = g.calories;
+    const restTarget = Math.round((gymTarget * REST_DAY_FACTOR) / 10) * 10;
+    const restDay = isRestDayToday();
+    const effectiveGoal = restDay ? restTarget : gymTarget;
+
+    document.getElementById('daytypeLabel').innerHTML = restDay
+      ? '<b>Rest day</b> — target ' + restTarget.toLocaleString() + ' cal'
+      : '<b>Gym day</b> — target ' + gymTarget.toLocaleString() + ' cal';
+    document.getElementById('daytypeBoth').textContent = 'Gym day: ' + gymTarget.toLocaleString() + ' cal · Rest day: ' + restTarget.toLocaleString() + ' cal';
+
+    const nutrition = storeGet('health:nutrition', {});
+    const today = nutrition[todayKey()] || {};
+    const cal = Math.round(today.calories || 0);
+
+    document.getElementById('calNum').textContent = cal.toLocaleString();
+    document.getElementById('calGoal').textContent = effectiveGoal.toLocaleString();
+    const left = effectiveGoal - cal;
+    document.getElementById('calLeft').textContent = left >= 0 ? left.toLocaleString() + ' left' : (Math.abs(left)).toLocaleString() + ' over';
+    document.getElementById('calBar').style.width = Math.min(100, (cal / effectiveGoal) * 100) + '%';
+
+    // On track today: hit protein, or at least ~85% of today's calorie
+    // target so far. A simple starting rule (the reference card's own
+    // "days hitting X" language was a 7-day rolling stat — this is the
+    // single-day version of the same idea) — will read as "Off track"
+    // earlier in the day before enough is logged, which is expected,
+    // not a bug.
+    const onTrack = (today.proteinG || 0) >= g.proteinG || cal >= effectiveGoal * 0.85;
+    const pill = document.getElementById('statusPill');
+    pill.textContent = onTrack ? 'On track' : 'Off track';
+    pill.className = 'status-pill ' + (onTrack ? 'is-on' : 'is-off');
+
+    document.querySelectorAll('.macro-card').forEach(function (card) {
+      const key = card.dataset.macro;
+      const val = Math.round(today[key] || 0);
+      const goal = g[key];
+      card.querySelector('.mval').textContent = val;
+      card.querySelector('.mgoal').textContent = goal;
+      card.querySelector('.macro-bar-fill').style.width = Math.min(100, (val / goal) * 100) + '%';
+    });
+
+    const steps = storeGet('health:steps', {});
+    const distance = storeGet('health:distance', {});
+    const distUnit = storeGet('health:distanceUnit', 'mi');
+    const sVal = steps[todayKey()];
+    const dVal = distance[todayKey()];
+    document.getElementById('stepsVal').textContent = sVal == null ? '—' : sVal.toLocaleString();
+    document.getElementById('distVal').textContent = dVal == null ? '—' : (dVal + ' ' + distUnit);
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    renderAll();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+  });
+  renderAll();
+})();
+</script>
+</body>
+</html>
