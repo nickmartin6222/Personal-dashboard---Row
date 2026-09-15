@@ -123,14 +123,6 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .macro-bar-fill { height: 100%; border-radius: 999px; transition: width 0.3s; }
 .macro-pct { display: none; }
 
-.dark-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.dark-card { background: var(--bg-dark); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
-.dark-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
-.dark-sub { font-size: 11px; color: var(--text-quaternary); margin: 2px 0 10px; text-transform: uppercase; letter-spacing: 0.04em; }
-.dark-val { font-size: 22px; font-weight: 800; }
-[data-theme="light"] .dark-label { color: #FAFAFA; }
-[data-theme="light"] .dark-sub { color: rgba(250,250,250,0.55); }
-
 .sec-label { font-family: var(--font-mono); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin: 18px 0 10px; display: block; }
 
 /* ---------- desktop: calories on the left, macros as a flush row list on the right ---------- */
@@ -222,16 +214,20 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   </div>
 
   <span class="sec-label">Steps &amp; distance</span>
-  <div class="dark-grid">
-    <div class="dark-card" id="stepsCard">
-      <div class="dark-label">Step Count</div>
-      <div class="dark-sub">Today</div>
-      <div class="dark-val" style="color:var(--steps)" id="stepsVal">—</div>
+  <div class="macro-panel" id="statPanel">
+    <div class="macro-card" id="stepsCard">
+      <div class="macro-icon" style="background:color-mix(in srgb, var(--steps) 22%, var(--cream));color:var(--steps)"><i data-lucide="footprints"></i></div>
+      <div class="macro-info">
+        <div class="macro-top"><span class="macro-name">Step Count</span><span class="macro-val" id="stepsVal">—</span></div>
+        <div class="macro-bar"><div class="macro-bar-fill" id="stepsBar" style="background:var(--steps);width:0%"></div></div>
+      </div>
+      <span class="macro-pct" id="stepsPct">—%</span>
     </div>
-    <div class="dark-card" id="distCard">
-      <div class="dark-label">Step Distance</div>
-      <div class="dark-sub">Today</div>
-      <div class="dark-val" style="color:var(--distance)" id="distVal">—</div>
+    <div class="macro-card" id="distCard">
+      <div class="macro-icon" style="background:color-mix(in srgb, var(--distance) 22%, var(--cream));color:var(--distance)"><i data-lucide="map-pin"></i></div>
+      <div class="macro-info">
+        <div class="macro-top"><span class="macro-name">Step Distance</span><span class="macro-val" id="distVal">—</span></div>
+      </div>
     </div>
   </div>
 </div>
@@ -282,7 +278,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   });
 
   // ---------- real goals — same DEFAULT_GOALS / health:goals health.html reads ----------
-  const DEFAULT_GOALS = { calories: 3000, proteinG: 160, carbsG: 410, fatG: 80, fiberG: 35 };
+  const DEFAULT_GOALS = { calories: 3000, proteinG: 160, carbsG: 410, fatG: 80, fiberG: 35, steps: 8000 };
   function goals() { return Object.assign({}, DEFAULT_GOALS, storeGet('health:goals', {})); }
 
   // ---------- gym-day vs rest-day target — reads the same weekdaySplit
@@ -354,7 +350,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     pill.textContent = onTrack ? 'On track' : 'Off track';
     pill.className = 'status-pill ' + (onTrack ? 'is-on' : 'is-off');
 
-    document.querySelectorAll('.macro-card').forEach(function (card) {
+    document.querySelectorAll('.macro-card[data-macro]').forEach(function (card) {
       const key = card.dataset.macro;
       const val = Math.round(dayData[key] || 0);
       const goal = g[key];
@@ -371,7 +367,9 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     const distUnit = storeGet('health:distanceUnit', 'mi');
     const sVal = steps[dateKey(selectedDate)];
     const dVal = distance[dateKey(selectedDate)];
-    document.getElementById('stepsVal').textContent = sVal == null ? '—' : sVal.toLocaleString();
+    document.getElementById('stepsVal').textContent = (sVal == null ? 0 : sVal).toLocaleString() + ' / ' + g.steps.toLocaleString();
+    document.getElementById('stepsBar').style.width = Math.min(100, ((sVal || 0) / g.steps) * 100) + '%';
+    document.getElementById('stepsPct').textContent = Math.round(Math.min(999, ((sVal || 0) / g.steps) * 100)) + '%';
     document.getElementById('distVal').textContent = dVal == null ? '—' : (dVal + ' ' + distUnit);
   }
 
