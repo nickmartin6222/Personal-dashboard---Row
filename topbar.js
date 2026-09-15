@@ -101,10 +101,10 @@
 }
 .bottombar-inner {
   width: 100%; max-width: 720px;
-  display: flex; justify-content: space-around; align-items: stretch; gap: 4px;
+  display: flex; justify-content: center; align-items: stretch; gap: 4px;
 }
 .bottombar-tab {
-  flex: 1;
+  flex: 1; max-width: 140px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px;
   padding: 7px 6px 6px;
