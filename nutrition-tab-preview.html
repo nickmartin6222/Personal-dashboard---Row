@@ -7,7 +7,7 @@
 <title>Nutrition Tab — draft</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
 <style>
 /* ===== Same tokens as health.html, copied verbatim ===== */
@@ -65,42 +65,51 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .demo-banner { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--text-primary); border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 16px; }
 .demo-banner b { color: var(--accent); }
 
-.hdr-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.hdr-title { font-family: var(--font-heading); font-size: 24px; font-weight: 700; color: var(--text-primary); }
+.hdr-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.hdr-title-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hdr-title { font-family: var(--font-heading); font-style: italic; font-size: 30px; font-weight: 600; color: var(--text-primary); }
 .theme-toggle { width: 44px; height: 24px; border-radius: 999px; background: var(--bg-input); border: 1px solid var(--border); position: relative; cursor: pointer; flex-shrink: 0; }
 .theme-toggle-dot { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); transition: transform 0.2s ease; }
 [data-theme="light"] .theme-toggle-dot { transform: translateX(20px); }
 
-/* ---------- status row: on-track pill + gym/rest day target line ---------- */
-.fuel-status-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+/* ---------- on-track pill — floats right next to the title, like the
+   reference's badge near its top photo, instead of its own row ---------- */
 .status-pill { font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 6px 13px; border-radius: 999px; }
 .status-pill.is-on { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
 .status-pill.is-off { background: color-mix(in srgb, var(--down) 16%, transparent); color: var(--down); border: 1px solid color-mix(in srgb, var(--down) 40%, transparent); }
-.daytype-label { font-size: 12.5px; color: var(--text-secondary); }
+.daytype-label { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 18px; }
 .daytype-label b { color: var(--text-primary); font-weight: 700; }
-.daytype-both { font-size: 11px; color: var(--text-tertiary); display: block; margin-top: 2px; }
+.daytype-both { font-size: 11px; color: rgba(255,255,255,0.4); display: block; margin-top: 14px; }
 
-/* ---------- layout: stacked on mobile, calories | macros on desktop ---------- */
-.nutrition-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+/* ---------- one dark hero panel holding calories + macros, matching
+   the reference's single dark card rather than several bordered boxes ---------- */
+.fuel-panel { background: var(--bg-dark); border: 1px solid var(--border); border-radius: 24px; padding: 24px; margin-bottom: 12px; }
+[data-theme="light"] .fuel-panel { background: #15382C; }
+.nutrition-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: center; }
 
-.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; position: relative; }
-.cal-label { font-size: 13px; color: var(--text-tertiary); font-weight: 600; margin-bottom: 8px; }
-.cal-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
-.cal-num { font-size: 30px; font-weight: 800; color: var(--text-primary); }
-.cal-goal { font-size: 14px; color: var(--text-tertiary); font-weight: 500; }
-.cal-left { font-size: 13px; color: var(--text-secondary); text-align: right; }
-.bar-track { height: 8px; border-radius: 999px; background: var(--bg-input); overflow: hidden; }
+.cal-block .cal-label { font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+[data-theme="light"] .cal-block .cal-label { color: rgba(255,255,255,0.6); }
+.cal-num { font-family: var(--font-heading); font-size: 56px; font-weight: 600; color: #FAFAFA; line-height: 1; }
+.cal-goal { font-size: 16px; color: rgba(255,255,255,0.45); font-weight: 500; margin-left: 4px; }
+.cal-left { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 8px; margin-bottom: 14px; }
+.bar-track { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; }
 .bar-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.3s; }
+[data-theme="light"] .bar-fill { background: #6EE3A4; }
 
-/* Mobile: 2x2 tile grid. Desktop (see media query below): a vertical
-   list of 4 full-width rows, sitting to the right of the calorie card. */
+/* Mobile: 2x2 tile grid (per the separate mobile mockup). Desktop (see
+   media query): a compact list of 4 rows instead of tiles, matching the
+   reference's plain icon+label+value rows rather than bordered cards. */
 .macro-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.macro-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; }
-.macro-name { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
-.macro-val { font-size: 18px; font-weight: 800; color: var(--text-primary); }
-.macro-goal { font-size: 12px; color: var(--text-tertiary); font-weight: 500; }
-.macro-bar { height: 5px; border-radius: 999px; background: var(--bg-input); overflow: hidden; margin-top: 8px; }
+.macro-card { background: rgba(255,255,255,0.06); border-radius: 14px; padding: 12px 14px; }
+.macro-name { font-size: 11.5px; font-weight: 700; margin-bottom: 5px; color: rgba(255,255,255,0.55); }
+.macro-swatch { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+.macro-val { font-size: 17px; font-weight: 800; color: #FAFAFA; }
+.macro-goal { font-size: 12px; color: rgba(255,255,255,0.4); font-weight: 500; }
+.macro-bar { height: 5px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; margin-top: 8px; }
 .macro-bar-fill { height: 100%; border-radius: 999px; }
+
+.fuel-cta { display: block; width: 100%; margin-top: 18px; padding: 15px; border-radius: 999px; border: none; background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 14.5px; cursor: pointer; text-align: center; font-family: inherit; }
+.fuel-cta-note { text-align: center; font-size: 10.5px; color: var(--text-tertiary); margin-top: 8px; }
 
 .dark-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .dark-card { background: var(--bg-dark); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
@@ -114,10 +123,17 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 /* ---------- desktop: calories on the left, macros as a row of 4 on the right ---------- */
 @media (min-width: 760px) {
-  .nutrition-grid { grid-template-columns: 1.1fr 1.4fr; align-items: stretch; }
-  .card#calCard { display: flex; flex-direction: column; justify-content: center; }
-  .macro-panel { grid-template-columns: repeat(4, 1fr); align-content: stretch; }
-  .macro-card { display: flex; flex-direction: column; justify-content: space-between; }
+  .nutrition-grid { grid-template-columns: 1fr 1fr; align-items: center; }
+  .cal-block { display: flex; flex-direction: column; justify-content: center; }
+  /* A plain row list instead of tiles — icon swatch, label, value, no
+     per-row card border — closer to the reference's own compact rows
+     sitting beside the big number rather than a tile grid. */
+  .macro-panel { grid-template-columns: 1fr; gap: 2px; background: none; }
+  .macro-card { background: none; border-radius: 0; padding: 11px 0; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .macro-card:last-child { border-bottom: none; }
+  .macro-name { font-size: 13px; margin-bottom: 0; display: flex; align-items: center; }
+  .macro-right { display: flex; align-items: baseline; gap: 4px; }
+  .macro-bar { display: none; }
 }
 </style>
 </head>
@@ -127,50 +143,51 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   <div class="demo-banner"><b>Draft</b> — new Nutrition tab layout per your reference. Reads your real logged calories/macros/steps (same <code>health:*</code> data health.html already uses) so the numbers below are real, not mock. Resize the window to see the desktop layout (calories left, macros as a row on the right) vs. the mobile layout (calories on top, 4 tiles below). Not wired into the live app yet.</div>
 
   <div class="hdr-row">
-    <span class="hdr-title">Today's fuel</span>
+    <div class="hdr-title-wrap">
+      <span class="hdr-title">Today's fuel</span>
+      <span class="status-pill" id="statusPill">—</span>
+    </div>
     <button type="button" class="theme-toggle" id="themeBtn" aria-label="Toggle light/dark"><span class="theme-toggle-dot"></span></button>
   </div>
 
-  <div class="fuel-status-row">
-    <span class="status-pill" id="statusPill">—</span>
-    <div>
-      <div class="daytype-label" id="daytypeLabel">—</div>
-      <span class="daytype-both" id="daytypeBoth"></span>
-    </div>
-  </div>
+  <div class="daytype-label" id="daytypeLabel">—</div>
 
-  <div class="nutrition-grid">
-    <div class="card" id="calCard">
-      <div class="cal-label">Calories</div>
-      <div class="cal-row">
-        <div><span class="cal-num" id="calNum">—</span><span class="cal-goal"> cal / <span id="calGoal">—</span></span></div>
+  <div class="fuel-panel">
+    <div class="nutrition-grid">
+      <div class="cal-block">
+        <div class="cal-label">Calories</div>
+        <div><span class="cal-num" id="calNum">—</span><span class="cal-goal">cal / <span id="calGoal">—</span></span></div>
         <div class="cal-left" id="calLeft">—</div>
+        <div class="bar-track"><div class="bar-fill" id="calBar" style="width:0%"></div></div>
+        <span class="daytype-both" id="daytypeBoth"></span>
       </div>
-      <div class="bar-track"><div class="bar-fill" id="calBar" style="width:0%"></div></div>
+
+      <div class="macro-panel" id="macroPanel">
+        <div class="macro-card" data-macro="proteinG">
+          <div class="macro-name"><span class="macro-swatch" style="background:var(--protein)"></span>Protein</div>
+          <div class="macro-right"><div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div></div>
+          <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--protein)"></div></div>
+        </div>
+        <div class="macro-card" data-macro="carbsG">
+          <div class="macro-name"><span class="macro-swatch" style="background:var(--carbs)"></span>Carbs</div>
+          <div class="macro-right"><div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div></div>
+          <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--carbs)"></div></div>
+        </div>
+        <div class="macro-card" data-macro="fatG">
+          <div class="macro-name"><span class="macro-swatch" style="background:var(--fat)"></span>Fat</div>
+          <div class="macro-right"><div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div></div>
+          <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--fat)"></div></div>
+        </div>
+        <div class="macro-card" data-macro="fiberG">
+          <div class="macro-name"><span class="macro-swatch" style="background:var(--fiber)"></span>Fibre</div>
+          <div class="macro-right"><div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div></div>
+          <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--fiber)"></div></div>
+        </div>
+      </div>
     </div>
 
-    <div class="macro-panel" id="macroPanel">
-      <div class="macro-card" data-macro="proteinG">
-        <div class="macro-name" style="color:var(--protein)">Protein</div>
-        <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
-        <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--protein)"></div></div>
-      </div>
-      <div class="macro-card" data-macro="carbsG">
-        <div class="macro-name" style="color:var(--carbs)">Carbs</div>
-        <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
-        <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--carbs)"></div></div>
-      </div>
-      <div class="macro-card" data-macro="fatG">
-        <div class="macro-name" style="color:var(--fat)">Fat</div>
-        <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
-        <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--fat)"></div></div>
-      </div>
-      <div class="macro-card" data-macro="fiberG">
-        <div class="macro-name" style="color:var(--fiber)">Fibre</div>
-        <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
-        <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--fiber)"></div></div>
-      </div>
-    </div>
+    <button type="button" class="fuel-cta">+ Add food</button>
+    <div class="fuel-cta-note">Demo only — logging isn't wired up on this page.</div>
   </div>
 
   <span class="sec-label">Steps &amp; distance</span>
