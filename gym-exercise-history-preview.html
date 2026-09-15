@@ -93,7 +93,7 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
    (.lib-chip) — a subtle neutral pill by default, with a small coloured
    dot carrying the muscle identity, rather than a loud fully-coloured
    pill. Colour only shows up boldly once a group is actually selected. */
-.lib2-pill { font-family: inherit; font-weight: 700; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: opacity 0.15s ease, transform 0.1s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease; line-height: 1.2; display: inline-flex; align-items: center; gap: 6px; }
+.lib2-pill { font-family: inherit; font-size: 13.5px; font-weight: 700; padding: 9px 15px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: opacity 0.15s ease, transform 0.1s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease; line-height: 1.2; display: inline-flex; align-items: center; gap: 6px; }
 .lib2-pill:active { transform: scale(0.96); }
 .lib2-pill-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .lib2-pill-count { opacity: 0.6; font-weight: 600; }
@@ -347,15 +347,10 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
   function renderLib2Cloud() {
     var colors = muscleColors();
     var muscles = Object.keys(LIB2_GROUPS).sort(function (a, b) { return LIB2_GROUPS[b].length - LIB2_GROUPS[a].length; });
-    var maxCount = Math.max.apply(null, muscles.map(function (m) { return LIB2_GROUPS[m].length; }));
     var q = (document.getElementById('lib2Search').value || '').trim().toLowerCase();
     var box = document.getElementById('lib2Cloud');
     box.innerHTML = muscles.map(function (m) {
       var n = LIB2_GROUPS[m].length;
-      var scale = maxCount > 1 ? (n - 1) / (maxCount - 1) : 0; // 0..1, sizes the pill by how many exercises it holds
-      var fontSize = (12 + scale * 6).toFixed(1);
-      var padY = (8 + scale * 4).toFixed(1);
-      var padX = (14 + scale * 8).toFixed(1);
       var color = colors[m] || '#888';
       var groupMatches = q && m.toLowerCase().indexOf(q) !== -1;
       var exMatches = q && LIB2_GROUPS[m].some(function (ex) { return ex.toLowerCase().indexOf(q) !== -1; });
@@ -364,11 +359,12 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
       // Neutral by default (the plain-chip look asked for); the muscle
       // colour only becomes the pill's own background/border once it's
       // actually selected — otherwise it's carried by the small dot only.
+      // Every pill is the same fixed size now (no more count-based scaling).
       var activeStyle = active
         ? 'background:color-mix(in srgb, ' + color + ' 20%, var(--bg-card));border-color:color-mix(in srgb, ' + color + ' 45%, transparent);'
         : '';
       return '<button type="button" class="lib2-pill' + (dim ? ' is-dim' : '') + (active ? ' is-active' : '') +
-        '" data-m="' + m + '" style="font-size:' + fontSize + 'px;padding:' + padY + 'px ' + padX + 'px;' + activeStyle + '">' +
+        '" data-m="' + m + '" style="' + activeStyle + '">' +
         '<span class="lib2-pill-dot" style="background:' + color + '"></span>' +
         m + '<span class="lib2-pill-count">' + n + '</span></button>';
     }).join('');
