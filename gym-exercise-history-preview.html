@@ -120,7 +120,7 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
 .eh-delta.is-up { color: var(--lime); }
 .eh-delta.is-down { color: var(--down); }
 .eh-delta.is-flat { color: var(--text-3); }
-.eh-pr-star { color: var(--lime); margin-right: 3px; font-size: 11px; vertical-align: 1px; }
+.eh-pr-badge { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--lime); color: var(--lime); font-size: 9px; margin-left: 6px; vertical-align: 1px; flex-shrink: 0; }
 
 .eh-viewall-btn { width: 100%; padding: 11px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); font-weight: 700; font-size: 12px; cursor: pointer; margin-top: 4px; }
 .eh-viewall-btn:hover { border-color: var(--border-strong); color: var(--text-1); }
@@ -353,7 +353,7 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
     var full = EXERCISES[currentExercise].log;
     var lifetime = full[full.length - 1].weight - full[0].weight;
     var sign = lifetime > 0 ? '+' : (lifetime < 0 ? '' : '±');
-    document.getElementById('ehImprove').innerHTML = '<b>' + sign + lifetime + 'kg</b> all time';
+    document.getElementById('ehImprove').innerHTML = '<b>' + sign + lifetime + '</b>kg all time';
   }
   function renderPopup(pts) {
     var wrap = document.getElementById('ehChartWrap');
@@ -398,9 +398,9 @@ body { margin: 0; background: var(--bg); color: var(--text-1); font-family: var(
       var delta = prev ? Math.round((l.weight - prev.weight) * 10) / 10 : null;
       var deltaHtml = delta == null ? '—' : (delta > 0 ? '+' + delta : (delta === 0 ? '0' : delta));
       var deltaCls = delta == null ? 'is-flat' : (delta > 0 ? 'is-up' : (delta < 0 ? 'is-down' : 'is-flat'));
-      var star = l.weight === best ? '<span class="eh-pr-star" title="Personal best">★</span>' : '';
-      return '<tr><td>' + star + fmtDate(l.date) + '</td><td>' + l.sets + '</td><td>' + l.reps + '</td>' +
-        '<td class="eh-weight">' + l.weight + 'kg</td>' +
+      var star = l.weight === best ? '<span class="eh-pr-badge" title="Personal best">★</span>' : '';
+      return '<tr><td>' + fmtDate(l.date) + '</td><td>' + l.sets + '</td><td>' + l.reps + '</td>' +
+        '<td class="eh-weight">' + l.weight + 'kg' + star + '</td>' +
         '<td><span class="eh-delta ' + deltaCls + '">' + deltaHtml + '</span></td></tr>';
     }).join('');
     document.getElementById('ehTable').innerHTML =
