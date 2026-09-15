@@ -10,8 +10,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="sync.js" defer></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
 <style>
+@view-transition { navigation: auto; }
 /* ==========================================================================
    STATISTICS TAB — sibling to gym-workouts-tab-preview.html in the
    proposed Fitness revamp (Home / Workouts / Statistics / Coach).
@@ -1451,12 +1454,15 @@ section { margin-bottom: 22px; }
   renderAll();
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof lucide !== 'undefined') lucide.createIcons();
-    // This page loads sync.js but never actually called initCloudSync
-    // — edits/deletes made here (and the bodyweight log) stayed local
-    // to this device until gym-preview.html happened to be open too.
-    // Same shared 'po-coach' row every fitness page now syncs — the key
-    // list MUST match exactly what the other two pages sync, since a
-    // push from any one of them replaces the whole remote row.
+    // Fixed 2026-09-15: this page called initCloudSync but never actually
+    // loaded sync.js/supabase-js, so the guard below always no-opped —
+    // edits/deletes made here (and the bodyweight log) stayed local to
+    // this device until gym-preview.html happened to be open too, and a
+    // fresh session opening Statistics before Workouts saw stale/empty
+    // data. Both script tags are in <head> now. Same shared 'po-coach'
+    // row every fitness page syncs — the key list MUST match exactly
+    // what the other two pages sync, since a push from any one of them
+    // replaces the whole remote row.
     if (typeof initCloudSync === 'function') {
       initCloudSync({
         appKey: 'po-coach',
