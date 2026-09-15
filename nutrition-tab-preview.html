@@ -94,6 +94,14 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
    gives each one some volume/lift off the page, and colour lives only
    in the bars/icon chips, not the tile itself. ---------- */
 :root { --cream: #F4EFE3; --cream-line: #15382C; --cream-ink: #2E2E2E; --cream-ink-soft: #5A5A54; --cream-ink-faint: #8C8C86; }
+/* Dark mode's page background is near-black, so a cream tile already
+   contrasts strongly against it. Light mode's page background IS this
+   same cream (#F4EFE3) — without an override the tiles would blend
+   into the page and only read by their border. White lifts them off
+   the page the same way the rest of the app's light-theme cards
+   already do (--bg-card is white there too), while staying close
+   enough to "cream" in feel. */
+[data-theme="light"] { --cream: #FFFFFF; }
 .nutrition-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
 .cream-tile { background: var(--cream); border: 1.5px solid var(--cream-line); border-radius: 22px; padding: 22px; }
 
@@ -127,7 +135,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 /* ---------- desktop: calories on the left, macros as a flush row list on the right ---------- */
 @media (min-width: 760px) {
-  .nutrition-grid { grid-template-columns: 1fr 1.3fr; align-items: stretch; }
+  .nutrition-grid { grid-template-columns: 3fr 2fr; align-items: stretch; }
   .cal-block { display: flex; flex-direction: column; justify-content: center; }
   /* The macro list becomes ONE cream tile holding a flush row list,
      matching the reference's single macros box — individual rows lose
