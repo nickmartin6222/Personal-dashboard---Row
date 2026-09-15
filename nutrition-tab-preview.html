@@ -133,14 +133,6 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 .sec-label { font-family: var(--font-mono); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin: 18px 0 10px; display: block; }
 
-/* ---------- protein coverage — trailing 7-day card, same cream tile ---------- */
-.coverage-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cream-ink-faint); margin-bottom: 10px; }
-.coverage-days { font-family: var(--font-heading); font-size: 26px; font-weight: 700; color: var(--cream-ink); margin-bottom: 6px; }
-.coverage-desc { font-size: 12.5px; color: var(--cream-ink-soft); margin-bottom: 14px; }
-.coverage-pill { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 6px 14px; border-radius: 999px; }
-.coverage-pill.is-on { background: color-mix(in srgb, var(--accent) 20%, var(--cream)); color: color-mix(in srgb, var(--accent) 70%, var(--cream-ink)); }
-.coverage-pill.is-off { background: color-mix(in srgb, var(--down) 16%, var(--cream)); color: var(--down); }
-
 /* ---------- desktop: calories on the left, macros as a flush row list on the right ---------- */
 @media (min-width: 760px) {
   .nutrition-grid { grid-template-columns: 3fr 2fr; align-items: stretch; }
@@ -247,13 +239,6 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     </div>
   </div>
 
-  <span class="sec-label">Nutrition &amp; recovery</span>
-  <div class="cream-tile">
-    <div class="coverage-eyebrow">Protein coverage</div>
-    <div class="coverage-days" id="coverageDays">—/7 days</div>
-    <div class="coverage-desc" id="coverageDesc">—</div>
-    <span class="coverage-pill" id="coveragePill">—</span>
-  </div>
 </div>
 
 <script>
@@ -386,16 +371,17 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     pill.textContent = pillText;
     pill.className = 'status-pill ' + pillClass;
 
-    document.getElementById('coverageDays').textContent = hitCount + '/7 days';
-    document.getElementById('coverageDesc').textContent = 'Days hitting ' + g.proteinG + 'g protein or ≥85% of that day’s calorie target, trailing week.';
-    const covPill = document.getElementById('coveragePill');
-    covPill.textContent = pillText;
-    covPill.className = 'coverage-pill ' + pillClass;
-
+    // Macro targets on a rest day: protein and fibre stay put (neither
+    // is really calorie-driven), carbs and fat carry the deficit — both
+    // scaled down by the same 10% REST_DAY_FACTOR as calories, standard
+    // "carb/fat cycling" practice. This is a starting rule same as the
+    // rest-day calorie factor itself; tune per-macro if you want a
+    // different split later (e.g. carbs cut harder than fat).
     document.querySelectorAll('.macro-card[data-macro]').forEach(function (card) {
       const key = card.dataset.macro;
+      const scales = (key === 'carbsG' || key === 'fatG') && restDay;
+      const goal = scales ? Math.round((g[key] * REST_DAY_FACTOR) / 5) * 5 : g[key];
       const val = Math.round(dayData[key] || 0);
-      const goal = g[key];
       const pct = Math.round(Math.min(999, (val / goal) * 100));
       card.querySelector('.mval').textContent = val;
       card.querySelector('.mgoal').textContent = goal;
