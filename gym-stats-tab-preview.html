@@ -47,6 +47,7 @@
   --gold: #F2C063;
   --gold-dim: rgba(242,192,99,0.16);
   --blue: #7DD3FC;
+  --down: #F0685C;
   --day-push: #F2C063; --day-push-dim: rgba(242,192,99,0.16);
   --day-pull: #7DD3FC; --day-pull-dim: rgba(125,211,252,0.16);
   --day-lowera: #6EE3A4; --day-lowera-dim: rgba(110,227,164,0.16);
@@ -74,6 +75,7 @@
   --gold: #C2A46F;
   --gold-dim: rgba(194,164,111,0.18);
   --blue: #4F7FBF;
+  --down: #B3392F;
   --day-push: #C2A46F; --day-push-dim: rgba(194,164,111,0.18);
   --day-pull: #4F7FBF; --day-pull-dim: rgba(79,127,191,0.14);
   --day-lowera: #2F6B52; --day-lowera-dim: rgba(47,107,82,0.14);
@@ -252,6 +254,30 @@ section { margin-bottom: 22px; }
 .lib-chip { font-family: inherit; font-size: 11.5px; padding: 6px 10px; border-radius: 999px; background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-2); cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .lib-chip:hover, .lib-chip:active { border-color: var(--border-strong); color: var(--text-1); }
 
+/* ---------- tag-cloud library browse — replaces the collapsible list
+   above with a horizontally-scrolling strip of muscle pills plus a
+   search box, per the updated reference. Searching either a muscle
+   group name OR a specific exercise name works. ---------- */
+.lib2-search-wrap { margin-bottom: 12px; }
+.lib2-search { width: 100%; box-sizing: border-box; font-size: 13.5px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-1); font-family: inherit; }
+.lib2-search::placeholder { color: var(--text-3); }
+.lib2-cloud { display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; overflow-x: auto; padding-bottom: 2px; margin-bottom: 12px; }
+.lib2-cloud::-webkit-scrollbar { display: none; }
+.lib2-pill { font-family: inherit; font-size: 13.5px; font-weight: 700; padding: 9px 15px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: opacity 0.15s ease, transform 0.1s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease; line-height: 1.2; display: inline-flex; align-items: center; gap: 6px; -webkit-tap-highlight-color: transparent; }
+.lib2-pill:active { transform: scale(0.96); }
+.lib2-pill-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.lib2-pill-count { opacity: 0.6; font-weight: 600; }
+.lib2-pill.is-dim { opacity: 0.3; }
+.lib2-pill.is-active { color: var(--text-1); }
+.lib2-results { display: flex; flex-direction: column; gap: 6px; }
+.lib2-results:empty { margin-top: 0; }
+.lib2-results-heading { font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); margin-bottom: 2px; }
+.lib2-result-row { font-family: inherit; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-raised); cursor: pointer; text-align: left; width: 100%; -webkit-tap-highlight-color: transparent; }
+.lib2-result-row:hover { border-color: var(--border-strong); }
+.lib2-result-name { font-weight: 700; font-size: 13px; color: var(--text-1); }
+.lib2-result-meta { font-size: 10px; font-family: var(--font-mono); font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; flex-shrink: 0; }
+.lib2-empty-hint { font-size: 12px; color: var(--text-3); text-align: center; padding: 10px 0; }
+
 /* ---------- muscles trained anatomy (ported) ---------- */
 .anatomy-toggle { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
 .anatomy-toggle button { font-size: 11px; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; }
@@ -286,7 +312,37 @@ section { margin-bottom: 22px; }
 .eh-stat-val { font-size: 16px; font-weight: 800; color: var(--text-1); }
 .eh-stat-label { font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin-top: 2px; }
 .eh-chart-label { font-size: 9.5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); margin-bottom: 6px; }
-.eh-chart { width: 100%; height: 80px; display: block; overflow: visible; }
+.eh-chart { width: 100%; height: 150px; display: block; overflow: visible; }
+
+/* ---------- exercise history: range toggle, tappable chart, table ---------- */
+.eh-range-row { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.eh-range-opt { font-family: var(--font-mono); font-size: 11px; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.eh-range-opt.active { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+.eh-chart-wrap { position: relative; margin-bottom: 4px; }
+.eh-pt { cursor: pointer; }
+.eh-pt-hit { fill: transparent; }
+.eh-pt-dot { fill: var(--lime); stroke: var(--bg-sheet); stroke-width: 2.5; }
+.eh-pt-dot.is-active { r: 6.5; }
+.eh-popup { position: absolute; transform: translate(-50%, -100%); background: var(--text-1); color: var(--bg-sheet); font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; padding: 5px 9px; border-radius: 8px; white-space: nowrap; pointer-events: none; box-shadow: 0 6px 14px rgba(0,0,0,0.25); }
+.eh-popup::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--text-1); }
+.eh-popup-sub { opacity: 0.65; font-weight: 500; margin-left: 4px; }
+.eh-improve { font-size: 12.5px; color: var(--text-2); margin: 10px 0 18px; text-align: center; }
+.eh-improve b { color: var(--lime); font-weight: 800; }
+.eh-stat-val.is-up { color: var(--lime); }
+.eh-stat-val.is-down { color: var(--down); }
+.eh-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.eh-table th { text-align: left; font-family: var(--font-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-3); font-weight: 700; padding: 0 6px 8px; border-bottom: 1px solid var(--border); }
+.eh-table th:last-child, .eh-table td:last-child { text-align: right; }
+.eh-table td { padding: 9px 6px; border-bottom: 1px solid var(--border); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.eh-table tr:last-child td { border-bottom: none; }
+.eh-table td.eh-weight { color: var(--text-1); font-weight: 700; }
+.eh-delta { font-weight: 700; }
+.eh-delta.is-up { color: var(--lime); }
+.eh-delta.is-down { color: var(--down); }
+.eh-delta.is-flat { color: var(--text-3); }
+.eh-pr-badge { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--lime); color: var(--lime); font-size: 9px; margin-left: 6px; vertical-align: 1px; flex-shrink: 0; }
+.eh-viewall-btn { width: 100%; padding: 11px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text-2); font-weight: 700; font-size: 12px; cursor: pointer; margin-top: 4px; -webkit-tap-highlight-color: transparent; }
+.eh-viewall-btn:hover { border-color: var(--border-strong); color: var(--text-1); }
 
 /* ---------- bodyweight chart ---------- */
 .bw-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
@@ -423,7 +479,9 @@ section { margin-bottom: 22px; }
   <section>
     <div class="sec-label-row"><span class="sec-label">Exercise Library</span></div>
     <div class="card lib-card">
-      <div id="libraryList"></div>
+      <div class="lib2-cloud" id="lib2Cloud"></div>
+      <div class="lib2-search-wrap"><input type="text" id="lib2Search" class="lib2-search" placeholder="Search a muscle group or an exercise…" autocomplete="off"></div>
+      <div class="lib2-results" id="lib2Results"></div>
     </div>
   </section>
 
@@ -1288,80 +1346,271 @@ section { margin-bottom: 22px; }
     renderActivity(); // picks up any edits/deletes made while the modal was open
   });
 
-  // ---------- exercise library (ported — grouped by muscle from your
-  // REAL exercise records, filtered to the current catalog, so it only
-  // shows exercises you've actually got in your program right now, not
-  // old ones that have since been removed/renamed from a reseed) ----------
-  var libOpen = {};
-  function computeMuscleActivity() {
-    var counts = {};
-    ALL_ENTRIES.forEach(function (e) { if (e.deload || !CURRENT_CATALOG_NAMES[e.ex.name]) return; var m = e.ex.muscle || CATALOG_MUSCLE[e.ex.name] || 'Other'; counts[m] = (counts[m] || 0) + 1; });
-    return counts;
+  // ---------- exercise library — tag-cloud browse over your REAL
+  // exercise records, filtered to the current catalog, so it only shows
+  // exercises you've actually got in your program right now (never one
+  // with zero logged history). Scroll the muscle pills or search either
+  // a muscle group name or a specific exercise name. ----------
+  var LIB2_GROUPS = {};
+  function buildLib2Groups() {
+    LIB2_GROUPS = {};
+    REAL_EXERCISES.forEach(function (ex) {
+      if (!CURRENT_CATALOG_NAMES[ex.name]) return;
+      if (!(REAL_LOGS[ex.id] || []).some(function (l) { return !l.deload; })) return;
+      var m = ex.muscle || CATALOG_MUSCLE[ex.name] || 'Other';
+      (LIB2_GROUPS[m] = LIB2_GROUPS[m] || []).push(ex.name);
+    });
   }
-  function renderLibrary() {
-    var groups = {};
-    REAL_EXERCISES.forEach(function (ex) { if (!CURRENT_CATALOG_NAMES[ex.name]) return; var m = ex.muscle || CATALOG_MUSCLE[ex.name] || 'Other'; (groups[m] = groups[m] || []).push(ex.name); });
-    var names = Object.keys(groups);
-    var el = document.getElementById('libraryList');
-    if (!names.length) { el.innerHTML = '<div class="act-empty">No exercises logged yet.</div>'; return; }
-    var activity = computeMuscleActivity();
-    var maxActivity = Math.max(1, Math.max.apply(null, names.map(function (m) { return activity[m] || 0; })));
-    var order = names.sort(function (a, b) { return (activity[b] || 0) - (activity[a] || 0); });
-    el.innerHTML = order.map(function (m) {
-      var open = !!libOpen[m];
-      var color = muscleColors()[m] || '#888';
-      var pct = Math.round(((activity[m] || 0) / maxActivity) * 100);
-      return '<div class="lib-group"><div class="lib-group-head" data-m="' + m + '"><span class="lib-dot" style="background:' + color + '"></span>' +
-        '<span class="lib-group-name">' + m + '</span><span class="lib-group-count">' + groups[m].length + '</span>' +
-        '<div class="lib-activity-track" title="' + (activity[m] || 0) + ' sets logged"><div class="lib-activity-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
-        '<span class="lib-chevron' + (open ? ' is-open' : '') + '">⌄</span></div>' +
-        (open ? '<div class="lib-chips">' + groups[m].map(function (n) { return '<button type="button" class="lib-chip" data-ex="' + n + '">' + n + '</button>'; }).join('') + '</div>' : '') +
-        '</div>';
+  var lib2ActiveGroup = null;
+  function renderLib2Cloud() {
+    buildLib2Groups();
+    var colors = muscleColors();
+    var muscles = Object.keys(LIB2_GROUPS).sort(function (a, b) { return LIB2_GROUPS[b].length - LIB2_GROUPS[a].length; });
+    var q = (document.getElementById('lib2Search').value || '').trim().toLowerCase();
+    var box = document.getElementById('lib2Cloud');
+    if (!muscles.length) { box.innerHTML = ''; document.getElementById('lib2Results').innerHTML = '<div class="lib2-empty-hint">No exercises logged yet.</div>'; return; }
+    box.innerHTML = muscles.map(function (m) {
+      var n = LIB2_GROUPS[m].length;
+      var color = colors[m] || '#888';
+      var groupMatches = q && m.toLowerCase().indexOf(q) !== -1;
+      var exMatches = q && LIB2_GROUPS[m].some(function (ex) { return ex.toLowerCase().indexOf(q) !== -1; });
+      var dim = q && !groupMatches && !exMatches;
+      var active = lib2ActiveGroup === m;
+      var activeStyle = active
+        ? 'background:color-mix(in srgb, ' + color + ' 20%, var(--bg-card));border-color:color-mix(in srgb, ' + color + ' 45%, transparent);'
+        : '';
+      return '<button type="button" class="lib2-pill' + (dim ? ' is-dim' : '') + (active ? ' is-active' : '') +
+        '" data-m="' + m + '" style="' + activeStyle + '">' +
+        '<span class="lib2-pill-dot" style="background:' + color + '"></span>' +
+        m + '<span class="lib2-pill-count">' + n + '</span></button>';
     }).join('');
-    document.querySelectorAll('.lib-group-head').forEach(function (h) { h.addEventListener('click', function () { libOpen[h.dataset.m] = !libOpen[h.dataset.m]; renderLibrary(); }); });
-    document.querySelectorAll('.lib-chip').forEach(function (btn) { btn.addEventListener('click', function (ev) { ev.stopPropagation(); openExerciseHistory(btn.dataset.ex); }); });
+    box.querySelectorAll('.lib2-pill').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        lib2ActiveGroup = (lib2ActiveGroup === btn.dataset.m) ? null : btn.dataset.m;
+        document.getElementById('lib2Search').value = '';
+        renderLib2Cloud();
+        renderLib2Results();
+      });
+    });
+  }
+  function renderLib2Results() {
+    var box = document.getElementById('lib2Results');
+    var q = (document.getElementById('lib2Search').value || '').trim().toLowerCase();
+    var names, heading;
+    if (lib2ActiveGroup) {
+      names = (LIB2_GROUPS[lib2ActiveGroup] || []).slice();
+      heading = lib2ActiveGroup + ' — ' + names.length + ' exercise' + (names.length === 1 ? '' : 's');
+    } else if (q) {
+      var groupHit = Object.keys(LIB2_GROUPS).find(function (m) { return m.toLowerCase() === q; }) ||
+        Object.keys(LIB2_GROUPS).find(function (m) { return m.toLowerCase().indexOf(q) === 0; });
+      if (groupHit) {
+        names = LIB2_GROUPS[groupHit].slice();
+        heading = groupHit + ' — ' + names.length + ' exercise' + (names.length === 1 ? '' : 's');
+      } else {
+        var allLogged = Object.keys(LIB2_GROUPS).reduce(function (a, m) { return a.concat(LIB2_GROUPS[m]); }, []);
+        names = allLogged.filter(function (n) { return n.toLowerCase().indexOf(q) !== -1; });
+        heading = names.length ? 'Matching exercises' : '';
+      }
+    } else {
+      box.innerHTML = '';
+      return;
+    }
+    if (!names.length) { box.innerHTML = '<div class="lib2-empty-hint">No matches.</div>'; return; }
+    var colors = muscleColors();
+    box.innerHTML = (heading ? '<div class="lib2-results-heading">' + heading + '</div>' : '') + names.map(function (n) {
+      var m = EX_BY_NAME[n].muscle || CATALOG_MUSCLE[n] || 'Other';
+      var color = colors[m] || '#888';
+      return '<button type="button" class="lib2-result-row" data-ex="' + n + '"><span class="lib2-result-name">' + n + '</span><span class="lib2-result-meta" style="color:' + color + '">' + m + '</span></button>';
+    }).join('');
+    box.querySelectorAll('.lib2-result-row').forEach(function (btn) {
+      btn.addEventListener('click', function () { openExerciseHistory(btn.dataset.ex); });
+    });
+  }
+  document.getElementById('lib2Search').addEventListener('input', function () {
+    lib2ActiveGroup = null;
+    renderLib2Cloud();
+    renderLib2Results();
+  });
+  function renderLibrary() { renderLib2Cloud(); renderLib2Results(); }
+
+  // ---------- exercise history sheet — range toggle, tappable
+  // weight/reps chart with popup, per-set table with deltas + PR
+  // badges. Each REAL_LOGS entry is one logged SET (not a session), so
+  // the table lists sets directly rather than inventing a session
+  // grouping the real data doesn't have. ----------
+  var EH_RANGES = [
+    { key: 'W', label: 'W', days: 7 },
+    { key: 'M', label: 'M', days: 30 },
+    { key: '3M', label: '3M', days: 90 },
+    { key: '6M', label: '6M', days: 180 },
+    { key: 'Y', label: 'Y', days: 365 },
+    { key: 'ALL', label: 'All', days: null }
+  ];
+  var ehExercise = null, ehRange = 'ALL', ehActivePt = null, ehTableExpanded = false;
+  var EH_TABLE_LIMIT = 5;
+  function ehDaysAgo(dateStr) {
+    var now = new Date(); now.setHours(0, 0, 0, 0);
+    var d = new Date((dateStr || '').slice(0, 10) + 'T12:00:00');
+    return Math.round((now - d) / 86400000);
+  }
+  function ehFmtDate(dateStr) {
+    var d = new Date((dateStr || '').slice(0, 10) + 'T12:00:00');
+    return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+  }
+  function ehFullLog() {
+    var ex = EX_BY_NAME[ehExercise];
+    return (REAL_LOGS[ex.id] || []).filter(function (l) { return !l.deload; }).sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
+  }
+  function ehFilteredLog() {
+    var full = ehFullLog();
+    var range = EH_RANGES.find(function (r) { return r.key === ehRange; });
+    if (!range.days) return full;
+    return full.filter(function (l) { return ehDaysAgo(l.date) <= range.days; });
   }
   function openExerciseHistory(name) {
     var ex = EX_BY_NAME[name];
     if (!ex) return;
-    var acc = accents();
+    ehExercise = name;
+    ehRange = 'ALL';
+    ehActivePt = null;
+    ehTableExpanded = false;
     document.getElementById('ehTitle').textContent = name;
-    var logs = (REAL_LOGS[ex.id] || []).filter(function (l) { return !l.deload; }).sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
     var body = document.getElementById('ehBody');
-    if (!logs.length) {
+    var full = ehFullLog();
+    if (!full.length) {
       body.innerHTML = '<div class="act-empty">No logged history for this exercise yet.</div>';
     } else {
-      var current = ex.bw ? logs[logs.length - 1].reps + ' reps' : (ex.currentLoad != null ? ex.currentLoad : logs[logs.length - 1].weight) + 'kg';
-      var best = ex.bw ? Math.max.apply(null, logs.map(function (l) { return l.reps; })) + ' reps' : Math.max.apply(null, logs.map(function (l) { return l.weight; })) + 'kg';
-      var statsHtml = '<div class="eh-stat-row">' +
-        '<div class="eh-stat"><div class="eh-stat-val">' + current + '</div><div class="eh-stat-label">Current</div></div>' +
-        '<div class="eh-stat"><div class="eh-stat-val">' + best + '</div><div class="eh-stat-label">Best</div></div>' +
-        '<div class="eh-stat"><div class="eh-stat-val">' + logs.length + '</div><div class="eh-stat-label">Sets logged</div></div></div>';
-      var chartHtml = '';
-      if (logs.length >= 2) {
-        var vals = logs.map(function (l) { return ex.bw ? l.reps : l.weight; });
-        var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
-        if (mx === mn) { mx += 1; mn -= 1; }
-        var W = 300, H = 80;
-        var pts = logs.map(function (l, i) { return { x: (i / (logs.length - 1)) * W, y: H - 8 - (((ex.bw ? l.reps : l.weight) - mn) / (mx - mn)) * (H - 16) }; });
-        var linePath = pts.map(function (p, i) { return (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
-        var areaPath = linePath + ' L' + pts[pts.length - 1].x.toFixed(1) + ',' + H + ' L0,' + H + ' Z';
-        var gradId = 'ehGrad' + ex.id;
-        // Same gradient-fill-under-line + endpoint-dot treatment as the
-        // Bodyweight chart and every other trend chart on this page —
-        // a bare stroke line here would be the only chart on the site
-        // without the fill.
-        chartHtml = '<div class="eh-chart-label">' + (ex.bw ? 'Reps' : 'Top weight') + ' trend</div><svg class="eh-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
-          '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
-          '<stop offset="0%" stop-color="' + acc.primary + '" stop-opacity="0.28"/>' +
-          '<stop offset="100%" stop-color="' + acc.primary + '" stop-opacity="0"/></linearGradient></defs>' +
-          '<path d="' + areaPath + '" fill="url(#' + gradId + ')" stroke="none"/>' +
-          '<path d="' + linePath + '" fill="none" stroke="' + acc.primary + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-          '<circle cx="' + pts[pts.length - 1].x.toFixed(1) + '" cy="' + pts[pts.length - 1].y.toFixed(1) + '" r="4" fill="' + acc.primary + '"/></svg>';
-      }
-      body.innerHTML = statsHtml + chartHtml;
+      body.innerHTML = '<div class="eh-range-row" id="ehRangeRow"></div>' +
+        '<div class="eh-chart-wrap" id="ehChartWrap"></div>' +
+        '<div class="eh-improve" id="ehImprove"></div>' +
+        '<div class="eh-stat-row" id="ehStatRow"></div>' +
+        '<table class="eh-table" id="ehTable"></table>' +
+        '<button type="button" class="eh-viewall-btn" id="ehViewAllBtn" hidden></button>';
+      ehRenderRangeRow();
+      ehRenderChart();
+      ehRenderStats();
+      ehRenderTable();
+      document.getElementById('ehViewAllBtn').addEventListener('click', function () {
+        ehTableExpanded = !ehTableExpanded;
+        ehRenderTable();
+      });
     }
     document.getElementById('ehModal').hidden = false;
+  }
+  function ehRenderRangeRow() {
+    var row = document.getElementById('ehRangeRow');
+    row.innerHTML = EH_RANGES.map(function (r) {
+      return '<button type="button" class="eh-range-opt' + (r.key === ehRange ? ' active' : '') + '" data-r="' + r.key + '">' + r.label + '</button>';
+    }).join('');
+    row.querySelectorAll('.eh-range-opt').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        ehRange = btn.dataset.r;
+        ehActivePt = null;
+        ehRenderRangeRow(); ehRenderChart(); ehRenderStats();
+      });
+    });
+  }
+  function ehRenderChart() {
+    var ex = EX_BY_NAME[ehExercise];
+    var wrap = document.getElementById('ehChartWrap');
+    var log = ehFilteredLog();
+    var acc = accents().primary;
+    var unit = ex.bw ? ' reps' : 'kg';
+    if (log.length < 2) {
+      wrap.innerHTML = '<div style="font-size:12.5px;color:var(--text-3);text-align:center;padding:30px 0;">Not enough logged sets in this range yet.</div>';
+    } else {
+      var W = 300, H = 150, padX = 10, padY = 16;
+      var vals = log.map(function (l) { return ex.bw ? l.reps : l.weight; });
+      var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+      if (mx === mn) { mx += 1; mn -= 1; }
+      var pts = log.map(function (l, i) {
+        var x = padX + (i / (log.length - 1)) * (W - padX * 2);
+        var y = H - padY - (((ex.bw ? l.reps : l.weight) - mn) / (mx - mn)) * (H - padY * 2);
+        return { x: x, y: y, l: l };
+      });
+      var linePath = pts.map(function (p, i) { return (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+      var areaPath = linePath + ' L' + pts[pts.length - 1].x.toFixed(1) + ',' + H + ' L' + pts[0].x.toFixed(1) + ',' + H + ' Z';
+      var gradId = 'ehGrad' + ex.id;
+      var circles = pts.map(function (p, i) {
+        var isActive = i === ehActivePt;
+        return '<circle class="eh-pt-hit" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="14" data-i="' + i + '"/>' +
+          '<circle class="eh-pt-dot' + (isActive ? ' is-active' : '') + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="4.5" data-i="' + i + '"/>';
+      }).join('');
+      wrap.innerHTML =
+        '<svg class="eh-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+        '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="' + acc + '" stop-opacity="0.28"/>' +
+        '<stop offset="100%" stop-color="' + acc + '" stop-opacity="0"/></linearGradient></defs>' +
+        '<path d="' + areaPath + '" fill="url(#' + gradId + ')" stroke="none"/>' +
+        '<path d="' + linePath + '" fill="none" stroke="' + acc + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<g class="eh-pt">' + circles + '</g></svg>';
+      wrap.querySelectorAll('.eh-pt-hit, .eh-pt-dot').forEach(function (el) {
+        el.addEventListener('click', function () {
+          var i = +el.dataset.i;
+          ehActivePt = (ehActivePt === i) ? null : i;
+          ehRenderChart();
+        });
+      });
+      var old = wrap.querySelector('.eh-popup');
+      if (ehActivePt != null) {
+        var p = pts[ehActivePt];
+        var popup = document.createElement('div');
+        popup.className = 'eh-popup';
+        popup.style.left = ((p.x / W) * 100) + '%';
+        popup.style.top = ((p.y / H) * 100) + '%';
+        popup.innerHTML = (ex.bw ? p.l.reps + ' reps' : p.l.weight + 'kg') + '<span class="eh-popup-sub">' + ehFmtDate(p.l.date) + '</span>';
+        wrap.appendChild(popup);
+      }
+    }
+    var full = ehFullLog();
+    var firstVal = ex.bw ? full[0].reps : full[0].weight;
+    var lastVal = ex.bw ? full[full.length - 1].reps : full[full.length - 1].weight;
+    var lifetime = Math.round((lastVal - firstVal) * 10) / 10;
+    var sign = lifetime > 0 ? '+' : (lifetime < 0 ? '' : '±');
+    document.getElementById('ehImprove').innerHTML = '<b>' + sign + lifetime + '</b>' + unit + ' all time';
+  }
+  function ehRenderStats() {
+    var ex = EX_BY_NAME[ehExercise];
+    var full = ehFullLog();
+    var last30 = full.filter(function (l) { return ehDaysAgo(l.date) <= 30; });
+    var current = ex.bw ? full[full.length - 1].reps + ' reps' : (ex.currentLoad != null ? ex.currentLoad : full[full.length - 1].weight) + 'kg';
+    var best = ex.bw ? Math.max.apply(null, full.map(function (l) { return l.reps; })) + ' reps' : Math.max.apply(null, full.map(function (l) { return l.weight; })) + 'kg';
+    document.getElementById('ehStatRow').innerHTML =
+      '<div class="eh-stat"><div class="eh-stat-val">' + current + '</div><div class="eh-stat-label">Current</div></div>' +
+      '<div class="eh-stat"><div class="eh-stat-val">' + best + '</div><div class="eh-stat-label">Best</div></div>' +
+      '<div class="eh-stat"><div class="eh-stat-val">' + last30.length + '</div><div class="eh-stat-label">Sets, last 30d</div></div>';
+  }
+  function ehRenderTable() {
+    var ex = EX_BY_NAME[ehExercise];
+    var full = ehFullLog().slice().reverse(); // newest first
+    var vals = full.map(function (l) { return ex.bw ? l.reps : l.weight; });
+    var best = Math.max.apply(null, vals);
+    var visible = ehTableExpanded ? full : full.slice(0, EH_TABLE_LIMIT);
+    var rows = visible.map(function (l, i) {
+      var prev = full[i + 1]; // chronologically previous set
+      var val = ex.bw ? l.reps : l.weight;
+      var prevVal = prev ? (ex.bw ? prev.reps : prev.weight) : null;
+      var delta = prevVal == null ? null : Math.round((val - prevVal) * 10) / 10;
+      var deltaHtml = delta == null ? '—' : (delta > 0 ? '+' + delta : (delta === 0 ? '0' : delta));
+      var deltaCls = delta == null ? 'is-flat' : (delta > 0 ? 'is-up' : (delta < 0 ? 'is-down' : 'is-flat'));
+      var star = val === best ? '<span class="eh-pr-badge" title="Personal best">★</span>' : '';
+      var repsCell = ex.bw ? '' : '<td>' + l.reps + '</td>';
+      var valHtml = ex.bw ? (l.reps + ' reps') : (l.weight + 'kg');
+      return '<tr><td>' + ehFmtDate(l.date) + '</td>' + repsCell +
+        '<td class="eh-weight">' + valHtml + star + '</td>' +
+        '<td><span class="eh-delta ' + deltaCls + '">' + deltaHtml + '</span></td></tr>';
+    }).join('');
+    var repsHeader = ex.bw ? '' : '<th>Reps</th>';
+    document.getElementById('ehTable').innerHTML =
+      '<thead><tr><th>Date</th>' + repsHeader + '<th>' + (ex.bw ? 'Reps' : 'Weight') + '</th><th>Progress</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody>';
+    var viewAllBtn = document.getElementById('ehViewAllBtn');
+    if (full.length <= EH_TABLE_LIMIT) {
+      viewAllBtn.hidden = true;
+    } else {
+      viewAllBtn.hidden = false;
+      viewAllBtn.textContent = ehTableExpanded ? 'Show less' : 'View all (' + full.length + ')';
+    }
   }
   document.getElementById('ehClose').addEventListener('click', function () { document.getElementById('ehModal').hidden = true; });
 
