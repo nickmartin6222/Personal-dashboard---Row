@@ -166,11 +166,20 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .goal-edit-icon { width: 12px !important; height: 12px !important; margin-left: auto; opacity: 0.55; color: var(--cream-ink-faint) !important; cursor: pointer; }
 .step-cell-val { font-size: 26px; font-weight: 800; color: var(--cream-ink); letter-spacing: -0.01em; }
 
+/* Distance: a small race-track-style loop under the number, showing
+   progress toward the ~7.75km an average 10,000-step day covers — a
+   quick visual reference point, not a literal route. */
+.dist-loop-wrap { margin-top: auto; }
+.dist-loop { width: 100%; height: 34px; display: block; overflow: visible; }
+.dist-loop-track { fill: none; stroke: rgba(21,56,44,0.12); stroke-width: 5; }
+.dist-loop-fill { fill: none; stroke: var(--distance); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.6s ease; }
+.dist-loop-caption { font-size: 10.5px; color: var(--cream-ink-faint); margin-top: 6px; }
+
 .steps-body { flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 12px; min-width: 0; }
 .steps-count-block { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
 #stepsBigVal { font-size: 33px; }
 .steps-count-goal { font-size: 12.5px; color: var(--cream-ink-faint); margin-top: 6px; }
-.steps-ring-wrap { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.steps-ring-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
 .steps-ring {
   --pct: 0%;
   width: 100px; height: 100px; border-radius: 50%; position: relative; flex-shrink: 0;
@@ -373,6 +382,13 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
       <div class="step-cell step-cell-dist" id="distCard">
         <div class="step-cell-head"><i data-lucide="map-pin"></i><span>Distance</span></div>
         <div class="step-cell-val" id="stepsSubDist">—</div>
+        <div class="dist-loop-wrap">
+          <svg class="dist-loop" viewBox="0 0 100 40" preserveAspectRatio="none">
+            <rect x="3" y="3" width="94" height="34" rx="13" ry="13" pathLength="100" class="dist-loop-track"/>
+            <rect x="3" y="3" width="94" height="34" rx="13" ry="13" pathLength="100" class="dist-loop-fill" id="distLoopFill"/>
+          </svg>
+          <div class="dist-loop-caption" id="distLoopCaption">of 10k-step distance</div>
+        </div>
       </div>
       <div class="step-cell step-cell-goal" id="weeklyGoalCell">
         <div class="step-cell-head"><i data-lucide="target"></i><span>Weekly goal</span><i data-lucide="pencil" class="goal-edit-icon"></i></div>
@@ -635,6 +651,12 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     document.getElementById('stepsRing').style.setProperty('--pct', dailyPct + '%');
     document.getElementById('stepsRingPct').textContent = dailyPct + '%';
     document.getElementById('stepsSubDist').textContent = dVal == null ? '—' : (dVal.toFixed(2) + 'km');
+    // 10,000 steps ≈ 7.5-8km for an average adult stride — used purely
+    // as a familiar reference point for the little loop, not a real goal.
+    const TEN_K_STEP_KM = 7.75;
+    const distPct = Math.max(0, Math.min(100, Math.round(((dVal || 0) / TEN_K_STEP_KM) * 100)));
+    document.getElementById('distLoopFill').style.strokeDashoffset = (100 - distPct);
+    document.getElementById('distLoopCaption').textContent = distPct + '% of 10k-step distance';
     const stepMins = Math.round(sVal / 100);
     document.getElementById('stepsSubTime').textContent = stepMins < 60
       ? stepMins + ' min'
