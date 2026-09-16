@@ -168,10 +168,10 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .step-cell-dist .step-cell-head { color: var(--distance); }
 .step-cell-time .step-cell-head { color: var(--time); }
 .step-cell-goal .step-cell-head { color: var(--weekly); }
-.step-cell-steps { background: color-mix(in srgb, var(--steps) 14%, var(--cream)); border-color: color-mix(in srgb, var(--steps) 65%, var(--cream-line)); }
-.step-cell-dist { background: color-mix(in srgb, var(--distance) 14%, var(--cream)); border-color: color-mix(in srgb, var(--distance) 65%, var(--cream-line)); }
-.step-cell-time { background: color-mix(in srgb, var(--time) 14%, var(--cream)); border-color: color-mix(in srgb, var(--time) 65%, var(--cream-line)); }
-.step-cell-goal { background: color-mix(in srgb, var(--weekly) 14%, var(--cream)); border-color: color-mix(in srgb, var(--weekly) 65%, var(--cream-line)); }
+.step-cell-steps { border-color: color-mix(in srgb, var(--steps) 65%, var(--cream-line)); }
+.step-cell-dist { border-color: color-mix(in srgb, var(--distance) 65%, var(--cream-line)); }
+.step-cell-time { border-color: color-mix(in srgb, var(--time) 65%, var(--cream-line)); }
+.step-cell-goal { border-color: color-mix(in srgb, var(--weekly) 65%, var(--cream-line)); }
 .step-cell-steps .step-cell-val, .step-cell-steps .steps-ring-pct { color: var(--steps); }
 .step-cell-dist .step-cell-val { color: var(--distance); }
 .step-cell-time .step-cell-val { color: var(--time); }
@@ -183,7 +183,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
    progress toward the ~7.75km an average 10,000-step day covers — a
    quick visual reference point, not a literal route. */
 .dist-loop-wrap { margin-top: auto; }
-.dist-loop { width: 100%; height: 52px; display: block; overflow: visible; }
+.dist-loop { width: 100%; height: 100px; display: block; overflow: visible; }
 .dist-loop-track { fill: none; stroke: rgba(21,56,44,0.12); stroke-width: 4; }
 .dist-loop-fill { fill: none; stroke: var(--distance); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.6s ease; }
 .dist-loop-marker { fill: var(--distance); stroke: var(--cream); stroke-width: 2; transition: cx 0.6s ease, cy 0.6s ease; }
@@ -251,6 +251,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   .goal-sparkline { height: 34px; }
   .steps-ring { width: 136px; height: 136px; }
   .steps-ring-pct { font-size: 26px; }
+  .dist-loop { height: 140px; }
 }
 
 /* ---------- weekly detail sheet ---------- */
