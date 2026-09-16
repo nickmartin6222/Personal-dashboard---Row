@@ -168,10 +168,14 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .step-cell-dist .step-cell-head { color: var(--distance); }
 .step-cell-time .step-cell-head { color: var(--time); }
 .step-cell-goal .step-cell-head { color: var(--weekly); }
-.step-cell-steps { border-color: color-mix(in srgb, var(--steps) 45%, var(--cream-line)); }
-.step-cell-dist { border-color: color-mix(in srgb, var(--distance) 45%, var(--cream-line)); }
-.step-cell-time { border-color: color-mix(in srgb, var(--time) 45%, var(--cream-line)); }
-.step-cell-goal { border-color: color-mix(in srgb, var(--weekly) 45%, var(--cream-line)); }
+.step-cell-steps { background: color-mix(in srgb, var(--steps) 14%, var(--cream)); border-color: color-mix(in srgb, var(--steps) 65%, var(--cream-line)); }
+.step-cell-dist { background: color-mix(in srgb, var(--distance) 14%, var(--cream)); border-color: color-mix(in srgb, var(--distance) 65%, var(--cream-line)); }
+.step-cell-time { background: color-mix(in srgb, var(--time) 14%, var(--cream)); border-color: color-mix(in srgb, var(--time) 65%, var(--cream-line)); }
+.step-cell-goal { background: color-mix(in srgb, var(--weekly) 14%, var(--cream)); border-color: color-mix(in srgb, var(--weekly) 65%, var(--cream-line)); }
+.step-cell-steps .step-cell-val, .step-cell-steps .steps-ring-pct { color: var(--steps); }
+.step-cell-dist .step-cell-val { color: var(--distance); }
+.step-cell-time .step-cell-val { color: var(--time); }
+.step-cell-goal .step-cell-val { color: var(--weekly); }
 .goal-edit-icon { width: 12px !important; height: 12px !important; margin-left: auto; opacity: 0.55; color: var(--cream-ink-faint) !important; cursor: pointer; }
 .step-cell-val { font-size: 26px; font-weight: 800; color: var(--cream-ink); letter-spacing: -0.01em; }
 
@@ -179,7 +183,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
    progress toward the ~7.75km an average 10,000-step day covers — a
    quick visual reference point, not a literal route. */
 .dist-loop-wrap { margin-top: auto; }
-.dist-loop { width: 100%; height: 34px; display: block; overflow: visible; }
+.dist-loop { width: 100%; height: 52px; display: block; overflow: visible; }
 .dist-loop-track { fill: none; stroke: rgba(21,56,44,0.12); stroke-width: 4; }
 .dist-loop-fill { fill: none; stroke: var(--distance); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.6s ease; }
 .dist-loop-marker { fill: var(--distance); stroke: var(--cream); stroke-width: 2; transition: cx 0.6s ease, cy 0.6s ease; }
@@ -393,10 +397,10 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
         <div class="step-cell-head"><i data-lucide="map-pin"></i><span>Distance</span></div>
         <div class="step-cell-val" id="stepsSubDist">—</div>
         <div class="dist-loop-wrap">
-          <svg class="dist-loop" viewBox="0 0 100 40" preserveAspectRatio="none">
-            <path d="M8,20 C8,9 22,4 35,7 C45,9 42,16 52,15 C62,14 65,6 78,8 C90,10 93,18 90,22 C87,27 75,24 68,27 C60,30 58,22 48,24 C38,26 35,33 25,32 C13,31 8,28 8,20 Z" pathLength="100" class="dist-loop-track" id="distLoopPath"/>
-            <path d="M8,20 C8,9 22,4 35,7 C45,9 42,16 52,15 C62,14 65,6 78,8 C90,10 93,18 90,22 C87,27 75,24 68,27 C60,30 58,22 48,24 C38,26 35,33 25,32 C13,31 8,28 8,20 Z" pathLength="100" class="dist-loop-fill" id="distLoopFill"/>
-            <circle class="dist-loop-marker" id="distLoopMarker" r="4" cx="8" cy="20"/>
+          <svg class="dist-loop" viewBox="0 0 72 46" preserveAspectRatio="xMidYMid meet">
+            <path d="M14,38 C6,34 5,22 11,15 C17,8 27,5 37,6 C49,7 59,6 65,13 C71,20 68,30 59,34 C51,38 44,31 36,32 C29,33 27,40 19,40 C16,40 14,39 14,38 Z" pathLength="100" class="dist-loop-track" id="distLoopPath"/>
+            <path d="M14,38 C6,34 5,22 11,15 C17,8 27,5 37,6 C49,7 59,6 65,13 C71,20 68,30 59,34 C51,38 44,31 36,32 C29,33 27,40 19,40 C16,40 14,39 14,38 Z" pathLength="100" class="dist-loop-fill" id="distLoopFill"/>
+            <circle class="dist-loop-marker" id="distLoopMarker" r="3.2" cx="14" cy="38"/>
           </svg>
           <div class="dist-loop-caption" id="distLoopCaption">of 10k-step distance</div>
         </div>
