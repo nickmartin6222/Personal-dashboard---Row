@@ -6,8 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
-<meta name="color-scheme" content="dark">
-<title>Health</title>
+<title>Nutrition</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -22,159 +21,217 @@
   --bg-card: rgba(255, 255, 255, 0.04);
   --bg-dark: #0c0c0d;
   --bg-input: rgba(0, 0, 0, 0.28);
-
   --border: rgba(255, 255, 255, 0.06);
-  --border-soft: rgba(255, 255, 255, 0.04);
   --border-strong: rgba(255, 255, 255, 0.12);
-
   --text-primary: #FAFAFA;
   --text-secondary: #B8B6B0;
   --text-tertiary: #76746E;
   --text-quaternary: #4D4B47;
-
   --accent: #6EE3A4;
+  --accent-ink: #04140f;
   --carbs: #4DD6C4;
   --fat: #B794F4;
   --protein: #F2C063;
   --fiber: #7DD3FC;
   --steps: #F97066;
   --distance: #6EE3A4;
-  --creatine: #F2C063;
-
+  --down: #F0685C;
   --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-heading: "Fraunces", Georgia, serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: dark;
 }
-/* Health had no light theme at all — the toggle existed but did
-   nothing. Built to match the cream/forest palette now standard across
-   the app's light mode (see golf.html, the Fitness Workouts prototype). */
 :root[data-theme="light"] {
   --bg: #F4EFE3;
   --bg-card: #FFFFFF;
   --bg-dark: #15382C;
   --bg-input: rgba(46,46,46,0.06);
   --border: rgba(46,46,46,0.08);
-  --border-soft: rgba(46,46,46,0.04);
   --border-strong: rgba(46,46,46,0.16);
   --text-primary: #2E2E2E;
   --text-secondary: #5A5A54;
   --text-tertiary: #8C8C86;
   --text-quaternary: #C7C4B8;
   --accent: #003B2F;
+  --accent-ink: #F4EFE3;
   --carbs: #C2A46F;
   --fat: #6B4A54;
   --protein: #8A6B3F;
   --fiber: #4F7FBF;
   --steps: #A9673D;
   --distance: #4F7FBF;
-  --creatine: #8A6B3F;
+  --down: #B3392F;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-secondary); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
-body { min-height: 100vh; }
-main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: max(20px, env(safe-area-inset-top, 20px)); }
+.page { max-width: 1100px; margin: 0 auto; padding: max(18px, env(safe-area-inset-top, 18px)) 18px 100px; }
 
-/* ===== Header ===== */
-.hdr-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; }
-.hdr-title { font-family: var(--font-heading); font-size: 30px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); margin: 0 0 14px; }
+.hdr-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.hdr-title-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hdr-title { font-family: var(--font-heading); font-size: 30px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
+.theme-toggle { width: 44px; height: 24px; border-radius: 999px; background: var(--bg-input); border: 1px solid var(--border); position: relative; cursor: pointer; flex-shrink: 0; }
+.theme-toggle-dot { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); transition: transform 0.2s ease; }
+[data-theme="light"] .theme-toggle-dot { transform: translateX(20px); }
 
-/* ===== Date strip — same structure as gym-preview.html's calendar
-   review (date-nav/date-strip/date-cell): a real navigable week view,
-   not a fixed snapshot. Tapping a past day shows that day's numbers
-   in the cards below instead of always today's. ===== */
-.date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.date-nav-btn {
-  width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); flex: none;
-  background: var(--bg-card); color: var(--text-secondary); font-size: 15px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent;
-}
-.date-nav-btn:disabled { opacity: 0.3; cursor: default; }
-.date-nav-btn:not(:disabled):active { color: var(--text-primary); border-color: var(--border-strong); }
-.date-nav-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.02em; }
-.date-nav-label.is-jump { color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-.date-strip { display: flex; gap: 6px; margin-bottom: 22px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
-.date-strip::-webkit-scrollbar { display: none; }
-.date-cell {
-  flex: 1 0 40px; min-width: 40px; display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 8px 4px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card);
-  color: var(--text-secondary); cursor: pointer; -webkit-tap-highlight-color: transparent; position: relative; font-family: inherit;
-}
-.date-cell-dow { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.7; }
-.date-cell-num { font-size: 17px; font-weight: 800; }
-.date-cell.is-today { background: var(--accent); border-color: var(--accent); color: #04140f; }
-.date-cell.is-selected:not(.is-today) { border-color: var(--accent); color: var(--text-primary); }
-.date-cell-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); position: absolute; bottom: 4px; }
-.date-cell.is-today .date-cell-dot { background: #04140f; opacity: 0.85; }
-[data-theme="light"] .date-cell.is-today { color: #FAFAFA; }
-[data-theme="light"] .date-cell.is-today .date-cell-dot { background: #FAFAFA; }
-.date-cell.is-future { opacity: 0.35; cursor: default; }
+/* ---------- on-track pill — floats right next to the title ---------- */
+.status-pill { font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 6px 13px; border-radius: 999px; }
+.status-pill.is-on { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+.status-pill.is-off { background: color-mix(in srgb, var(--down) 16%, transparent); color: var(--down); border: 1px solid color-mix(in srgb, var(--down) 40%, transparent); }
 
-/* ===== Cards ===== */
-.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 12px; position: relative; }
-.card-tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.card-tap:active { background: rgba(255,255,255,0.06); }
+/* ---------- gym/rest toggle, under the title ---------- */
+.daytype-row { margin-bottom: 14px; }
+.daytype-toggle { display: inline-flex; background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; }
+.daytype-opt { font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; padding: 6px 13px; border-radius: 999px; border: none; background: transparent; color: var(--text-tertiary); cursor: pointer; }
+.daytype-opt.is-active { background: var(--accent); color: var(--accent-ink); }
 
+/* ---------- week calendar — ported verbatim from
+   gym-workouts-tab-preview.html's own .cal-card component ---------- */
+.cal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 22px 20px; margin-bottom: 14px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.cal-month { font-size: 23px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; }
+.cal-nav { display: flex; background: var(--bg-input); border-radius: 999px; padding: 3px; gap: 2px; }
+.cal-nav button { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+.cal-week { display: flex; gap: 4px; }
+.cal-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 4px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: 14px; background: none; border: none; font-family: inherit; }
+.cal-day-name { font-size: 12px; font-weight: 700; font-family: var(--font-mono); color: var(--text-tertiary); letter-spacing: 0.02em; }
+.cal-day-num { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--text-primary); transition: background 0.15s, box-shadow 0.15s; }
+.cal-day.is-today .cal-day-num { background: var(--accent); color: var(--accent-ink); }
+:root:not([data-theme="light"]) .cal-day.is-today .cal-day-num { box-shadow: 0 0 14px 0 var(--accent); }
+.cal-day.is-selected:not(.is-today) .cal-day-num { box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
+.cal-day-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin-top: -8px; opacity: 0; }
+.cal-day.has-session .cal-day-dot { opacity: 1; }
+.cal-day.is-today .cal-day-dot { background: var(--accent-ink); }
+.daytype-both { font-size: 11px; color: var(--cream-ink-faint); display: block; margin-top: 14px; }
+
+/* ---------- cream tiles (calorie box + macros box) — deliberately NOT
+   theme-driven, like the steps cards are deliberately always-dark. ---------- */
+:root { --cream: #F4EFE3; --cream-line: #15382C; --cream-ink: #2E2E2E; --cream-ink-soft: #5A5A54; --cream-ink-faint: #8C8C86; }
+[data-theme="light"] { --cream: #FFFFFF; }
+.nutrition-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 12px; }
+.cream-tile { background: var(--cream); border: 1.5px solid var(--cream-line); border-radius: 22px; padding: 22px; position: relative; }
+
+/* Tap-the-pencil goal editing — same idea as the app's other real goal
+   edits (prompt-based), styled to sit on the cream tiles instead of the
+   old dark cards. */
 .tile-edit-btn {
-  position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border-radius: 50%;
-  background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-tertiary);
+  position: absolute; top: 14px; right: 14px; width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(21,56,44,0.08); border: none; color: var(--cream-ink-faint);
   display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent;
   z-index: 2;
 }
-.tile-edit-btn:active { background: rgba(255,255,255,0.14); color: var(--text-primary); }
-.tile-edit-btn svg { width: 13px; height: 13px; }
+.tile-edit-btn:active { background: rgba(21,56,44,0.16); color: var(--cream-ink); }
+.tile-edit-btn i { width: 12px; height: 12px; }
+.macro-card .tile-edit-btn { top: 10px; right: 10px; width: 20px; height: 20px; }
+.macro-card .tile-edit-btn i { width: 10px; height: 10px; }
 
-.cal-label { font-size: 13px; color: var(--text-tertiary); font-weight: 600; margin-bottom: 8px; }
-.cal-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
-.cal-num { font-size: 26px; font-weight: 800; color: var(--text-primary); }
-.cal-goal { font-size: 14px; color: var(--text-tertiary); font-weight: 500; }
-.cal-left { font-size: 13px; color: var(--text-secondary); text-align: right; }
-.bar-track { height: 8px; border-radius: 999px; background: var(--bg-input); overflow: hidden; }
-.bar-fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.3s; }
+.cal-block .cal-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cream-ink-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+.cal-block .cal-label i { width: 13px; height: 13px; }
+.cal-num-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+.cal-num { font-size: 52px; font-weight: 800; color: var(--cream-ink); line-height: 1; letter-spacing: -0.01em; }
+.cal-unit { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cream-ink-faint); line-height: 1.3; }
+.cal-endpoints { display: flex; align-items: baseline; justify-content: space-between; margin-top: 10px; font-size: 12.5px; color: var(--cream-ink-soft); }
+.cal-endpoints b { color: var(--cream-ink); font-weight: 800; }
+.bar-track { height: 7px; border-radius: 999px; background: rgba(21,56,44,0.12); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; background: var(--cream-line); transition: width 0.3s; }
 
-.macro-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-.macro-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; position: relative; }
-.macro-card .tile-edit-btn { width: 22px; height: 22px; top: 8px; right: 8px; }
-.macro-card .tile-edit-btn svg { width: 11px; height: 11px; }
-.macro-card:active { background: rgba(255,255,255,0.06); }
-.macro-name { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
-.macro-val { font-size: 17px; font-weight: 800; color: var(--text-primary); }
-.macro-goal { font-size: 12px; color: var(--text-tertiary); font-weight: 500; }
-.macro-bar { height: 5px; border-radius: 999px; background: var(--bg-input); overflow: hidden; margin-top: 8px; }
-.macro-bar-fill { height: 100%; border-radius: 999px; }
+.macro-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.macro-card { background: var(--cream); border: 1.5px solid var(--cream-line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; position: relative; cursor: pointer; }
+#calCard { cursor: pointer; }
+.macro-icon { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.macro-icon i { width: 13px; height: 13px; }
+.macro-top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+.macro-name { font-size: 12px; font-weight: 700; color: var(--cream-ink-soft); }
+.macro-val { font-size: 15.5px; font-weight: 800; color: var(--cream-ink); white-space: nowrap; }
+.macro-goal { font-size: 11.5px; color: var(--cream-ink-faint); font-weight: 500; }
+.macro-bar { height: 5px; border-radius: 999px; background: rgba(21,56,44,0.12); overflow: hidden; }
+.macro-bar-fill { height: 100%; border-radius: 999px; transition: width 0.3s; }
+.macro-pct { display: none; }
 
-.dark-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-.dark-card { background: var(--bg-dark); border: 1px solid var(--border); border-radius: 16px; padding: 16px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.dark-card:active { background: #111113; }
-.dark-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
-.dark-sub { font-size: 11px; color: var(--text-quaternary); margin: 2px 0 10px; text-transform: uppercase; letter-spacing: 0.04em; }
-/* .dark-card stays a dark forest tile in both themes (deliberate — a
-   spotlight surface), so its own text must stay light-on-dark even
-   when the page around it flips to the light palette's dark-on-light
-   tokens. */
-[data-theme="light"] .dark-label { color: #FAFAFA; }
-[data-theme="light"] .dark-sub { color: rgba(250,250,250,0.55); }
-.dark-val { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
-.mini-bars { display: flex; align-items: flex-end; gap: 3px; height: 30px; }
-.mini-bar { flex: 1; border-radius: 2px 2px 0 0; opacity: 0.85; }
+.sec-label { font-family: var(--font-mono); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin: 18px 0 10px; display: block; }
 
-.creatine-row { display: flex; align-items: center; justify-content: space-between; }
+/* ---------- steps section: 4 outlined tiles in a bento layout ---------- */
+.steps-section { display: flex; gap: 10px; align-items: stretch; }
+.steps-col { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+.step-cell { background: var(--cream); border: 1.5px solid var(--cream-line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+.step-cell-steps { flex: 1; min-height: 220px; cursor: pointer; }
+.step-cell-dist, .step-cell-goal { flex: 1; min-height: 104px; cursor: pointer; }
+.step-cell-goal { cursor: pointer; }
+.step-cell-time { flex: 0 0 auto; min-height: 86px; }
+.step-cell-head { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--cream-ink-faint); }
+.step-cell-head i { width: 14px; height: 14px; flex-shrink: 0; }
+.step-cell-steps .step-cell-head i { color: var(--steps); }
+.step-cell-dist .step-cell-head i { color: var(--distance); }
+.step-cell-goal .step-cell-head i:first-child { color: var(--accent); }
+.goal-edit-icon { width: 12px !important; height: 12px !important; margin-left: auto; opacity: 0.55; color: var(--cream-ink-faint) !important; cursor: pointer; }
+.step-cell-val { font-size: 26px; font-weight: 800; color: var(--cream-ink); letter-spacing: -0.01em; }
+
+.steps-body { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.steps-count-block { display: flex; flex-direction: column; justify-content: center; }
+.steps-count-goal { font-size: 12.5px; color: var(--cream-ink-faint); margin-top: 6px; }
+.steps-ring-wrap { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.steps-ring {
+  --pct: 0%;
+  width: 92px; height: 92px; border-radius: 50%; position: relative; flex-shrink: 0;
+  background: conic-gradient(from -90deg,
+    color-mix(in srgb, var(--steps) 40%, white) 0%,
+    var(--steps) var(--pct),
+    rgba(21,56,44,0.1) var(--pct) 100%);
+  transition: background 0.5s ease;
+}
+.steps-ring::before { content: ''; position: absolute; inset: 10px; border-radius: 50%; background: var(--cream); }
+.steps-ring-inner { position: relative; z-index: 1; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.steps-ring-pct { font-size: 19px; font-weight: 800; color: var(--cream-ink); letter-spacing: -0.01em; }
+
+.goal-main-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: auto; }
+.goal-sub { font-size: 11px; color: var(--cream-ink-faint); }
+.goal-sub .is-up { color: var(--accent); font-weight: 700; }
+.goal-sub .is-down { color: var(--down); font-weight: 700; }
+.goal-sparkline { display: flex; align-items: flex-end; gap: 3px; height: 28px; flex-shrink: 0; }
+.goal-sparkline span { width: 5px; border-radius: 2px; background: var(--accent); min-height: 3px; opacity: 0.5; }
+.goal-sparkline span.is-today { opacity: 1; }
+
+/* ---------- Creatine — real feature carried over from the old layout,
+   kept as its own spotlight dark tile (matching the calendar card)
+   rather than folded into the cream nutrition tiles above. ---------- */
+.creatine-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; }
 .creatine-check { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; -webkit-tap-highlight-color: transparent; color: var(--text-tertiary); flex-shrink: 0; }
-.creatine-check.on { background: var(--creatine); border-color: var(--creatine); color: #1a0a02; }
+.creatine-check.on { background: var(--protein); border-color: var(--protein); color: #1a0a02; }
+.creatine-label { font-size: 13px; color: var(--text-tertiary); font-weight: 600; margin-bottom: 2px; }
+.creatine-sub { font-size: 13px; color: var(--text-secondary); }
 .creatine-streak { display: flex; gap: 5px; margin-top: 10px; }
 .creatine-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); }
-.creatine-dot.hit { background: var(--creatine); }
+.creatine-dot.hit { background: var(--protein); }
 
-/* ===== Weekly modal ===== */
+/* ---------- desktop: calories on the left, macros as a flush row list on the right ---------- */
+@media (min-width: 760px) {
+  .nutrition-grid { grid-template-columns: 3fr 2fr; align-items: stretch; }
+  .cal-block { display: flex; flex-direction: column; justify-content: center; }
+  .macro-panel { grid-template-columns: 1fr; gap: 0; background: var(--cream); border: 1.5px solid var(--cream-line); border-radius: 22px; padding: 6px 20px; justify-content: center; }
+  .macro-card { flex-direction: row; align-items: center; gap: 14px; background: none; border: none; border-radius: 0; padding: 15px 0; border-bottom: 1px solid rgba(21,56,44,0.14); }
+  .macro-card:last-child { border-bottom: none; }
+  .macro-card .tile-edit-btn { position: static; margin-left: auto; }
+  .macro-icon { width: 30px; height: 30px; border-radius: 9px; }
+  .macro-icon i { width: 14px; height: 14px; }
+  .macro-info { flex: 1; min-width: 0; }
+  .macro-top { margin-bottom: 6px; }
+  .macro-pct { display: block; font-size: 12.5px; font-weight: 700; color: var(--cream-ink-soft); width: 34px; text-align: right; flex-shrink: 0; }
+
+  .step-cell { padding: 20px; }
+  .step-cell-steps { min-height: 260px; }
+  .step-cell-dist, .step-cell-goal { min-height: 122px; }
+  .step-cell-time { min-height: 100px; }
+  .step-cell-val { font-size: 30px; }
+  .goal-sparkline { height: 34px; }
+  .steps-ring { width: 110px; height: 110px; }
+  .steps-ring-pct { font-size: 22px; }
+}
+
+/* ---------- weekly detail sheet ---------- */
 .wk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; padding: 20px; }
 .wk-overlay[hidden] { display: none; }
 .wk-sheet { background: #0d0d0e; border: 1px solid rgba(255,255,255,0.12); border-radius: 22px; width: 100%; max-width: 560px; max-height: 84vh; overflow-y: auto; margin: 0 auto; padding: 20px 20px max(20px, env(safe-area-inset-bottom, 20px)); }
 .wk-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-/* This sheet is always a dark surface regardless of page theme (same
-   spotlight-tile idea as .dark-card above) — its own text must stay
-   light-on-dark even when the page around it is in the light palette,
-   so these are fixed colours rather than the theme-flipping tokens. */
 .wk-title { font-size: 17px; font-weight: 800; color: #FAFAFA; }
 .wk-close { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.08); border: none; color: #B8B6B0; font-size: 16px; cursor: pointer; }
 .wk-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -189,16 +246,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
 .wk-bar.is-selected { opacity: 1; box-shadow: 0 0 0 2px rgba(255,255,255,0.4) inset; }
 .wk-bar-label { font-size: 11px; color: #4D4B47; font-weight: 600; }
 
-.attribution { text-align: center; font-size: 11px; color: var(--text-quaternary); margin-top: 24px; }
-
-/* Own bottom nav (Home/Workouts/Nutrition/Statistics) — this page is
-   now the Nutrition tab of the merged Fitness+Health section, matching
-   gym-workouts-tab-preview.html / gym-stats-tab-preview.html's exact
-   bar instead of topbar.js's generic 5-tab one (which used to treat
-   this as its own separate top-level "Health" destination). Carries
-   `id="bottombar"` so topbar.js's own bottombar injection skips itself
-   here while still injecting the theme toggle this page has no control
-   of its own for. */
+/* ---------- own bottom nav (Home/Workouts/Nutrition/Statistics) ---------- */
 .bottom-tabs {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
   display: flex; justify-content: center; gap: 4px;
@@ -219,86 +267,133 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
 </head>
 <body>
 
-<main>
-  <div class="hdr-eyebrow" id="hdrDate">—</div>
-  <div class="hdr-title" id="hdrTitle">Today</div>
+<div class="page">
 
-  <div class="date-nav">
-    <button type="button" class="date-nav-btn" id="dateNavPrev" aria-label="Previous week">‹</button>
-    <span class="date-nav-label" id="dateNavLabel">This week</span>
-    <button type="button" class="date-nav-btn" id="dateNavNext" aria-label="Next week" disabled>›</button>
-  </div>
-  <div class="date-strip" id="dateStrip"></div>
-
-  <!-- Calories -->
-  <div class="card card-tap" id="calCard">
-    <button type="button" class="tile-edit-btn" id="calEditBtn" aria-label="Edit calorie goal"><i data-lucide="pencil"></i></button>
-    <div class="cal-label">Calories</div>
-    <div class="cal-row">
-      <div><span class="cal-num" id="calNum">—</span><span class="cal-goal"> cal / <span id="calGoal">—</span></span></div>
-      <div class="cal-left" id="calLeft">—</div>
+  <div class="hdr-row">
+    <div class="hdr-title-wrap">
+      <span class="hdr-title">Today's fuel</span>
+      <span class="status-pill" id="statusPill">—</span>
     </div>
-    <div class="bar-track"><div class="bar-fill" id="calBar" style="width:0%"></div></div>
+    <button type="button" class="theme-toggle" id="themeBtn" aria-label="Toggle light/dark"><span class="theme-toggle-dot"></span></button>
   </div>
 
-  <!-- Macros: Carbs / Fat / Protein / Fiber -->
-  <div class="macro-grid">
-    <div class="macro-card" data-macro="carbsG">
-      <button type="button" class="tile-edit-btn" data-edit-macro="carbsG" aria-label="Edit carbs goal"><i data-lucide="pencil"></i></button>
-      <div class="macro-name" style="color:var(--carbs)">Carbs</div>
-      <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
-      <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--carbs)"></div></div>
-    </div>
-    <div class="macro-card" data-macro="fatG">
-      <button type="button" class="tile-edit-btn" data-edit-macro="fatG" aria-label="Edit fat goal"><i data-lucide="pencil"></i></button>
-      <div class="macro-name" style="color:var(--fat)">Fat</div>
-      <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
-      <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--fat)"></div></div>
-    </div>
-    <div class="macro-card" data-macro="proteinG">
-      <button type="button" class="tile-edit-btn" data-edit-macro="proteinG" aria-label="Edit protein goal"><i data-lucide="pencil"></i></button>
-      <div class="macro-name" style="color:var(--protein)">Protein</div>
-      <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
-      <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--protein)"></div></div>
-    </div>
-    <div class="macro-card" data-macro="fiberG">
-      <button type="button" class="tile-edit-btn" data-edit-macro="fiberG" aria-label="Edit fiber goal"><i data-lucide="pencil"></i></button>
-      <div class="macro-name" style="color:var(--fiber)">Fiber</div>
-      <div class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></div>
-      <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--fiber)"></div></div>
+  <div class="daytype-row">
+    <div class="daytype-toggle" id="daytypeToggle">
+      <button type="button" class="daytype-opt" data-type="gym">Gym day</button>
+      <button type="button" class="daytype-opt" data-type="rest">Rest day</button>
     </div>
   </div>
 
-  <!-- Steps + Distance -->
-  <div class="dark-grid">
-    <div class="dark-card" id="stepsCard">
-      <div class="dark-label">Step Count</div>
-      <div class="dark-sub">Today</div>
-      <div class="dark-val" style="color:var(--steps)" id="stepsVal">—</div>
-      <div class="mini-bars" id="stepsMini"></div>
+  <div class="cal-card">
+    <div class="cal-head">
+      <div class="cal-month" id="calMonth">—</div>
+      <div class="cal-nav"><button type="button" id="calPrev">‹</button><button type="button" id="calNext">›</button></div>
     </div>
-    <div class="dark-card" id="distCard">
-      <div class="dark-label">Step Distance</div>
-      <div class="dark-sub">Today</div>
-      <div class="dark-val" style="color:var(--distance)" id="distVal">—</div>
-      <div class="mini-bars" id="distMini"></div>
-    </div>
+    <div class="cal-week" id="calWeek"></div>
   </div>
 
-  <!-- Creatine -->
-  <div class="card">
-    <div class="creatine-row">
-      <div>
-        <div class="cal-label" style="margin-bottom:2px">Creatine</div>
-        <div style="font-size:13px;color:var(--text-secondary)" id="creatineSub">Not taken yet today</div>
+  <div class="nutrition-grid">
+    <div class="cal-block cream-tile" id="calCard">
+      <button type="button" class="tile-edit-btn" id="calEditBtn" aria-label="Edit calorie goal"><i data-lucide="pencil"></i></button>
+      <div class="cal-label"><i data-lucide="flame"></i>Calories</div>
+      <div class="cal-num-row"><span class="cal-num" id="calNum">—</span><span class="cal-unit">Kcal<br>Left</span></div>
+      <div class="bar-track"><div class="bar-fill" id="calBar" style="width:0%"></div></div>
+      <div class="cal-endpoints"><span><b id="calEaten">—</b> eaten</span><span><b id="calGoal">—</b> goal</span></div>
+      <span class="daytype-both" id="daytypeBoth"></span>
+    </div>
+
+    <div class="macro-panel" id="macroPanel">
+      <div class="macro-card" data-macro="proteinG">
+        <button type="button" class="tile-edit-btn" data-edit-macro="proteinG" aria-label="Edit protein goal"><i data-lucide="pencil"></i></button>
+        <div class="macro-icon" style="background:color-mix(in srgb, var(--protein) 22%, var(--cream));color:var(--protein)"><i data-lucide="drumstick"></i></div>
+        <div class="macro-info">
+          <div class="macro-top"><span class="macro-name">Protein</span><span class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></span></div>
+          <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--protein)"></div></div>
+        </div>
+        <span class="macro-pct" id="proteinPct">—%</span>
       </div>
-      <div class="creatine-check" id="creatineCheck">✓</div>
+      <div class="macro-card" data-macro="carbsG">
+        <button type="button" class="tile-edit-btn" data-edit-macro="carbsG" aria-label="Edit carbs goal"><i data-lucide="pencil"></i></button>
+        <div class="macro-icon" style="background:color-mix(in srgb, var(--carbs) 22%, var(--cream));color:var(--carbs)"><i data-lucide="wheat"></i></div>
+        <div class="macro-info">
+          <div class="macro-top"><span class="macro-name">Carbs</span><span class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></span></div>
+          <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--carbs)"></div></div>
+        </div>
+        <span class="macro-pct" id="carbsPct">—%</span>
+      </div>
+      <div class="macro-card" data-macro="fatG">
+        <button type="button" class="tile-edit-btn" data-edit-macro="fatG" aria-label="Edit fat goal"><i data-lucide="pencil"></i></button>
+        <div class="macro-icon" style="background:color-mix(in srgb, var(--fat) 22%, var(--cream));color:var(--fat)"><i data-lucide="droplet"></i></div>
+        <div class="macro-info">
+          <div class="macro-top"><span class="macro-name">Fat</span><span class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></span></div>
+          <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--fat)"></div></div>
+        </div>
+        <span class="macro-pct" id="fatPct">—%</span>
+      </div>
+      <div class="macro-card" data-macro="fiberG">
+        <button type="button" class="tile-edit-btn" data-edit-macro="fiberG" aria-label="Edit fiber goal"><i data-lucide="pencil"></i></button>
+        <div class="macro-icon" style="background:color-mix(in srgb, var(--fiber) 22%, var(--cream));color:var(--fiber)"><i data-lucide="leaf"></i></div>
+        <div class="macro-info">
+          <div class="macro-top"><span class="macro-name">Fibre</span><span class="macro-val"><span class="mval">—</span><span class="macro-goal"> / <span class="mgoal">—</span>g</span></span></div>
+          <div class="macro-bar"><div class="macro-bar-fill" style="background:var(--fiber)"></div></div>
+        </div>
+        <span class="macro-pct" id="fiberPct">—%</span>
+      </div>
     </div>
-    <div class="creatine-streak" id="creatineStreak"></div>
   </div>
 
-  <div class="attribution">tap the pencil to set a real goal</div>
-</main>
+  <span class="sec-label">Steps</span>
+  <div class="steps-section">
+    <div class="steps-col">
+      <div class="step-cell step-cell-steps" id="stepsCard">
+        <div class="step-cell-head"><i data-lucide="footprints"></i><span>Steps</span><i data-lucide="pencil" class="goal-edit-icon" id="stepsGoalEditBtn"></i></div>
+        <div class="steps-body">
+          <div class="steps-count-block">
+            <div class="step-cell-val" id="stepsBigVal">—</div>
+            <div class="steps-count-goal" id="stepsCountGoal">—</div>
+          </div>
+          <div class="steps-ring-wrap">
+            <div class="steps-ring" id="stepsRing">
+              <div class="steps-ring-inner">
+                <div class="steps-ring-pct" id="stepsRingPct">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step-cell step-cell-time">
+        <div class="step-cell-head"><i data-lucide="clock"></i><span>Time</span></div>
+        <div class="step-cell-val" id="stepsSubTime">—</div>
+      </div>
+    </div>
+    <div class="steps-col">
+      <div class="step-cell step-cell-dist" id="distCard">
+        <div class="step-cell-head"><i data-lucide="map-pin"></i><span>Distance</span></div>
+        <div class="step-cell-val" id="stepsSubDist">—</div>
+      </div>
+      <div class="step-cell step-cell-goal" id="weeklyGoalCell">
+        <div class="step-cell-head"><i data-lucide="target"></i><span>Weekly goal</span><i data-lucide="pencil" class="goal-edit-icon"></i></div>
+        <div class="goal-main-row">
+          <div>
+            <div class="step-cell-val" id="weeklyGoalPct">—</div>
+            <div class="goal-sub" id="weeklyGoalSub">—</div>
+          </div>
+          <div class="goal-sparkline" id="weeklyGoalSpark"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cal-card creatine-card">
+    <div style="flex:1">
+      <div class="creatine-label">Creatine</div>
+      <div class="creatine-sub" id="creatineSub">Not taken yet today</div>
+      <div class="creatine-streak" id="creatineStreak"></div>
+    </div>
+    <div class="creatine-check" id="creatineCheck">✓</div>
+  </div>
+
+</div>
 
 <!-- Weekly detail sheet -->
 <div class="wk-overlay" id="wkOverlay" hidden>
@@ -320,178 +415,307 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
 
 <script>
 (function () {
-  // Set once initCloudSync() resolves near the bottom — lets a
-  // critical edit (a goal) force an immediate push instead of waiting
-  // out the normal debounce, so it can't get stranded locally if the
-  // tab closes/navigates away right after.
+  'use strict';
+
+  // Set once initCloudSync() resolves near the bottom — lets a critical
+  // edit (a goal, creatine) force an immediate push instead of waiting
+  // out the normal debounce.
   let healthSync = null;
+
   function storeGet(key, fallback) {
     try { const raw = localStorage.getItem(key); return raw == null ? fallback : JSON.parse(raw); } catch (e) { return fallback; }
   }
-  function storeSet(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
-  }
-  function todayKey() {
-    const d = new Date();
+  function storeSet(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+  function dateKey(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
+  function todayKey() { return dateKey(new Date()); }
+
+  // ---------- date navigation — a real selected day, not always "today" ----------
+  let selectedDate = new Date();
+  selectedDate.setHours(0, 0, 0, 0);
+  let calWeekOffset = 0;
+  function renderCalendar() {
+    const today = new Date();
+    const dow = today.getDay();
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(today); monday.setDate(today.getDate() + mondayOffset + calWeekOffset * 7);
+    document.getElementById('calMonth').textContent = monday.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const nutritionLog = storeGet('health:nutrition', {});
+    let html = '';
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      const dk = dateKey(d);
+      const isToday = d.toDateString() === today.toDateString();
+      const isSelected = d.toDateString() === selectedDate.toDateString();
+      const isFuture = d > today && !isToday;
+      const hasSession = nutritionLog[dk] && (nutritionLog[dk].calories || 0) > 0;
+      html += '<button type="button" class="cal-day' + (isToday ? ' is-today' : '') + (isSelected ? ' is-selected' : '') + (hasSession ? ' has-session' : '') + '"' +
+        (isFuture ? ' disabled style="opacity:0.35;cursor:default"' : ' data-date="' + dk + '"') + '>' +
+        '<div class="cal-day-name">' + names[i] + '</div>' +
+        '<div class="cal-day-num">' + d.getDate() + '</div>' +
+        '<div class="cal-day-dot"></div>' +
+        '</button>';
+    }
+    document.getElementById('calWeek').innerHTML = html;
+    document.querySelectorAll('.cal-day[data-date]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const parts = btn.dataset.date.split('-').map(Number);
+        selectedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        manualDayType = null;
+        renderCalendar();
+        renderAll();
+      });
+    });
+  }
+  document.getElementById('calPrev').addEventListener('click', function () { calWeekOffset--; renderCalendar(); });
+  document.getElementById('calNext').addEventListener('click', function () { calWeekOffset++; renderCalendar(); });
+
+  // ---------- theme ----------
+  function applyTheme() {
+    const v = localStorage.getItem('dash:colorTheme');
+    if (v === 'sage') document.documentElement.setAttribute('data-theme', 'light');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  applyTheme();
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    localStorage.setItem('dash:colorTheme', isLight ? 'mint' : 'sage');
+    applyTheme();
+    renderAll();
+  });
+
+  // ---------- real goals ----------
+  const DEFAULT_GOALS = { calories: 3000, proteinG: 160, carbsG: 410, fatG: 80, fiberG: 35, steps: 8000 };
+  function goals() { return Object.assign({}, DEFAULT_GOALS, storeGet('health:goals', {})); }
+
+  // A goal you just set is a deliberate decision, not a casual value —
+  // it should stick until YOU change it again, never get quietly
+  // reverted by a sync race. GOALS_PENDING_KEY remembers the exact
+  // goals object as of your last edit; onApplied below re-asserts it
+  // against any remote pull that disagrees, for as long as it's still
+  // the most recent edit.
+  const GOALS_PENDING_KEY = 'health:goals:pendingEdit';
+  function saveGoalEdit(g) {
+    storeSet('health:goals', g);
+    try { localStorage.setItem(GOALS_PENDING_KEY, JSON.stringify(g)); } catch (e) {}
+    renderAll();
+    if (healthSync) healthSync.flush();
+  }
+
+  document.getElementById('calEditBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const g = goals();
+    const v = prompt('Daily calorie goal:', g.calories);
+    if (v && !isNaN(v)) { g.calories = Number(v); saveGoalEdit(g); }
+  });
+  document.querySelectorAll('[data-edit-macro]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const key = btn.dataset.editMacro;
+      const card = btn.closest('.macro-card');
+      const label = card.querySelector('.macro-name').textContent;
+      const g = goals();
+      const v = prompt(label + ' goal (g):', g[key]);
+      if (v && !isNaN(v)) { g[key] = Number(v); saveGoalEdit(g); }
+    });
+  });
+  document.getElementById('stepsGoalEditBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const g = goals();
+    const v = prompt('Daily step goal:', g.steps);
+    if (v && !isNaN(v)) { g.steps = Number(v); saveGoalEdit(g); }
+  });
+
+  // ---------- gym-day vs rest-day target ----------
+  const WEEKDAY_FALLBACK = ['Rest', 'Push', 'Lower A', 'Pull', 'Push', 'Lower B', 'Lower B']; // Sun..Sat
+  function weekdaySplit() {
+    try {
+      const raw = localStorage.getItem('po_coach_v1');
+      if (raw) {
+        const live = JSON.parse(raw);
+        if (live && Array.isArray(live.weekdaySplit) && live.weekdaySplit.length === 7) return live.weekdaySplit;
+      }
+    } catch (e) {}
+    return WEEKDAY_FALLBACK;
+  }
+  function autoIsRestDay(d) { return weekdaySplit()[d.getDay()] === 'Rest'; }
+  const REST_DAY_FACTOR = 0.9;
+
+  let manualDayType = null; // null = auto, else 'gym' | 'rest'
+  document.querySelectorAll('.daytype-opt').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      manualDayType = btn.dataset.type;
+      renderAll();
+    });
+  });
+
+  function renderAll() {
+    const g = goals();
+    const gymTarget = g.calories;
+    const restTarget = Math.round((gymTarget * REST_DAY_FACTOR) / 10) * 10;
+    const restDay = manualDayType ? manualDayType === 'rest' : autoIsRestDay(selectedDate);
+    const effectiveGoal = restDay ? restTarget : gymTarget;
+
+    document.querySelectorAll('.daytype-opt').forEach(function (btn) {
+      btn.classList.toggle('is-active', (btn.dataset.type === 'rest') === restDay);
+    });
+    document.getElementById('daytypeBoth').textContent = 'Gym day: ' + gymTarget.toLocaleString() + ' cal · Rest day: ' + restTarget.toLocaleString() + ' cal';
+
+    const nutrition = storeGet('health:nutrition', {});
+    const dayData = nutrition[dateKey(selectedDate)] || {};
+    const cal = Math.round(dayData.calories || 0);
+
+    const left = effectiveGoal - cal;
+    document.getElementById('calNum').textContent = left.toLocaleString();
+    document.getElementById('calEaten').textContent = cal.toLocaleString();
+    document.getElementById('calGoal').textContent = effectiveGoal.toLocaleString();
+    document.getElementById('calBar').style.width = Math.min(100, (cal / effectiveGoal) * 100) + '%';
+
+    // Protein coverage — trailing 7 days ending on the selected date: a
+    // day "counts" if it hit the protein target OR >=85% of that day's
+    // own calorie target. On track once >=4 of the 7 days qualify.
+    let hitCount = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(selectedDate);
+      d.setDate(d.getDate() - i);
+      const dData = nutrition[dateKey(d)] || {};
+      const dGoal = autoIsRestDay(d) ? restTarget : gymTarget;
+      if ((dData.proteinG || 0) >= g.proteinG || (dData.calories || 0) >= dGoal * 0.85) hitCount++;
+    }
+    const onTrack = hitCount >= 4;
+    const pillText = onTrack ? 'On track' : 'Off track';
+    const pillClass = onTrack ? 'is-on' : 'is-off';
+    const pill = document.getElementById('statusPill');
+    pill.textContent = pillText;
+    pill.className = 'status-pill ' + pillClass;
+
+    // Macro targets on a rest day: protein and fibre stay put, carbs and
+    // fat carry the deficit (scaled down by the same REST_DAY_FACTOR).
+    document.querySelectorAll('.macro-card[data-macro]').forEach(function (card) {
+      const key = card.dataset.macro;
+      const scales = (key === 'carbsG' || key === 'fatG') && restDay;
+      const goal = scales ? Math.round((g[key] * REST_DAY_FACTOR) / 5) * 5 : g[key];
+      const val = Math.round(dayData[key] || 0);
+      const pct = Math.round(Math.min(999, (val / goal) * 100));
+      card.querySelector('.mval').textContent = val;
+      card.querySelector('.mgoal').textContent = goal;
+      card.querySelector('.macro-bar-fill').style.width = Math.min(100, (val / goal) * 100) + '%';
+      const pctEl = card.querySelector('.macro-pct');
+      if (pctEl) pctEl.textContent = pct + '%';
+    });
+
+    // ---------- Steps tile ----------
+    const steps = storeGet('health:steps', {});
+    const distance = storeGet('health:distance', {});
+    const distUnit = storeGet('health:distanceUnit', 'mi');
+    const sVal = steps[dateKey(selectedDate)] || 0;
+    const dVal = distance[dateKey(selectedDate)];
+    const dailyPct = Math.round(Math.min(100, (sVal / g.steps) * 100));
+    document.getElementById('stepsBigVal').textContent = sVal.toLocaleString();
+    document.getElementById('stepsCountGoal').textContent = g.steps.toLocaleString() + ' goal';
+    document.getElementById('stepsRing').style.setProperty('--pct', dailyPct + '%');
+    document.getElementById('stepsRingPct').textContent = dailyPct + '%';
+    document.getElementById('stepsSubDist').textContent = dVal == null ? '—' : (dVal + ' ' + distUnit);
+    const stepMins = Math.round(sVal / 100);
+    document.getElementById('stepsSubTime').textContent = stepMins < 60
+      ? stepMins + ' min'
+      : Math.floor(stepMins / 60) + 'h ' + (stepMins % 60) + 'min';
+
+    // ---------- Weekly step goal ----------
+    function mondayOf(d) {
+      const dow = d.getDay();
+      const m = new Date(d); m.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow)); m.setHours(0, 0, 0, 0);
+      return m;
+    }
+    function weekStepTotal(weeksAgo) {
+      const today = new Date();
+      const monday = mondayOf(today); monday.setDate(monday.getDate() - weeksAgo * 7);
+      let total = 0;
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday); d.setDate(monday.getDate() + i);
+        if (weeksAgo === 0 && d > today) continue;
+        total += steps[dateKey(d)] || 0;
+      }
+      return total;
+    }
+    const weeklyGoalVal = Number(localStorage.getItem('health:weeklyStepGoal')) || 70000;
+    const thisWeekSteps = weekStepTotal(0);
+    const lastWeekSteps = weekStepTotal(1);
+    const goalPct = Math.round((thisWeekSteps / weeklyGoalVal) * 100);
+    document.getElementById('weeklyGoalPct').textContent = Math.min(999, goalPct) + '%';
+    const vsLastWeek = lastWeekSteps > 0 ? Math.round(((thisWeekSteps - lastWeekSteps) / lastWeekSteps) * 100) : null;
+    document.getElementById('weeklyGoalSub').innerHTML = vsLastWeek == null
+      ? goalPct + '% of ' + weeklyGoalVal.toLocaleString()
+      : (vsLastWeek >= 0
+        ? '<span class="is-up">+' + vsLastWeek + '%</span> from last week'
+        : '<span class="is-down">' + vsLastWeek + '%</span> from last week');
+
+    const weekDayVals = [];
+    const monday = mondayOf(new Date());
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      weekDayVals.push(d > new Date() ? null : (steps[dateKey(d)] || 0));
+    }
+    const sparkMax = Math.max(1, ...weekDayVals.filter(v => v != null));
+    const todayIdx = (new Date().getDay() + 6) % 7; // Mon=0 .. Sun=6
+    document.getElementById('weeklyGoalSpark').innerHTML = weekDayVals.map((v, i) => {
+      if (v == null) return '<span style="height:3px;opacity:0.2"></span>';
+      const h = Math.max(3, Math.round((v / sparkMax) * 28));
+      return '<span style="height:' + h + 'px" class="' + (i === todayIdx ? 'is-today' : '') + '"></span>';
+    }).join('');
+
+    renderCreatine();
+  }
+
+  document.getElementById('weeklyGoalCell').addEventListener('click', () => {
+    const current = Number(localStorage.getItem('health:weeklyStepGoal')) || 70000;
+    const next = prompt('Weekly step goal', current);
+    if (next == null) return;
+    const parsed = parseInt(next, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return;
+    localStorage.setItem('health:weeklyStepGoal', String(parsed));
+    if (healthSync) healthSync.flush();
+    renderAll();
+  });
+
+  // ---------- Creatine — real feature carried over unchanged ----------
   function last7Dates() {
     const out = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      out.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+      out.push(dateKey(d));
     }
     return out;
   }
-  const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-  const DEFAULT_GOALS = { calories: 3000, proteinG: 160, carbsG: 410, fatG: 80, fiberG: 35, steps: 8000 };
-
-  function goals() { return Object.assign({}, DEFAULT_GOALS, storeGet('health:goals', {})); }
-
-  // ===== Date strip — same structure as gym-preview.html's calendar
-  // review: a real navigable week view (weekOffset pages it back/forward
-  // 7 days at a time), not a fixed snapshot. Tapping a past day shows
-  // that day's numbers in the cards below instead of always today's.
-  let selectedDateKey = todayKey();
-  let weekOffset = 0;
-
-  function renderDateStrip() {
-    const today = new Date();
-    const tKey = todayKey();
-    const dow = today.getDay(); // 0=Sun..6=Sat
-    const mondayOffset = dow === 0 ? -6 : 1 - dow;
-    const monday = new Date(today); monday.setDate(today.getDate() + mondayOffset + weekOffset * 7);
-    const steps = storeGet('health:steps', {});
-    const nutrition = storeGet('health:nutrition', {});
-    const cells = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monday); d.setDate(monday.getDate() + i);
-      const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-      cells.push({
-        key, d,
-        isToday: key === tKey,
-        isFuture: d > today && key !== tKey,
-        hasData: steps[key] != null || (nutrition[key] && nutrition[key].calories),
-      });
-    }
-    document.getElementById('dateStrip').innerHTML = cells.map(c => {
-      const sel = c.key === selectedDateKey;
-      return '<button type="button" class="date-cell' + (c.isToday ? ' is-today' : '') + (sel && !c.isToday ? ' is-selected' : '') + (c.isFuture ? ' is-future' : '') + '" data-key="' + c.key + '"' + (c.isFuture ? ' disabled' : '') + '>'
-        + '<span class="date-cell-dow">' + DOW[c.d.getDay()] + '</span>'
-        + '<span class="date-cell-num">' + c.d.getDate() + '</span>'
-        + (c.hasData ? '<span class="date-cell-dot"></span>' : '')
-        + '</button>';
-    }).join('');
-    document.querySelectorAll('.date-cell:not([disabled])').forEach(btn => {
-      btn.addEventListener('click', () => selectDate(btn.dataset.key));
-    });
-    const label = document.getElementById('dateNavLabel');
-    label.textContent = weekOffset === 0 ? 'This week'
-      : cells[0].d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' – ' + cells[6].d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    label.classList.toggle('is-jump', weekOffset !== 0);
-    document.getElementById('dateNavNext').disabled = weekOffset >= 0;
-
-    const selD = new Date(selectedDateKey + 'T12:00:00');
-    const titleEl = document.getElementById('hdrTitle');
-    if (titleEl) titleEl.textContent = selectedDateKey === tKey ? 'Today' : selD.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-    const eyebrowEl = document.getElementById('hdrDate');
-    if (eyebrowEl) eyebrowEl.textContent = selD.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
-    document.querySelectorAll('.dark-sub').forEach(el => { el.textContent = selectedDateKey === tKey ? 'Today' : selD.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); });
-  }
-  function selectDate(key) {
-    selectedDateKey = key;
-    renderDateStrip();
-    renderCalories();
-    renderStepsDistance();
-    renderCreatine();
-  }
-  document.getElementById('dateNavPrev').addEventListener('click', () => { weekOffset--; renderDateStrip(); });
-  document.getElementById('dateNavNext').addEventListener('click', () => { if (weekOffset < 0) { weekOffset++; renderDateStrip(); } });
-  document.getElementById('dateNavLabel').addEventListener('click', () => { if (weekOffset !== 0) { weekOffset = 0; renderDateStrip(); } });
-
-  function renderCalories() {
-    const nutrition = storeGet('health:nutrition', {});
-    const today = nutrition[selectedDateKey] || {};
-    const g = goals();
-    const cal = Math.round(today.calories || 0);
-    const left = g.calories - cal;
-    document.getElementById('calNum').textContent = cal.toLocaleString();
-    document.getElementById('calGoal').textContent = g.calories.toLocaleString();
-    document.getElementById('calLeft').textContent = (left >= 0 ? left.toLocaleString() + ' left' : Math.abs(left).toLocaleString() + ' over');
-    document.getElementById('calBar').style.width = Math.min(100, (cal / g.calories) * 100) + '%';
-
-    document.querySelectorAll('.macro-card').forEach(card => {
-      const key = card.dataset.macro;
-      const val = Math.round(today[key] || 0);
-      const goalVal = g[key];
-      card.querySelector('.mval').textContent = val;
-      card.querySelector('.mgoal').textContent = goalVal;
-      card.querySelector('.macro-bar-fill').style.width = Math.min(100, (val / goalVal) * 100) + '%';
-    });
-  }
-
-  function miniBars(el, values, color) {
-    const max = Math.max(1, ...values);
-    el.innerHTML = values.map(v => '<div class="mini-bar" style="height:' + Math.max(6, (v / max) * 100) + '%;background:' + color + '"></div>').join('');
-  }
-
-  // Step Distance always displays in km, regardless of what unit Health
-  // Auto Export happens to report (phone-locale-dependent — could be mi
-  // or km). A real imported value gets converted; a day with steps but
-  // no matching distance point falls back to an estimate from step
-  // count (average adult stride, ~0.762m/step) so the tile always shows
-  // *something* rather than "—".
-  const METRES_PER_STEP = 0.762;
-  function estimateDistanceKm(steps) { return (steps * METRES_PER_STEP) / 1000; }
-  function toKm(value, fromUnit) { return fromUnit === 'mi' ? value * 1.60934 : value; }
-  function distanceKmForDate(dk, steps, distance, storedUnit) {
-    if (distance[dk] != null) return toKm(distance[dk], storedUnit);
-    return steps[dk] ? estimateDistanceKm(steps[dk]) : null;
-  }
-  function renderStepsDistance() {
-    const steps = storeGet('health:steps', {});
-    const distance = storeGet('health:distance', {});
-    const storedUnit = storeGet('health:distanceUnit', 'mi');
-    const dates = last7Dates();
-    const daySteps = steps[selectedDateKey];
-    const dayDist = distanceKmForDate(selectedDateKey, steps, distance, storedUnit);
-
-    document.getElementById('stepsVal').textContent = daySteps == null ? '—' : daySteps.toLocaleString();
-    document.getElementById('distVal').textContent = dayDist == null ? '—' : dayDist.toFixed(2) + 'km';
-    miniBars(document.getElementById('stepsMini'), dates.map(dk => steps[dk] || 0), 'var(--steps)');
-    miniBars(document.getElementById('distMini'), dates.map(dk => distanceKmForDate(dk, steps, distance, storedUnit) || 0), 'var(--distance)');
-  }
-
   function renderCreatine() {
     const log = storeGet('health:creatine', {});
     const dates = last7Dates();
-    const taken = !!log[selectedDateKey];
+    const taken = !!log[todayKey()];
     const check = document.getElementById('creatineCheck');
     check.classList.toggle('on', taken);
-    document.getElementById('creatineSub').textContent = taken ? 'Taken' : 'Not taken';
+    document.getElementById('creatineSub').textContent = taken ? 'Taken' : 'Not taken yet today';
     document.getElementById('creatineStreak').innerHTML = dates.map(dk =>
       '<div class="creatine-dot' + (log[dk] ? ' hit' : '') + '"></div>'
     ).join('');
   }
-
-  function renderAll() {
-    renderDateStrip();
-    renderCalories();
-    renderStepsDistance();
+  document.getElementById('creatineCheck').addEventListener('click', () => {
+    const log = storeGet('health:creatine', {});
+    log[todayKey()] = !log[todayKey()];
+    storeSet('health:creatine', log);
     renderCreatine();
-  }
+    if (healthSync) healthSync.flush();
+  });
 
-  // ===== Weekly detail sheet =====
+  // ---------- weekly detail sheet ----------
+  const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const wkOverlay = document.getElementById('wkOverlay');
-  let wkArgs = null; // { title, color, unit, getValueForDate }
+  let wkArgs = null;
   let wkWeekOffset = 0;
-  let wkSelectedIdx = null; // which bar is tapped; null = show the 7-day total
+  let wkSelectedIdx = null;
   let wkDates = [], wkValues = [];
-  // Real Mon-Sun calendar weeks, same convention renderDateStrip() uses
-  // for the page's own date strip — so "this week" means the same
-  // thing in both places.
   function weekDatesForOffset(offset) {
     const today = new Date();
     const dow = today.getDay();
@@ -500,7 +724,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
     const out = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday); d.setDate(monday.getDate() + i);
-      out.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+      out.push(dateKey(d));
     }
     return out;
   }
@@ -528,11 +752,6 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
       return '<div class="wk-bar-wrap"><div class="wk-bar" data-h="' + h + '" data-i="' + i + '" style="height:' + (animate ? '0%' : h + '%') + ';background:' + wkArgs.color + '"></div>'
         + '<div class="wk-bar-label">' + DOW[d.getDay()] + '</div></div>';
     }).join('');
-    // Tap a bar (like the iOS Health app) to see that day's own value up
-    // top instead of the week's total — tap it again to go back to the
-    // total. This only touches the header and the tapped bar's own
-    // style, never rebuilds the chart, so it doesn't re-trigger the
-    // fill-in animation below.
     chartEl.querySelectorAll('.wk-bar').forEach(el => {
       el.addEventListener('click', () => {
         const i = +el.dataset.i;
@@ -570,7 +789,10 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
   document.getElementById('wkNext').addEventListener('click', () => { if (wkWeekOffset < 0) { wkWeekOffset++; wkSelectedIdx = null; renderWeeklyChart(true); } });
   document.getElementById('wkClose').addEventListener('click', () => { wkOverlay.hidden = true; });
   wkOverlay.addEventListener('click', (e) => { if (e.target === wkOverlay) wkOverlay.hidden = true; });
-
+  document.getElementById('stepsCard').addEventListener('click', () => {
+    const steps = storeGet('health:steps', {});
+    openWeekly('Step Count', 'var(--steps)', '', dk => steps[dk] || 0);
+  });
   document.getElementById('calCard').addEventListener('click', () => {
     const nutrition = storeGet('health:nutrition', {});
     openWeekly('Calories', 'var(--accent)', ' cal', dk => (nutrition[dk] || {}).calories || 0);
@@ -579,78 +801,27 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
     card.addEventListener('click', () => {
       const key = card.dataset.macro;
       const label = card.querySelector('.macro-name').textContent;
-      const color = getComputedStyle(card.querySelector('.macro-name')).color;
+      const color = getComputedStyle(card.querySelector('.macro-bar-fill')).backgroundColor;
       const nutrition = storeGet('health:nutrition', {});
       openWeekly(label, color, 'g', dk => (nutrition[dk] || {})[key] || 0);
     });
   });
-  document.getElementById('stepsCard').addEventListener('click', () => {
-    const steps = storeGet('health:steps', {});
-    openWeekly('Step Count', 'var(--steps)', '', dk => steps[dk] || 0);
-  });
   document.getElementById('distCard').addEventListener('click', () => {
     const distance = storeGet('health:distance', {});
-    const steps = storeGet('health:steps', {});
-    const storedUnit = storeGet('health:distanceUnit', 'mi');
-    openWeekly('Step Distance', 'var(--distance)', 'km', dk => distanceKmForDate(dk, steps, distance, storedUnit) || 0);
+    const distUnit = storeGet('health:distanceUnit', 'mi');
+    openWeekly('Step Distance', 'var(--distance)', ' ' + distUnit, dk => distance[dk] || 0);
   });
 
-  document.getElementById('creatineCheck').addEventListener('click', () => {
-    const log = storeGet('health:creatine', {});
-    log[selectedDateKey] = !log[selectedDateKey];
-    storeSet('health:creatine', log);
-    renderCreatine();
-  });
+  function renderEverything() { renderCalendar(); renderAll(); }
 
-  // A goal you just set is a deliberate decision, not a casual value —
-  // it should stick until YOU change it again, never get quietly
-  // reverted by a sync race. GOALS_PENDING_KEY remembers the exact
-  // goals object as of your last edit (local-only, never synced
-  // itself); onApplied below re-asserts it against any remote pull
-  // that disagrees, for as long as it's still the most recent edit.
-  // Tradeoff worth knowing: this makes THIS device's last edit sticky
-  // and authoritative — if you ever edit goals from a different
-  // device, opening health.html here again will push this device's
-  // older pending edit back over that change. Real per-field conflict
-  // resolution (e.g. last-edit-wins per field, with timestamps) would
-  // remove that tradeoff but is more than this needed for now.
-  const GOALS_PENDING_KEY = 'health:goals:pendingEdit';
-  function saveGoalEdit(g) {
-    storeSet('health:goals', g);
-    try { localStorage.setItem(GOALS_PENDING_KEY, JSON.stringify(g)); } catch (e) {}
-    renderCalories();
-    if (healthSync) healthSync.flush();
-  }
-
-  // Tap the pencil in a tile's corner to edit its goal — simple
-  // prompt-based for this draft; a proper settings modal can replace
-  // this once the layout itself is signed off.
-  document.getElementById('calEditBtn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    const g = goals();
-    const v = prompt('Daily calorie goal:', g.calories);
-    if (v && !isNaN(v)) { g.calories = Number(v); saveGoalEdit(g); }
-  });
-  document.querySelectorAll('[data-edit-macro]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const key = btn.dataset.editMacro;
-      const card = btn.closest('.macro-card');
-      const label = card.querySelector('.macro-name').textContent;
-      const g = goals();
-      const v = prompt(label + ' goal (g):', g[key]);
-      if (v && !isNaN(v)) { g[key] = Number(v); saveGoalEdit(g); }
-    });
-  });
-
-  renderAll();
-  window.addEventListener('storage', renderAll);
+  renderEverything();
+  window.addEventListener('storage', renderEverything);
   document.addEventListener('DOMContentLoaded', function () {
     if (typeof lucide !== 'undefined') lucide.createIcons();
     if (typeof initCloudSync !== 'function') return;
     healthSync = initCloudSync({
       appKey: 'health-metrics',
-      syncedKeys: ['health:steps', 'health:nutrition', 'health:distance', 'health:distanceUnit', 'health:goals', 'health:creatine'],
+      syncedKeys: ['health:steps', 'health:nutrition', 'health:distance', 'health:distanceUnit', 'health:goals', 'health:creatine', 'health:weeklyStepGoal'],
       onApplied: function () {
         try {
           const pendingRaw = localStorage.getItem(GOALS_PENDING_KEY);
