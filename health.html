@@ -166,13 +166,14 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .goal-edit-icon { width: 12px !important; height: 12px !important; margin-left: auto; opacity: 0.55; color: var(--cream-ink-faint) !important; cursor: pointer; }
 .step-cell-val { font-size: 26px; font-weight: 800; color: var(--cream-ink); letter-spacing: -0.01em; }
 
-.steps-body { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.steps-count-block { display: flex; flex-direction: column; justify-content: center; }
+.steps-body { flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 12px; min-width: 0; }
+.steps-count-block { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+#stepsBigVal { font-size: 33px; }
 .steps-count-goal { font-size: 12.5px; color: var(--cream-ink-faint); margin-top: 6px; }
 .steps-ring-wrap { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .steps-ring {
   --pct: 0%;
-  width: 92px; height: 92px; border-radius: 50%; position: relative; flex-shrink: 0;
+  width: 100px; height: 100px; border-radius: 50%; position: relative; flex-shrink: 0;
   background: conic-gradient(from -90deg,
     color-mix(in srgb, var(--steps) 40%, white) 0%,
     var(--steps) var(--pct),
@@ -222,9 +223,11 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   .step-cell-dist, .step-cell-goal { min-height: 122px; }
   .step-cell-time { min-height: 100px; }
   .step-cell-val { font-size: 30px; }
+  #stepsBigVal { font-size: 52px; }
+  .steps-body { gap: 18px; }
   .goal-sparkline { height: 34px; }
-  .steps-ring { width: 110px; height: 110px; }
-  .steps-ring-pct { font-size: 22px; }
+  .steps-ring { width: 136px; height: 136px; }
+  .steps-ring-pct { font-size: 26px; }
 }
 
 /* ---------- weekly detail sheet ---------- */
@@ -490,6 +493,20 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   const DEFAULT_GOALS = { calories: 3000, proteinG: 160, carbsG: 410, fatG: 80, fiberG: 35, steps: 8000 };
   function goals() { return Object.assign({}, DEFAULT_GOALS, storeGet('health:goals', {})); }
 
+  // Step Distance always displays in km, regardless of what unit Health
+  // Auto Export happens to report (phone-locale-dependent — could be mi
+  // or km). A real imported value gets converted; a day with steps but
+  // no matching distance point falls back to an estimate from step
+  // count (average adult stride, ~0.762m/step) so the tile always shows
+  // *something* rather than "—".
+  const METRES_PER_STEP = 0.762;
+  function estimateDistanceKm(steps) { return (steps * METRES_PER_STEP) / 1000; }
+  function toKm(value, fromUnit) { return fromUnit === 'mi' ? value * 1.60934 : value; }
+  function distanceKmForDate(dk, steps, distance, storedUnit) {
+    if (distance[dk] != null) return toKm(distance[dk], storedUnit);
+    return steps[dk] ? estimateDistanceKm(steps[dk]) : null;
+  }
+
   // A goal you just set is a deliberate decision, not a casual value —
   // it should stick until YOU change it again, never get quietly
   // reverted by a sync race. GOALS_PENDING_KEY remembers the exact
@@ -609,15 +626,15 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     // ---------- Steps tile ----------
     const steps = storeGet('health:steps', {});
     const distance = storeGet('health:distance', {});
-    const distUnit = storeGet('health:distanceUnit', 'mi');
+    const storedUnit = storeGet('health:distanceUnit', 'mi');
     const sVal = steps[dateKey(selectedDate)] || 0;
-    const dVal = distance[dateKey(selectedDate)];
+    const dVal = distanceKmForDate(dateKey(selectedDate), steps, distance, storedUnit);
     const dailyPct = Math.round(Math.min(100, (sVal / g.steps) * 100));
     document.getElementById('stepsBigVal').textContent = sVal.toLocaleString();
     document.getElementById('stepsCountGoal').textContent = g.steps.toLocaleString() + ' goal';
     document.getElementById('stepsRing').style.setProperty('--pct', dailyPct + '%');
     document.getElementById('stepsRingPct').textContent = dailyPct + '%';
-    document.getElementById('stepsSubDist').textContent = dVal == null ? '—' : (dVal + ' ' + distUnit);
+    document.getElementById('stepsSubDist').textContent = dVal == null ? '—' : (dVal.toFixed(2) + 'km');
     const stepMins = Math.round(sVal / 100);
     document.getElementById('stepsSubTime').textContent = stepMins < 60
       ? stepMins + ' min'
@@ -807,9 +824,10 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     });
   });
   document.getElementById('distCard').addEventListener('click', () => {
+    const steps = storeGet('health:steps', {});
     const distance = storeGet('health:distance', {});
-    const distUnit = storeGet('health:distanceUnit', 'mi');
-    openWeekly('Step Distance', 'var(--distance)', ' ' + distUnit, dk => distance[dk] || 0);
+    const storedUnit = storeGet('health:distanceUnit', 'mi');
+    openWeekly('Step Distance', 'var(--distance)', 'km', dk => distanceKmForDate(dk, steps, distance, storedUnit) || 0);
   });
 
   function renderEverything() { renderCalendar(); renderAll(); }
