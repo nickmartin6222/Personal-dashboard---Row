@@ -150,10 +150,23 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 .sec-label { font-family: var(--font-mono); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin: 18px 0 10px; display: block; }
 
-/* ---------- steps section: 4 cells (steps / distance / time / weekly goal) ---------- */
-.steps-section { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* ---------- steps section: 4 outlined tiles in a bento layout —
+   Steps spans two rows (biggest), Distance/Weekly-goal share those
+   same two row-tracks one each (so they match each other), Time sits
+   under Steps as its own short row (smallest). Every cell keeps its
+   own cream-tile border at every width, same as the calorie/macro
+   tiles — this is four tiles, not one merged card. ---------- */
+.steps-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas: "steps dist" "steps goal" "time .";
+  gap: 10px;
+}
 .step-cell { background: var(--cream); border: 1.5px solid var(--cream-line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-.step-cell-steps, .step-cell-goal { cursor: pointer; }
+.step-cell-steps { grid-area: steps; min-height: 220px; cursor: pointer; }
+.step-cell-dist { grid-area: dist; min-height: 104px; }
+.step-cell-goal { grid-area: goal; min-height: 104px; cursor: pointer; }
+.step-cell-time { grid-area: time; min-height: 86px; }
 .step-cell-head { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--cream-ink-faint); }
 .step-cell-head i { width: 14px; height: 14px; flex-shrink: 0; }
 .step-cell-steps .step-cell-head i { color: var(--steps); }
@@ -161,19 +174,24 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .step-cell-goal .step-cell-head i:first-child { color: var(--accent); }
 .goal-edit-icon { width: 12px !important; height: 12px !important; margin-left: auto; opacity: 0.55; color: var(--cream-ink-faint) !important; }
 .step-cell-val { font-size: 26px; font-weight: 800; color: var(--cream-ink); letter-spacing: -0.01em; }
-.step-cell-steps .step-cell-val { font-size: 30px; }
+.step-cell-steps .step-cell-val { font-size: 32px; }
 
 .steps-bar-track { height: 10px; border-radius: 999px; background: rgba(21,56,44,0.1); overflow: hidden; margin-top: auto; }
 .steps-bar-fill {
   height: 100%; border-radius: 999px; width: 0%; transition: width 0.4s ease; background: var(--steps);
   background-image: repeating-linear-gradient(-45deg, rgba(255,255,255,0.35) 0 6px, transparent 6px 12px);
 }
-.goal-bar-track { height: 8px; border-radius: 999px; background: rgba(21,56,44,0.1); overflow: hidden; }
-.goal-bar-fill { height: 100%; border-radius: 999px; width: 0%; transition: width 0.5s ease; background: var(--accent); }
-.goal-sub { font-size: 11px; color: var(--cream-ink-faint); line-height: 1.4; }
-.goal-sub b { color: var(--cream-ink-soft); }
+
+/* Weekly-goal tile: big % + "vs last week" on the left, a small daily
+   sparkline bottom-right — same size/position as the reference's
+   percentage-plus-mini-chart layout. */
+.goal-main-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: auto; }
+.goal-sub { font-size: 11px; color: var(--cream-ink-faint); }
 .goal-sub .is-up { color: var(--accent); font-weight: 700; }
 .goal-sub .is-down { color: var(--down); font-weight: 700; }
+.goal-sparkline { display: flex; align-items: flex-end; gap: 3px; height: 28px; flex-shrink: 0; }
+.goal-sparkline span { width: 5px; border-radius: 2px; background: var(--accent); min-height: 3px; opacity: 0.5; }
+.goal-sparkline span.is-today { opacity: 1; }
 
 /* ---------- desktop: calories on the left, macros as a flush row list on the right ---------- */
 @media (min-width: 760px) {
@@ -191,16 +209,16 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   .macro-top { margin-bottom: 6px; }
   .macro-pct { display: block; font-size: 12.5px; font-weight: 700; color: var(--cream-ink-soft); width: 34px; text-align: right; flex-shrink: 0; }
 
-  /* Steps section becomes one unified cream tile split into a 2x2
-     quadrant grid with thin dividers, same "merge into one tile"
-     treatment the macro list gets above — matching the reference's
-     single divided card instead of four separate ones. */
-  .steps-section { background: var(--cream); border: 1.5px solid var(--cream-line); border-radius: 22px; gap: 0; padding: 0; }
-  .step-cell { background: none; border: none; border-radius: 0; padding: 22px; }
-  .step-cell-steps, .step-cell-time { border-right: 1px solid rgba(21,56,44,0.14); }
-  .step-cell-steps, .step-cell-dist { border-bottom: 1px solid rgba(21,56,44,0.14); }
-  .step-cell-val { font-size: 32px; }
+  /* Steps section stays four separately-outlined tiles on desktop too
+     (each keeps its own cream-tile border) — just sized up a little,
+     same bento proportions as mobile. */
+  .step-cell { padding: 20px; }
+  .step-cell-steps { min-height: 260px; }
+  .step-cell-dist, .step-cell-goal { min-height: 122px; }
+  .step-cell-time { min-height: 100px; }
+  .step-cell-val { font-size: 30px; }
   .step-cell-steps .step-cell-val { font-size: 38px; }
+  .goal-sparkline { height: 34px; }
 }
 
 /* ---------- weekly detail sheet — ported from health.html, same
@@ -314,9 +332,13 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     </div>
     <div class="step-cell step-cell-goal" id="weeklyGoalCell">
       <div class="step-cell-head"><i data-lucide="target"></i><span>Weekly goal</span><i data-lucide="pencil" class="goal-edit-icon"></i></div>
-      <div class="step-cell-val" id="weeklyGoalPct">—</div>
-      <div class="goal-bar-track"><div class="goal-bar-fill" id="weeklyGoalBar"></div></div>
-      <div class="goal-sub" id="weeklyGoalSub">—</div>
+      <div class="goal-main-row">
+        <div>
+          <div class="step-cell-val" id="weeklyGoalPct">—</div>
+          <div class="goal-sub" id="weeklyGoalSub">—</div>
+        </div>
+        <div class="goal-sparkline" id="weeklyGoalSpark"></div>
+      </div>
     </div>
   </div>
 
@@ -551,12 +573,28 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     const lastWeekSteps = weekStepTotal(1);
     const goalPct = Math.round((thisWeekSteps / weeklyGoalVal) * 100);
     document.getElementById('weeklyGoalPct').textContent = Math.min(999, goalPct) + '%';
-    document.getElementById('weeklyGoalBar').style.width = Math.min(100, goalPct) + '%';
     const vsLastWeek = lastWeekSteps > 0 ? Math.round(((thisWeekSteps - lastWeekSteps) / lastWeekSteps) * 100) : null;
-    const vsLabel = vsLastWeek == null ? '' : (vsLastWeek >= 0
-      ? ' · <span class="is-up">+' + vsLastWeek + '%</span> vs last week'
-      : ' · <span class="is-down">' + vsLastWeek + '%</span> vs last week');
-    document.getElementById('weeklyGoalSub').innerHTML = '<b>' + thisWeekSteps.toLocaleString() + '</b> / ' + weeklyGoalVal.toLocaleString() + ' steps' + vsLabel;
+    document.getElementById('weeklyGoalSub').innerHTML = vsLastWeek == null
+      ? goalPct + '% of ' + weeklyGoalVal.toLocaleString()
+      : (vsLastWeek >= 0
+        ? '<span class="is-up">+' + vsLastWeek + '%</span> from last week'
+        : '<span class="is-down">' + vsLastWeek + '%</span> from last week');
+
+    // Small daily sparkline, bottom-right of the tile — this week's
+    // steps so far (Mon-today), scaled to the tallest day.
+    const weekDayVals = [];
+    const monday = mondayOf(new Date());
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      weekDayVals.push(d > new Date() ? null : (steps[dateKey(d)] || 0));
+    }
+    const sparkMax = Math.max(1, ...weekDayVals.filter(v => v != null));
+    const todayIdx = (new Date().getDay() + 6) % 7; // Mon=0 .. Sun=6
+    document.getElementById('weeklyGoalSpark').innerHTML = weekDayVals.map((v, i) => {
+      if (v == null) return '<span style="height:3px;opacity:0.2"></span>';
+      const h = Math.max(3, Math.round((v / sparkMax) * 28));
+      return '<span style="height:' + h + 'px" class="' + (i === todayIdx ? 'is-today' : '') + '"></span>';
+    }).join('');
   }
 
   document.getElementById('weeklyGoalCell').addEventListener('click', () => {
