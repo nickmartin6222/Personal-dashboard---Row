@@ -33,8 +33,10 @@
   --fat: #B794F4;
   --protein: #F2C063;
   --fiber: #7DD3FC;
-  --steps: #F97066;
-  --distance: #6EE3A4;
+  --steps: #F2C063;
+  --distance: #7DD3FC;
+  --time: #6EE3A4;
+  --weekly: #B794F4;
   --down: #F0685C;
   --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-heading: "Fraunces", Georgia, serif;
@@ -58,8 +60,10 @@
   --fat: #6B4A54;
   --protein: #8A6B3F;
   --fiber: #4F7FBF;
-  --steps: #A9673D;
+  --steps: #8A6B3F;
   --distance: #4F7FBF;
+  --time: #2F6B52;
+  --weekly: #6B4A54;
   --down: #B3392F;
   color-scheme: light;
 }
@@ -160,9 +164,14 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .step-cell-time { flex: 0 0 auto; min-height: 86px; }
 .step-cell-head { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--cream-ink-faint); }
 .step-cell-head i { width: 14px; height: 14px; flex-shrink: 0; }
-.step-cell-steps .step-cell-head i { color: var(--steps); }
-.step-cell-dist .step-cell-head i { color: var(--distance); }
-.step-cell-goal .step-cell-head i:first-child { color: var(--accent); }
+.step-cell-steps .step-cell-head { color: var(--steps); }
+.step-cell-dist .step-cell-head { color: var(--distance); }
+.step-cell-time .step-cell-head { color: var(--time); }
+.step-cell-goal .step-cell-head { color: var(--weekly); }
+.step-cell-steps { border-color: color-mix(in srgb, var(--steps) 45%, var(--cream-line)); }
+.step-cell-dist { border-color: color-mix(in srgb, var(--distance) 45%, var(--cream-line)); }
+.step-cell-time { border-color: color-mix(in srgb, var(--time) 45%, var(--cream-line)); }
+.step-cell-goal { border-color: color-mix(in srgb, var(--weekly) 45%, var(--cream-line)); }
 .goal-edit-icon { width: 12px !important; height: 12px !important; margin-left: auto; opacity: 0.55; color: var(--cream-ink-faint) !important; cursor: pointer; }
 .step-cell-val { font-size: 26px; font-weight: 800; color: var(--cream-ink); letter-spacing: -0.01em; }
 
@@ -171,8 +180,9 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
    quick visual reference point, not a literal route. */
 .dist-loop-wrap { margin-top: auto; }
 .dist-loop { width: 100%; height: 34px; display: block; overflow: visible; }
-.dist-loop-track { fill: none; stroke: rgba(21,56,44,0.12); stroke-width: 5; }
-.dist-loop-fill { fill: none; stroke: var(--distance); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.6s ease; }
+.dist-loop-track { fill: none; stroke: rgba(21,56,44,0.12); stroke-width: 4; }
+.dist-loop-fill { fill: none; stroke: var(--distance); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.6s ease; }
+.dist-loop-marker { fill: var(--distance); stroke: var(--cream); stroke-width: 2; transition: cx 0.6s ease, cy 0.6s ease; }
 .dist-loop-caption { font-size: 10.5px; color: var(--cream-ink-faint); margin-top: 6px; }
 
 .steps-body { flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 12px; min-width: 0; }
@@ -195,10 +205,10 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 .goal-main-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: auto; }
 .goal-sub { font-size: 11px; color: var(--cream-ink-faint); }
-.goal-sub .is-up { color: var(--accent); font-weight: 700; }
+.goal-sub .is-up { color: var(--weekly); font-weight: 700; }
 .goal-sub .is-down { color: var(--down); font-weight: 700; }
 .goal-sparkline { display: flex; align-items: flex-end; gap: 3px; height: 28px; flex-shrink: 0; }
-.goal-sparkline span { width: 5px; border-radius: 2px; background: var(--accent); min-height: 3px; opacity: 0.5; }
+.goal-sparkline span { width: 5px; border-radius: 2px; background: var(--weekly); min-height: 3px; opacity: 0.5; }
 .goal-sparkline span.is-today { opacity: 1; }
 
 /* ---------- Creatine — real feature carried over from the old layout,
@@ -384,8 +394,9 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
         <div class="step-cell-val" id="stepsSubDist">—</div>
         <div class="dist-loop-wrap">
           <svg class="dist-loop" viewBox="0 0 100 40" preserveAspectRatio="none">
-            <rect x="3" y="3" width="94" height="34" rx="13" ry="13" pathLength="100" class="dist-loop-track"/>
-            <rect x="3" y="3" width="94" height="34" rx="13" ry="13" pathLength="100" class="dist-loop-fill" id="distLoopFill"/>
+            <path d="M8,20 C8,9 22,4 35,7 C45,9 42,16 52,15 C62,14 65,6 78,8 C90,10 93,18 90,22 C87,27 75,24 68,27 C60,30 58,22 48,24 C38,26 35,33 25,32 C13,31 8,28 8,20 Z" pathLength="100" class="dist-loop-track" id="distLoopPath"/>
+            <path d="M8,20 C8,9 22,4 35,7 C45,9 42,16 52,15 C62,14 65,6 78,8 C90,10 93,18 90,22 C87,27 75,24 68,27 C60,30 58,22 48,24 C38,26 35,33 25,32 C13,31 8,28 8,20 Z" pathLength="100" class="dist-loop-fill" id="distLoopFill"/>
+            <circle class="dist-loop-marker" id="distLoopMarker" r="4" cx="8" cy="20"/>
           </svg>
           <div class="dist-loop-caption" id="distLoopCaption">of 10k-step distance</div>
         </div>
@@ -657,6 +668,11 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     const distPct = Math.max(0, Math.min(100, Math.round(((dVal || 0) / TEN_K_STEP_KM) * 100)));
     document.getElementById('distLoopFill').style.strokeDashoffset = (100 - distPct);
     document.getElementById('distLoopCaption').textContent = distPct + '% of 10k-step distance';
+    const loopPathEl = document.getElementById('distLoopPath');
+    const loopLen = loopPathEl.getTotalLength();
+    const loopPt = loopPathEl.getPointAtLength(loopLen * (distPct / 100));
+    document.getElementById('distLoopMarker').setAttribute('cx', loopPt.x);
+    document.getElementById('distLoopMarker').setAttribute('cy', loopPt.y);
     const stepMins = Math.round(sVal / 100);
     document.getElementById('stepsSubTime').textContent = stepMins < 60
       ? stepMins + ' min'
