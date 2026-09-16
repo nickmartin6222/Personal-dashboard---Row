@@ -67,7 +67,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 .hdr-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .hdr-title-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.hdr-title { font-family: var(--font-heading); font-style: italic; font-size: 30px; font-weight: 600; color: var(--text-primary); }
+.hdr-title { font-family: var(--font-heading); font-size: 30px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
 .theme-toggle { width: 44px; height: 24px; border-radius: 999px; background: var(--bg-input); border: 1px solid var(--border); position: relative; cursor: pointer; flex-shrink: 0; }
 .theme-toggle-dot { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); transition: transform 0.2s ease; }
 [data-theme="light"] .theme-toggle-dot { transform: translateX(20px); }
@@ -77,15 +77,30 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .status-pill.is-on { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
 .status-pill.is-off { background: color-mix(in srgb, var(--down) 16%, transparent); color: var(--down); border: 1px solid color-mix(in srgb, var(--down) 40%, transparent); }
 
-/* ---------- date nav + gym/rest toggle, under the title ---------- */
-.date-toggle-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
-.date-nav { display: flex; align-items: center; gap: 8px; }
-.date-nav-btn { width: 26px; height: 26px; border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
-.date-nav-btn:disabled { opacity: 0.3; cursor: default; }
-.date-nav-label { font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+/* ---------- gym/rest toggle, under the title ---------- */
+.daytype-row { margin-bottom: 14px; }
 .daytype-toggle { display: inline-flex; background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; }
 .daytype-opt { font-family: var(--font-mono); font-size: 10.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; padding: 6px 13px; border-radius: 999px; border: none; background: transparent; color: var(--text-tertiary); cursor: pointer; }
 .daytype-opt.is-active { background: var(--accent); color: var(--accent-ink); }
+
+/* ---------- week calendar — ported verbatim from
+   gym-workouts-tab-preview.html's own .cal-card component, same
+   classes/behaviour, just this file's token names ---------- */
+.cal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 22px 20px; margin-bottom: 14px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.cal-month { font-size: 23px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; }
+.cal-nav { display: flex; background: var(--bg-input); border-radius: 999px; padding: 3px; gap: 2px; }
+.cal-nav button { width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+.cal-week { display: flex; gap: 4px; }
+.cal-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 4px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: 14px; background: none; border: none; font-family: inherit; }
+.cal-day-name { font-size: 12px; font-weight: 700; font-family: var(--font-mono); color: var(--text-tertiary); letter-spacing: 0.02em; }
+.cal-day-num { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: var(--text-primary); transition: background 0.15s, box-shadow 0.15s; }
+.cal-day.is-today .cal-day-num { background: var(--accent); color: var(--accent-ink); }
+:root:not([data-theme="light"]) .cal-day.is-today .cal-day-num { box-shadow: 0 0 14px 0 var(--accent); }
+.cal-day.is-selected:not(.is-today) .cal-day-num { box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
+.cal-day-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); margin-top: -8px; opacity: 0; }
+.cal-day.has-session .cal-day-dot { opacity: 1; }
+.cal-day.is-today .cal-day-dot { background: var(--accent-ink); }
 .daytype-both { font-size: 11px; color: var(--cream-ink-faint); display: block; margin-top: 14px; }
 
 /* ---------- cream tiles (calorie box + macros box) — deliberately NOT
@@ -108,7 +123,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .cal-block .cal-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cream-ink-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
 .cal-block .cal-label i { width: 13px; height: 13px; }
 .cal-num-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
-.cal-num { font-family: var(--font-heading); font-size: 56px; font-weight: 600; color: var(--cream-ink); line-height: 1; }
+.cal-num { font-size: 52px; font-weight: 800; color: var(--cream-ink); line-height: 1; letter-spacing: -0.01em; }
 .cal-unit { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--cream-ink-faint); line-height: 1.3; }
 .cal-endpoints { display: flex; align-items: baseline; justify-content: space-between; margin-top: 10px; font-size: 12.5px; color: var(--cream-ink-soft); }
 .cal-endpoints b { color: var(--cream-ink); font-weight: 800; }
@@ -135,6 +150,34 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 .sec-label { font-family: var(--font-mono); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin: 18px 0 10px; display: block; }
 
+/* ---------- macro ratio + steps, side by side ---------- */
+.pair-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+.ratio-label { font-size: 13px; font-weight: 700; color: var(--cream-ink); margin-bottom: 6px; }
+.ratio-sub { font-size: 11.5px; color: var(--cream-ink-faint); line-height: 1.5; margin-bottom: 16px; }
+.ratio-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ratio-row-label { font-family: var(--font-mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--cream-ink-soft); width: 42px; flex-shrink: 0; }
+.ratio-bar { flex: 1; height: 14px; border-radius: 7px; overflow: hidden; display: flex; background: rgba(21,56,44,0.1); }
+.ratio-bar span { height: 100%; }
+.ratio-legend { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-top: 14px; }
+.ratio-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--cream-ink-soft); }
+.ratio-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.ratio-legend-item b { color: var(--cream-ink); }
+
+.steps-tile { display: flex; flex-direction: column; cursor: pointer; }
+.steps-bar-track { height: 14px; border-radius: 999px; background: rgba(21,56,44,0.1); overflow: hidden; margin-bottom: 18px; }
+.steps-bar-fill {
+  height: 100%; border-radius: 999px; width: 0%; transition: width 0.4s ease; background: var(--steps);
+  background-image: repeating-linear-gradient(-45deg, rgba(255,255,255,0.35) 0 6px, transparent 6px 12px);
+}
+.steps-main-row { display: flex; align-items: baseline; gap: 8px; margin-bottom: 16px; }
+.steps-num { font-size: 40px; font-weight: 800; color: var(--cream-ink); letter-spacing: -0.01em; }
+.steps-icon { width: 20px; height: 20px; color: var(--steps); margin: 0 2px 0 6px; }
+.steps-num-label { font-size: 13px; color: var(--cream-ink-faint); font-weight: 600; }
+.steps-sub-row { display: flex; gap: 10px; margin-top: auto; }
+.steps-sub { flex: 1; background: rgba(21,56,44,0.06); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--cream-ink); }
+.steps-sub i { width: 16px; height: 16px; color: var(--cream-ink-faint); flex-shrink: 0; }
+
 /* ---------- desktop: calories on the left, macros as a flush row list on the right ---------- */
 @media (min-width: 760px) {
   .nutrition-grid { grid-template-columns: 3fr 2fr; align-items: stretch; }
@@ -149,14 +192,40 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   .macro-icon i { width: 14px; height: 14px; }
   .macro-info { flex: 1; min-width: 0; }
   .macro-top { margin-bottom: 6px; }
-  .macro-pct { display: block; font-family: var(--font-heading); font-style: italic; font-size: 13px; font-weight: 600; color: var(--cream-ink-soft); width: 34px; text-align: right; flex-shrink: 0; }
+  .macro-pct { display: block; font-size: 12.5px; font-weight: 700; color: var(--cream-ink-soft); width: 34px; text-align: right; flex-shrink: 0; }
+
+  /* "desktop could be a little bigger" */
+  .pair-grid { grid-template-columns: 1fr 1fr; align-items: stretch; }
+  .steps-num { font-size: 48px; }
+  .steps-bar-track { height: 16px; }
+  .ratio-bar { height: 16px; }
 }
+
+/* ---------- weekly detail sheet — ported from health.html, same
+   always-dark treatment regardless of page theme (it's an overlay). ---------- */
+.wk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; padding: 20px; }
+.wk-overlay[hidden] { display: none; }
+.wk-sheet { background: #0d0d0e; border: 1px solid rgba(255,255,255,0.12); border-radius: 22px; width: 100%; max-width: 560px; max-height: 84vh; overflow-y: auto; margin: 0 auto; padding: 20px 20px max(20px, env(safe-area-inset-bottom, 20px)); }
+.wk-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.wk-title { font-size: 17px; font-weight: 800; color: #FAFAFA; }
+.wk-close { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.08); border: none; color: #B8B6B0; font-size: 16px; cursor: pointer; }
+.wk-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.wk-nav-btn { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #B8B6B0; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+.wk-nav-btn:disabled { opacity: 0.3; cursor: default; }
+.wk-range-label { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: #B8B6B0; letter-spacing: 0.02em; }
+.wk-total-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #76746E; }
+.wk-total-val { font-size: 26px; font-weight: 800; color: #FAFAFA; margin: 4px 0 20px; }
+.wk-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 140px; gap: 8px; margin-bottom: 8px; }
+.wk-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; gap: 6px; }
+.wk-bar { width: 100%; border-radius: 5px 5px 0 0; min-height: 3px; cursor: pointer; opacity: 0.62; transition: opacity 0.15s; }
+.wk-bar.is-selected { opacity: 1; box-shadow: 0 0 0 2px rgba(255,255,255,0.4) inset; }
+.wk-bar-label { font-size: 11px; color: #4D4B47; font-weight: 600; }
 </style>
 </head>
 <body>
 
 <div class="page">
-  <div class="demo-banner"><b>Draft</b> — new Nutrition tab layout per your reference. Reads your real logged calories/macros/steps (same <code>health:*</code> data health.html already uses), and real date navigation (‹ › actually moves between days). The Gym day / Rest day toggle defaults to your real weekday split but can be tapped to preview either target for any day. Not wired into the live app yet.</div>
+  <div class="demo-banner"><b>Draft</b> — new Nutrition tab layout per your reference. Reads your real logged calories/macros/steps (same <code>health:*</code> data health.html already uses). Tap any day in the calendar below to select it (a dot marks days with logged food). The Gym day / Rest day toggle defaults to your real weekday split for whichever day is selected, but can be tapped to preview either target. Not wired into the live app yet.</div>
 
   <div class="hdr-row">
     <div class="hdr-title-wrap">
@@ -166,16 +235,19 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     <button type="button" class="theme-toggle" id="themeBtn" aria-label="Toggle light/dark"><span class="theme-toggle-dot"></span></button>
   </div>
 
-  <div class="date-toggle-row">
-    <div class="date-nav">
-      <button type="button" class="date-nav-btn" id="datePrev" aria-label="Previous day">‹</button>
-      <span class="date-nav-label" id="dateLabel">—</span>
-      <button type="button" class="date-nav-btn" id="dateNext" aria-label="Next day" disabled>›</button>
-    </div>
+  <div class="daytype-row">
     <div class="daytype-toggle" id="daytypeToggle">
       <button type="button" class="daytype-opt" data-type="gym">Gym day</button>
       <button type="button" class="daytype-opt" data-type="rest">Rest day</button>
     </div>
+  </div>
+
+  <div class="cal-card">
+    <div class="cal-head">
+      <div class="cal-month" id="calMonth">—</div>
+      <div class="cal-nav"><button type="button" id="calPrev">‹</button><button type="button" id="calNext">›</button></div>
+    </div>
+    <div class="cal-week" id="calWeek"></div>
   </div>
 
   <div class="nutrition-grid">
@@ -223,24 +295,52 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     </div>
   </div>
 
-  <span class="sec-label">Steps &amp; distance</span>
-  <div class="macro-panel" id="statPanel">
-    <div class="macro-card" id="stepsCard">
-      <div class="macro-icon" style="background:color-mix(in srgb, var(--steps) 22%, var(--cream));color:var(--steps)"><i data-lucide="footprints"></i></div>
-      <div class="macro-info">
-        <div class="macro-top"><span class="macro-name">Step Count</span><span class="macro-val" id="stepsVal">—</span></div>
-        <div class="macro-bar"><div class="macro-bar-fill" id="stepsBar" style="background:var(--steps);width:0%"></div></div>
+  <span class="sec-label">Macro ratio &amp; steps</span>
+  <div class="pair-grid">
+    <div class="cream-tile ratio-tile">
+      <div class="ratio-label">Macro ratio</div>
+      <div class="ratio-sub">Share of calories, not grams — a hit protein target can still hide a skewed ratio if carbs or fat run high.</div>
+      <div class="ratio-row">
+        <span class="ratio-row-label">Today</span>
+        <div class="ratio-bar" id="ratioToday"></div>
       </div>
-      <span class="macro-pct" id="stepsPct">—%</span>
+      <div class="ratio-row">
+        <span class="ratio-row-label">Target</span>
+        <div class="ratio-bar" id="ratioTarget"></div>
+      </div>
+      <div class="ratio-legend" id="ratioLegend"></div>
     </div>
-    <div class="macro-card" id="distCard">
-      <div class="macro-icon" style="background:color-mix(in srgb, var(--distance) 22%, var(--cream));color:var(--distance)"><i data-lucide="map-pin"></i></div>
-      <div class="macro-info">
-        <div class="macro-top"><span class="macro-name">Step Distance</span><span class="macro-val" id="distVal">—</span></div>
+
+    <div class="cream-tile steps-tile" id="stepsCard">
+      <div class="steps-bar-track"><div class="steps-bar-fill" id="stepsBigBar"></div></div>
+      <div class="steps-main-row">
+        <div><span class="steps-num" id="stepsBigVal">—</span><i data-lucide="footprints" class="steps-icon"></i><span class="steps-num-label">Steps</span></div>
+      </div>
+      <div class="steps-sub-row">
+        <div class="steps-sub"><i data-lucide="map-pin"></i><span id="stepsSubDist">—</span></div>
+        <div class="steps-sub"><i data-lucide="clock"></i><span id="stepsSubTime">—</span></div>
       </div>
     </div>
   </div>
 
+</div>
+
+<!-- Weekly detail sheet — ported from health.html's own -->
+<div class="wk-overlay" id="wkOverlay" hidden>
+  <div class="wk-sheet">
+    <div class="wk-head">
+      <div class="wk-title" id="wkTitle">—</div>
+      <button class="wk-close" id="wkClose" type="button">×</button>
+    </div>
+    <div class="wk-nav">
+      <button type="button" class="wk-nav-btn" id="wkPrev" aria-label="Previous week">‹</button>
+      <span class="wk-range-label" id="wkRangeLabel">This week</span>
+      <button type="button" class="wk-nav-btn" id="wkNext" aria-label="Next week" disabled>›</button>
+    </div>
+    <div class="wk-total-label" id="wkTotalLabel">7-DAY TOTAL</div>
+    <div class="wk-total-val" id="wkTotal">—</div>
+    <div class="wk-chart" id="wkChart"></div>
+  </div>
 </div>
 
 <script>
@@ -256,23 +356,48 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   function todayKey() { return dateKey(new Date()); }
 
   // ---------- date navigation — a real selected day, not always "today" ----------
+  // Week calendar ported from gym-workouts-tab-preview.html's own
+  // .cal-card (same markup/behaviour) instead of a plain prev/next-day
+  // strip — click any day in the row to select it.
   let selectedDate = new Date();
   selectedDate.setHours(0, 0, 0, 0);
-  function fmtDateLabel(d) {
-    return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  let calWeekOffset = 0;
+  function renderCalendar() {
+    const today = new Date();
+    const dow = today.getDay();
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(today); monday.setDate(today.getDate() + mondayOffset + calWeekOffset * 7);
+    document.getElementById('calMonth').textContent = monday.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const names = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const nutritionLog = storeGet('health:nutrition', {});
+    let html = '';
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      const dk = dateKey(d);
+      const isToday = d.toDateString() === today.toDateString();
+      const isSelected = d.toDateString() === selectedDate.toDateString();
+      const isFuture = d > today && !isToday;
+      const hasSession = nutritionLog[dk] && (nutritionLog[dk].calories || 0) > 0;
+      html += '<button type="button" class="cal-day' + (isToday ? ' is-today' : '') + (isSelected ? ' is-selected' : '') + (hasSession ? ' has-session' : '') + '"' +
+        (isFuture ? ' disabled style="opacity:0.35;cursor:default"' : ' data-date="' + dk + '"') + '>' +
+        '<div class="cal-day-name">' + names[i] + '</div>' +
+        '<div class="cal-day-num">' + d.getDate() + '</div>' +
+        '<div class="cal-day-dot"></div>' +
+        '</button>';
+    }
+    document.getElementById('calWeek').innerHTML = html;
+    document.querySelectorAll('.cal-day[data-date]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const parts = btn.dataset.date.split('-').map(Number);
+        selectedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        manualDayType = null;
+        renderCalendar();
+        renderAll();
+      });
+    });
   }
-  document.getElementById('datePrev').addEventListener('click', function () {
-    selectedDate.setDate(selectedDate.getDate() - 1);
-    manualDayType = null;
-    renderAll();
-  });
-  document.getElementById('dateNext').addEventListener('click', function () {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    if (selectedDate >= today) return;
-    selectedDate.setDate(selectedDate.getDate() + 1);
-    manualDayType = null;
-    renderAll();
-  });
+  document.getElementById('calPrev').addEventListener('click', function () { calWeekOffset--; renderCalendar(); });
+  document.getElementById('calNext').addEventListener('click', function () { calWeekOffset++; renderCalendar(); });
 
   // ---------- theme ----------
   function applyTheme() {
@@ -332,9 +457,6 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     const restDay = manualDayType ? manualDayType === 'rest' : autoIsRestDay(selectedDate);
     const effectiveGoal = restDay ? restTarget : gymTarget;
 
-    document.getElementById('dateLabel').textContent = fmtDateLabel(selectedDate);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    document.getElementById('dateNext').disabled = selectedDate >= today;
     document.querySelectorAll('.daytype-opt').forEach(function (btn) {
       btn.classList.toggle('is-active', (btn.dataset.type === 'rest') === restDay);
     });
@@ -392,21 +514,138 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
       if (pctEl) pctEl.textContent = pct + '%';
     });
 
+    // ---------- Steps tile ----------
     const steps = storeGet('health:steps', {});
     const distance = storeGet('health:distance', {});
     const distUnit = storeGet('health:distanceUnit', 'mi');
-    const sVal = steps[dateKey(selectedDate)];
+    const sVal = steps[dateKey(selectedDate)] || 0;
     const dVal = distance[dateKey(selectedDate)];
-    document.getElementById('stepsVal').textContent = (sVal == null ? 0 : sVal).toLocaleString() + ' / ' + g.steps.toLocaleString();
-    document.getElementById('stepsBar').style.width = Math.min(100, ((sVal || 0) / g.steps) * 100) + '%';
-    document.getElementById('stepsPct').textContent = Math.round(Math.min(999, ((sVal || 0) / g.steps) * 100)) + '%';
-    document.getElementById('distVal').textContent = dVal == null ? '—' : (dVal + ' ' + distUnit);
+    document.getElementById('stepsBigVal').textContent = sVal.toLocaleString();
+    document.getElementById('stepsBigBar').style.width = Math.min(100, (sVal / g.steps) * 100) + '%';
+    document.getElementById('stepsSubDist').textContent = dVal == null ? '—' : (dVal + ' ' + distUnit);
+    // 100 steps/minute pace estimate, "Xh Ymin" once it ticks over an hour
+    const stepMins = Math.round(sVal / 100);
+    document.getElementById('stepsSubTime').textContent = stepMins < 60
+      ? stepMins + ' min'
+      : Math.floor(stepMins / 60) + 'h ' + (stepMins % 60) + 'min';
+
+    // ---------- Macro ratio tile — share of CALORIES, not grams, so a
+    // hit protein-gram target can't hide a carb/fat-skewed ratio. ----------
+    const ratioGoal = {
+      proteinG: g.proteinG,
+      carbsG: (restDay ? Math.round((g.carbsG * REST_DAY_FACTOR) / 5) * 5 : g.carbsG),
+      fatG: (restDay ? Math.round((g.fatG * REST_DAY_FACTOR) / 5) * 5 : g.fatG)
+    };
+    const KCAL_PER_G = { proteinG: 4, carbsG: 4, fatG: 9 };
+    const RATIO_COLOR = { proteinG: 'var(--protein)', carbsG: 'var(--carbs)', fatG: 'var(--fat)' };
+    const RATIO_LABEL = { proteinG: 'Protein', carbsG: 'Carbs', fatG: 'Fat' };
+    function renderRatioBar(el, grams) {
+      const shares = ['proteinG', 'carbsG', 'fatG'].map(k => (grams[k] || 0) * KCAL_PER_G[k]);
+      const total = Math.max(1, shares.reduce((a, b) => a + b, 0));
+      el.innerHTML = ['proteinG', 'carbsG', 'fatG'].map((k, i) => {
+        const pct = (shares[i] / total) * 100;
+        return pct > 0 ? '<span style="width:' + pct + '%;background:' + RATIO_COLOR[k] + '"></span>' : '';
+      }).join('');
+      return shares.map((s, i) => Math.round((s / total) * 100));
+    }
+    renderRatioBar(document.getElementById('ratioToday'), { proteinG: dayData.proteinG, carbsG: dayData.carbsG, fatG: dayData.fatG });
+    const targetPcts = renderRatioBar(document.getElementById('ratioTarget'), ratioGoal);
+    document.getElementById('ratioLegend').innerHTML = ['proteinG', 'carbsG', 'fatG'].map((k, i) =>
+      '<span class="ratio-legend-item"><span class="ratio-legend-dot" style="background:' + RATIO_COLOR[k] + '"></span>' + RATIO_LABEL[k] + ' target ' + targetPcts[i] + '%</span>'
+    ).join('');
   }
 
+  // ---------- weekly detail sheet — ported from health.html ----------
+  const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const wkOverlay = document.getElementById('wkOverlay');
+  let wkArgs = null;
+  let wkWeekOffset = 0;
+  let wkSelectedIdx = null;
+  let wkDates = [], wkValues = [];
+  function weekDatesForOffset(offset) {
+    const today = new Date();
+    const dow = today.getDay();
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(today); monday.setDate(today.getDate() + mondayOffset + offset * 7);
+    const out = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      out.push(dateKey(d));
+    }
+    return out;
+  }
+  function openWeekly(title, color, unit, getValueForDate) {
+    wkArgs = { title, color, unit, getValueForDate };
+    wkWeekOffset = 0;
+    wkSelectedIdx = null;
+    document.getElementById('wkTitle').textContent = title;
+    renderWeeklyChart(true);
+    wkOverlay.hidden = false;
+  }
+  function renderWeeklyChart(animate) {
+    wkDates = weekDatesForOffset(wkWeekOffset);
+    wkValues = wkDates.map(wkArgs.getValueForDate);
+    const max = Math.max(1, ...wkValues);
+    const d0 = new Date(wkDates[0] + 'T12:00:00'), d6 = new Date(wkDates[6] + 'T12:00:00');
+    document.getElementById('wkRangeLabel').textContent = wkWeekOffset === 0
+      ? 'This week'
+      : d0.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' – ' + d6.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    document.getElementById('wkNext').disabled = wkWeekOffset >= 0;
+    const chartEl = document.getElementById('wkChart');
+    chartEl.innerHTML = wkDates.map((dk, i) => {
+      const d = new Date(dk + 'T12:00:00');
+      const h = Math.max(3, (wkValues[i] / max) * 100);
+      return '<div class="wk-bar-wrap"><div class="wk-bar" data-h="' + h + '" data-i="' + i + '" style="height:' + (animate ? '0%' : h + '%') + ';background:' + wkArgs.color + '"></div>'
+        + '<div class="wk-bar-label">' + DOW[d.getDay()] + '</div></div>';
+    }).join('');
+    chartEl.querySelectorAll('.wk-bar').forEach(el => {
+      el.addEventListener('click', () => {
+        const i = +el.dataset.i;
+        wkSelectedIdx = wkSelectedIdx === i ? null : i;
+        updateWeeklyHeader();
+        chartEl.querySelectorAll('.wk-bar').forEach(b => b.classList.toggle('is-selected', +b.dataset.i === wkSelectedIdx));
+      });
+    });
+    if (animate) {
+      const bars = chartEl.querySelectorAll('.wk-bar');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          bars.forEach((el, i) => {
+            el.style.transition = 'height 0.9s cubic-bezier(.22,.7,.2,1) ' + (i * 70) + 'ms';
+            el.style.height = el.dataset.h + '%';
+          });
+        });
+      });
+    }
+    updateWeeklyHeader();
+  }
+  function updateWeeklyHeader() {
+    const unit = wkArgs.unit ? wkArgs.unit : '';
+    if (wkSelectedIdx != null) {
+      const d = new Date(wkDates[wkSelectedIdx] + 'T12:00:00');
+      document.getElementById('wkTotalLabel').textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }).toUpperCase();
+      document.getElementById('wkTotal').textContent = (Math.round(wkValues[wkSelectedIdx] * 10) / 10).toLocaleString() + unit;
+    } else {
+      const total = wkValues.reduce((a, b) => a + b, 0);
+      document.getElementById('wkTotalLabel').textContent = '7-DAY TOTAL';
+      document.getElementById('wkTotal').textContent = (Math.round(total * 10) / 10).toLocaleString() + unit;
+    }
+  }
+  document.getElementById('wkPrev').addEventListener('click', () => { wkWeekOffset--; wkSelectedIdx = null; renderWeeklyChart(true); });
+  document.getElementById('wkNext').addEventListener('click', () => { if (wkWeekOffset < 0) { wkWeekOffset++; wkSelectedIdx = null; renderWeeklyChart(true); } });
+  document.getElementById('wkClose').addEventListener('click', () => { wkOverlay.hidden = true; });
+  wkOverlay.addEventListener('click', (e) => { if (e.target === wkOverlay) wkOverlay.hidden = true; });
+  document.getElementById('stepsCard').addEventListener('click', () => {
+    const steps = storeGet('health:steps', {});
+    openWeekly('Step Count', 'var(--steps)', '', dk => steps[dk] || 0);
+  });
+
   document.addEventListener('DOMContentLoaded', function () {
+    renderCalendar();
     renderAll();
     if (typeof lucide !== 'undefined') lucide.createIcons();
   });
+  renderCalendar();
   renderAll();
 })();
 </script>
