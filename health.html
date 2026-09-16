@@ -159,7 +159,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .steps-col { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
 .step-cell { background: var(--cream); border: 1.5px solid var(--cream-line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; position: relative; }
 .step-cell-steps { flex: 1; min-height: 220px; cursor: pointer; }
-.step-cell-dist, .step-cell-goal { flex: 1; min-height: 104px; cursor: pointer; }
+.step-cell-dist, .step-cell-goal { flex: 1; min-height: 190px; cursor: pointer; }
 .step-cell-goal { cursor: pointer; }
 .step-cell-time { flex: 0 0 auto; min-height: 86px; }
 .step-cell-head { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--cream-ink-faint); }
@@ -183,7 +183,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
    progress toward the ~7.75km an average 10,000-step day covers — a
    quick visual reference point, not a literal route. */
 .dist-loop-wrap { margin-top: auto; }
-.dist-loop { width: 100%; height: 100px; display: block; overflow: visible; }
+.dist-loop { width: 100%; height: 72px; display: block; overflow: visible; }
 .dist-loop-track { fill: none; stroke: rgba(21,56,44,0.12); stroke-width: 4; }
 .dist-loop-fill { fill: none; stroke: var(--distance); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.6s ease; }
 .dist-loop-marker { fill: var(--distance); stroke: var(--cream); stroke-width: 2; transition: cx 0.6s ease, cy 0.6s ease; }
@@ -191,12 +191,12 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 .steps-body { flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 12px; min-width: 0; }
 .steps-count-block { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
-#stepsBigVal { font-size: 33px; }
+#stepsBigVal { font-size: 27px; }
 .steps-count-goal { font-size: 12.5px; color: var(--cream-ink-faint); margin-top: 6px; }
 .steps-ring-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
 .steps-ring {
   --pct: 0%;
-  width: 100px; height: 100px; border-radius: 50%; position: relative; flex-shrink: 0;
+  width: 82px; height: 82px; border-radius: 50%; position: relative; flex-shrink: 0;
   background: conic-gradient(from -90deg,
     color-mix(in srgb, var(--steps) 40%, white) 0%,
     var(--steps) var(--pct),
@@ -243,7 +243,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
   .step-cell { padding: 20px; }
   .step-cell-steps { min-height: 260px; }
-  .step-cell-dist, .step-cell-goal { min-height: 122px; }
+  .step-cell-dist, .step-cell-goal { min-height: 250px; }
   .step-cell-time { min-height: 100px; }
   .step-cell-val { font-size: 30px; }
   #stepsBigVal { font-size: 52px; }
@@ -251,7 +251,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   .goal-sparkline { height: 34px; }
   .steps-ring { width: 136px; height: 136px; }
   .steps-ring-pct { font-size: 26px; }
-  .dist-loop { height: 140px; }
+  .dist-loop { height: 100px; }
 }
 
 /* ---------- weekly detail sheet ---------- */
