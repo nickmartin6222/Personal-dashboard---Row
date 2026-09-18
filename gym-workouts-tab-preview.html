@@ -51,6 +51,7 @@
   --day-pull: #7DD3FC; --day-pull-dim: rgba(125,211,252,0.16);
   --day-lowera: #6EE3A4; --day-lowera-dim: rgba(110,227,164,0.16);
   --day-lowerb: #B794F4; --day-lowerb-dim: rgba(183,148,244,0.16);
+  --day-fullbody: #F97066; --day-fullbody-dim: rgba(249,112,102,0.16);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-heading: 'Fraunces', Georgia, serif;
   --font-mono: ui-monospace, SF Mono, Menlo, Consolas, monospace;
@@ -81,6 +82,7 @@
   --day-pull: #4F7FBF; --day-pull-dim: rgba(79,127,191,0.14);
   --day-lowera: #2F6B52; --day-lowera-dim: rgba(47,107,82,0.14);
   --day-lowerb: #6B4A54; --day-lowerb-dim: rgba(107,74,84,0.14);
+  --day-fullbody: #B3392F; --day-fullbody-dim: rgba(179,57,47,0.14);
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -636,10 +638,33 @@ button { font-family: inherit; }
         { area: 'Knee Extension', sets: 3, order: 50, options: [{ name: "Leg Extension", muscle: "Quads", repMin: 10, repMax: 15, step: 5, startWeight: 30, equipmentClass: 'pin' }] },
         { area: 'Calf', sets: 3, order: 55, options: [{ name: "Seated Calf Raise", muscle: "Calves", repMin: 12, repMax: 20, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }] },
       ]
+    },
+    // A fifth, optional day — one balanced session covering every major
+    // pattern (squat, hinge, horizontal press, vertical pull, shoulder
+    // press, core) at lower per-area volume than a dedicated day, for
+    // filling in an extra training day or a week where a split day got
+    // missed. Every option below is the SAME exercise object already
+    // used on Push/Pull/Lower A/Lower B (name, rep range, equipment
+    // class, etc. copied verbatim) — reusing the existing names means
+    // Statistics' CURRENT_CATALOG_NAMES/CATALOG_MUSCLE lookups already
+    // cover this day with no changes needed there.
+    'Full Body': {
+      accent: '--day-fullbody', accentDim: '--day-fullbody-dim',
+      img: 'assets/squat-cutout-v2.png',
+      muscles: ['Quads', 'Hamstrings', 'Chest', 'Back', 'Shoulders', 'Core'],
+      warmup: ['5 min bike or rower', 'Bodyweight squats × 10', 'Band pull-aparts × 15', 'Arm circles + shoulder dislocates × 10'],
+      areas: [
+        { area: 'Squat Pattern', sets: 3, order: 10, options: [{ name: "Hack Squat", muscle: "Quads", repMin: 8, repMax: 12, step: 5, startWeight: 80, perSide: true, equipmentClass: 'plateLoaded' }, { name: "Smith Squat", muscle: "Quads", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'plateLoaded' }, { name: "Front Squat", muscle: "Quads", repMin: 6, repMax: 10, step: 5, startWeight: 40, equipmentClass: 'barbell', barWeight: 20 }, { name: "Goblet Squat", muscle: "Quads", repMin: 6, repMax: 10, step: 2.5, startWeight: 20, equipmentClass: 'dumbbell' }] },
+        { area: 'Hip Hinge', sets: 3, order: 20, options: [{ name: "Barbell RDL", muscle: "Hamstrings", repMin: 6, repMax: 10, step: 5, startWeight: 60, equipmentClass: 'barbell', barWeight: 20 }, { name: "DB RDL", muscle: "Hamstrings", repMin: 6, repMax: 10, step: 2.5, startWeight: 20, perSide: true, equipmentClass: 'dumbbell' }, { name: "Single-Leg RDL", muscle: "Hamstrings", repMin: 8, repMax: 12, step: 1, startWeight: 10, perSide: true, equipmentClass: 'dumbbell' }, { name: "Machine Back Extension", muscle: "Hamstrings", repMin: 12, repMax: 20, step: 5, startWeight: 20, equipmentClass: 'pin' }] },
+        { area: 'Horizontal Press', sets: 3, order: 30, options: [{ name: "Barbell Bench Press", muscle: "Chest", repMin: 5, repMax: 8, step: 5, startWeight: 50, equipmentClass: 'barbell', barWeight: 20 }, { name: "DB Bench Press", muscle: "Chest", repMin: 5, repMax: 8, step: 2.5, startWeight: 20, perSide: true, equipmentClass: 'dumbbell' }, { name: "Smith Machine Bench Press", muscle: "Chest", repMin: 5, repMax: 8, step: 5, startWeight: 20, equipmentClass: 'plateLoaded' }, { name: "Machine Chest Press", muscle: "Chest", repMin: 5, repMax: 8, step: 5, startWeight: 20, equipmentClass: 'pin' }, { name: "Weighted Dip", muscle: "Chest", repMin: 5, repMax: 8, step: 2.5, startWeight: 0, equipmentClass: 'bodyweightLoaded' }] },
+        { area: 'Vertical Pull', sets: 3, order: 40, options: [{ name: "Lat Pulldown", muscle: "Back", repMin: 8, repMax: 12, step: 5, startWeight: 50, equipmentClass: 'pin' }, { name: "Pull-Ups", muscle: "Back", repMin: 4, repMax: 10, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }, { name: "Assisted Pull-Up", muscle: "Back", repMin: 8, repMax: 12, step: 5, startWeight: 40, equipmentClass: 'pin' }, { name: "Neutral-Grip Pulldown", muscle: "Back", repMin: 8, repMax: 12, step: 5, startWeight: 45, equipmentClass: 'pin' }] },
+        { area: 'Shoulder Press', sets: 3, order: 50, options: [{ name: "DB Shoulder Press", muscle: "Shoulders", repMin: 8, repMax: 12, step: 2.5, startWeight: 17.5, perSide: true, equipmentClass: 'dumbbell' }, { name: "Arnold Press", muscle: "Shoulders", repMin: 8, repMax: 12, step: 2.5, startWeight: 15, perSide: true, equipmentClass: 'dumbbell' }, { name: "Landmine Press", muscle: "Shoulders", repMin: 8, repMax: 12, step: 5, startWeight: 20, perSide: true, equipmentClass: 'plateLoaded' }, { name: "Machine Shoulder Press", muscle: "Shoulders", repMin: 8, repMax: 12, step: 5, startWeight: 20, equipmentClass: 'pin' }] },
+        { area: 'Core', sets: 3, order: 90, options: [{ name: "Pallof Press", muscle: "Core", repMin: 10, repMax: 12, step: 2.5, startWeight: 10, perSide: true, equipmentClass: 'cable' }] },
+      ]
     }
   };
-  var DAY_ORDER = ['Push', 'Pull', 'Lower A', 'Lower B'];
-  var DAY_TAG_TEXT = { 'Push': 'Push Day', 'Pull': 'Pull Day', 'Lower A': 'Lower Body — A', 'Lower B': 'Lower Body — B' };
+  var DAY_ORDER = ['Push', 'Pull', 'Lower A', 'Lower B', 'Full Body'];
+  var DAY_TAG_TEXT = { 'Push': 'Push Day', 'Pull': 'Pull Day', 'Lower A': 'Lower Body — A', 'Lower B': 'Lower Body — B', 'Full Body': 'Full Body Day' };
 
   // ===== Custom exercises — user-added, layered on top of the built-in
   // catalog above. Stored under their own key so they ride the same
