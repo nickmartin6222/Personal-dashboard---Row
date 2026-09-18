@@ -1763,6 +1763,21 @@ button { font-family: inherit; }
         }
       });
     }
+
+    // nutritionRollup7d() reads health:nutrition for the protein-gate
+    // check above, but this page never independently synced it — a
+    // fresh storage context that's never opened health.html would read
+    // an empty nutrition log and silently skip the protein gate instead
+    // of actually checking it. Read-only interest here (health.html
+    // owns writes to these keys), so no onApplied wiring needed beyond
+    // a re-render.
+    if (typeof initCloudSync === 'function') {
+      initCloudSync({
+        appKey: 'health-metrics',
+        syncedKeys: ['health:steps', 'health:nutrition', 'health:distance', 'health:distanceUnit', 'health:goals', 'health:creatine', 'health:weeklyStepGoal'],
+        onApplied: function () { renderAll(); }
+      });
+    }
   });
 })();
 </script>

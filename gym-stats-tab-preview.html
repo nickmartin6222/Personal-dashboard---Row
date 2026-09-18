@@ -1728,6 +1728,18 @@ section { margin-bottom: 22px; }
         }
       });
     }
+
+    // "Nutrition & Recovery" reads health:nutrition cross-page but this
+    // page never independently synced it — same gap as Workouts' own
+    // protein-gate read of the same key, fixed there for the same
+    // reason. Read-only interest (health.html owns writes to these).
+    if (typeof initCloudSync === 'function') {
+      initCloudSync({
+        appKey: 'health-metrics',
+        syncedKeys: ['health:steps', 'health:nutrition', 'health:distance', 'health:distanceUnit', 'health:goals', 'health:creatine', 'health:weeklyStepGoal'],
+        onApplied: function () { renderAll(); }
+      });
+    }
   });
 })();
 </script>

@@ -898,6 +898,19 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
         window.dispatchEvent(new Event('storage'));
       }
     });
+
+    // Reads po_coach_v1.weekdaySplit for the Gym day / Rest day
+    // auto-detect above, but never independently synced it — a fresh
+    // Home Screen storage context that's never opened the Workouts tab
+    // would silently fall back to WEEKDAY_FALLBACK's generic schedule
+    // instead of your real one. Same root cause as the Finance Home
+    // Screen bug, just a quieter symptom (a wrong default instead of a
+    // blank tile) since there was already a fallback in place.
+    initCloudSync({
+      appKey: 'po-coach',
+      syncedKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_custom_exercises'],
+      onApplied: function () { window.dispatchEvent(new Event('storage')); }
+    });
   });
 })();
 </script>

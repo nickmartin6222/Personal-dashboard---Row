@@ -1109,6 +1109,29 @@ body::after {
     });
   });
 
+  // Same gap existed for the Gym/Workouts and Golf mini-tiles above —
+  // both read straight from localStorage (po_coach_v1 for "Today"'s
+  // split, golf's own keys for handicap) with no independent pull of
+  // their own, so a Home Screen icon that's never opened gym-workouts-
+  // tab-preview.html/golf.html in ITS storage context would show both
+  // stuck on "—" forever, same root cause as the Finance tile above.
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof initCloudSync !== 'function') return;
+    initCloudSync({
+      appKey: 'po-coach',
+      syncedKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_custom_exercises'],
+      onApplied: function () { window.dispatchEvent(new Event('storage')); }
+    });
+  });
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof initCloudSync !== 'function') return;
+    initCloudSync({
+      appKey: 'golf',
+      syncedKeys: ['golf:rounds', 'golf:courses', 'golf:courseImages', 'golf:favoriteCourses'],
+      onApplied: function () { window.dispatchEvent(new Event('storage')); }
+    });
+  });
+
   // Hover/touch tracking for the net worth chart — shows the exact
   // value + date for the nearest plotted point, same as Finance's own
   // chart. The SVG element itself persists across re-renders (only its
