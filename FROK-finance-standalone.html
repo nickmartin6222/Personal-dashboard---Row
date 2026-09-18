@@ -12,6 +12,21 @@
 <script src="topbar.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="sync.js" defer></script>
+<!-- Temporary on-device debug console — only loads with ?debug=1 in the
+     URL, so it never shows up in normal use. Open this page with that
+     flag (and save THAT url to the Home Screen, or just open it in
+     Safari on the Home Screen icon's session), tap the floating button
+     it adds bottom-right, and check the Console/Network tabs for real
+     errors — no computer/cable needed. Remove this block once the
+     Home Screen data issue is diagnosed. -->
+<script>
+  if (location.search.indexOf('debug=1') !== -1) {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/eruda';
+    s.onload = function () { eruda.init(); };
+    document.head.appendChild(s);
+  }
+</script>
 <!--
   Cross-device build — data syncs via Supabase (same pattern as
   golf.html / nutrition.html), so entries made on one device show up
