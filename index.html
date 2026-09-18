@@ -1092,6 +1092,23 @@ body::after {
     });
   });
 
+  // Same idea for Finance — this page's own Goals/Overview tiles read
+  // nw:*/subs/etc straight from localStorage and, until now, only ever
+  // had real numbers if FROK-finance-standalone.html had already been
+  // opened in THIS SAME storage context. A Home Screen icon gets its
+  // own separate storage from Safari on iOS, so a device that's only
+  // ever used the Finance page inside Safari (never as the installed
+  // icon) would show this tile empty forever without its own pull.
+  document.addEventListener('DOMContentLoaded', function () {
+    if (typeof initCloudSync !== 'function') return;
+    initCloudSync({
+      appKey: 'finance-nw',
+      syncedKeys: ['subs', 'wishlist', 'incoming_orders', 'nw_currency', 'stocks:snapshot', 'stocks:lastFetchTs'],
+      syncedPrefixes: ['nw:'],
+      onApplied: function () { window.dispatchEvent(new Event('storage')); }
+    });
+  });
+
   // Hover/touch tracking for the net worth chart — shows the exact
   // value + date for the nearest plotted point, same as Finance's own
   // chart. The SVG element itself persists across re-renders (only its
