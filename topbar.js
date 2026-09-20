@@ -292,6 +292,14 @@ body.topbar-modal-open {
   function isEmbedded() {
     try { return window.self !== window.top; } catch (e) { return true; }
   }
+  // The main dashboard already has its own Finance nav tile (and the
+  // Finance tab in the bottombar below) — the floating wallet shortcut
+  // up top is redundant there specifically, so it's the one page that
+  // skips it.
+  function isMainDashboardPage() {
+    const p = (window.location.pathname || '').toLowerCase();
+    return p === '/' || p === '' || p.endsWith('/index.html');
+  }
   function shouldShowChrome() {
     return !isFinancePage() && !isEmbedded();
   }
@@ -352,7 +360,12 @@ body.topbar-modal-open {
     if (!document.getElementById('topbar')) {
       const topWrap = document.createElement('div');
       topWrap.innerHTML = topbarHtml.trim();
-      document.body.insertBefore(topWrap.firstChild, document.body.firstChild);
+      const topbarEl = topWrap.firstChild;
+      if (isMainDashboardPage()) {
+        const financeBtn = topbarEl.querySelector('#topbarFinance');
+        if (financeBtn) financeBtn.remove();
+      }
+      document.body.insertBefore(topbarEl, document.body.firstChild);
     }
 
     if (!document.getElementById('bottombar')) {

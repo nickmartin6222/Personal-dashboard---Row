@@ -305,9 +305,10 @@ body::after {
   .fin-stock-chg { font-size: 9.5px; padding: 2px 6px; }
 }
 
-/* ===== Small tile row (Gym / Golf / Nutrition) ===== */
-.mini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-@media (max-width: 720px) { .mini-grid { grid-template-columns: 1fr; } }
+/* ===== Overview tile row (Finance / Fitness / Golf / Health) ===== */
+.mini-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 900px) { .mini-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .mini-grid { grid-template-columns: 1fr; } }
 .mini-tile {
   background: var(--card); border: 1px solid var(--border);
   border-radius: 18px; padding: 20px;
@@ -322,6 +323,18 @@ body::after {
 .mini-tile-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 14px; }
 .mini-tile-val { font-family: var(--font); font-size: 24px; font-weight: 800; color: var(--text-primary); margin-top: 3px; letter-spacing: -0.02em; }
 .mini-tile-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 6px; }
+/* A plain nav tile (Finance) — no stat/sparkline, since the real
+   numbers live on its own page now, one tap away. */
+.mini-tile-nav .mini-tile-label { margin-top: 28px; font-size: 13px; text-transform: none; letter-spacing: 0; color: var(--text-primary); font-weight: 700; }
+/* 7-day sparkline (Steps/Golf) — tiny bars, same technique as the
+   Weekly Goal sparkline on health.html. */
+.mini-spark { display: flex; align-items: flex-end; gap: 3px; height: 22px; margin-top: 10px; }
+.mini-spark span { flex: 1; border-radius: 2px; background: var(--sage); min-height: 2px; opacity: 0.5; }
+.mini-spark span.is-today { opacity: 1; }
+/* Weekly split dots (Workouts) — one per day, colored by day type. */
+.mini-week-dots { display: flex; gap: 5px; margin-top: 12px; }
+.mini-week-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+.mini-week-dot.is-today { box-shadow: 0 0 0 2px var(--card), 0 0 0 3px var(--sage); }
 
 /* ===== Settings modal ===== */
 .modal-bg {
@@ -426,53 +439,30 @@ body::after {
   <div class="section-title">Goals</div>
   <div class="goals-grid" id="goalsGrid"></div>
 
-  <div class="section-title">Finance overview</div>
-  <a class="card" href="FROK-finance-standalone.html#net" style="text-decoration:none; display:block;">
-    <div class="fin-overview">
-      <div>
-        <div class="fin-total-label">Net worth</div>
-        <div class="fin-total-val" id="finTotal">—</div>
-        <div class="fin-total-sub" id="finBreakdown"></div>
-        <div class="fin-chart-wrap">
-          <svg class="fin-chart-svg" id="finChartSvg" viewBox="0 0 300 100" preserveAspectRatio="none"></svg>
-          <div class="fin-chart-tooltip" id="finChartTooltip" hidden></div>
-          <div class="fin-chart-stats">
-            <div class="fin-stat"><div class="fin-stat-label">1% =</div><div class="fin-stat-val" id="finStat1pct">—</div></div>
-            <div class="fin-stat"><div class="fin-stat-label">High</div><div class="fin-stat-val" id="finStatHigh">—</div></div>
-            <div class="fin-stat"><div class="fin-stat-label">Low</div><div class="fin-stat-val" id="finStatLow">—</div></div>
-            <div class="fin-stat"><div class="fin-stat-label">Snapshots</div><div class="fin-stat-val" id="finStatCount">—</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="fin-donut-row">
-        <div class="fin-donut">
-          <svg class="fin-donut-svg" id="finDonutSvg" viewBox="0 0 96 96" aria-hidden="true"></svg>
-        </div>
-        <div class="fin-legend" id="finLegend"></div>
-      </div>
-      <div class="fin-stocks-row" id="finStocksRow"></div>
-    </div>
-  </a>
-
-  <div class="section-title">Fitness, golf &amp; health</div>
+  <div class="section-title">Overview</div>
   <div class="mini-grid">
+    <a class="mini-tile mini-tile-nav" href="FROK-finance-standalone.html#net">
+      <div class="mini-tile-top"><i data-lucide="wallet" class="mini-tile-icon"></i><span class="mini-tile-arrow">→</span></div>
+      <div class="mini-tile-label">Finance</div>
+      <div class="mini-tile-sub">Net worth &amp; holdings</div>
+    </a>
     <a class="mini-tile" href="gym-workouts-tab-preview.html">
       <div class="mini-tile-top"><i data-lucide="dumbbell" class="mini-tile-icon"></i><span class="mini-tile-arrow">→</span></div>
       <div class="mini-tile-label">Today</div>
       <div class="mini-tile-val" id="gymVal">—</div>
-      <div class="mini-tile-sub">Fitness split</div>
+      <div class="mini-week-dots" id="gymWeekDots"></div>
     </a>
     <a class="mini-tile" href="golf.html">
       <div class="mini-tile-top"><i data-lucide="flag" class="mini-tile-icon"></i><span class="mini-tile-arrow">→</span></div>
       <div class="mini-tile-label">Handicap</div>
       <div class="mini-tile-val" id="golfVal">—</div>
-      <div class="mini-tile-sub">Rounds &amp; trend</div>
+      <div class="mini-spark" id="golfSpark"></div>
     </a>
     <a class="mini-tile" href="health.html">
       <div class="mini-tile-top"><i data-lucide="heart-pulse" class="mini-tile-icon"></i><span class="mini-tile-arrow">→</span></div>
       <div class="mini-tile-label">Steps</div>
       <div class="mini-tile-val" id="healthVal">—</div>
-      <div class="mini-tile-sub">Today</div>
+      <div class="mini-spark" id="healthSpark"></div>
     </a>
   </div>
 
@@ -578,12 +568,9 @@ body::after {
     const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'mint' : 'sage';
     applyTheme(next);
     try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
-    // The Finance Overview pie picks a different default palette per
-    // theme (dark = Finance's own category colors, light = the muted
-    // per-item palette) — needs a re-render to actually recolor. Same
-    // for the goal bars (savings/stock/handicap/steps), which pick a
-    // theme-matched gradient now instead of one fixed neon one.
-    if (typeof renderFinance === 'function') renderFinance();
+    // Goal bars (savings/stock/handicap/steps) pick a theme-matched
+    // gradient now instead of one fixed neon one — needs a re-render to
+    // actually recolor.
     if (typeof renderGoals === 'function') renderGoals();
   });
   // Stay in sync if the shared toggle button (topbar.js, present on
@@ -591,7 +578,6 @@ body::after {
   window.addEventListener('storage', (e) => {
     if (e.key === THEME_KEY) {
       applyTheme(e.newValue || 'mint');
-      if (typeof renderFinance === 'function') renderFinance();
       if (typeof renderGoals === 'function') renderGoals();
     }
   });
@@ -1019,19 +1005,72 @@ body::after {
   // ============================================================
   // GYM / GOLF / NUTRITION mini tiles
   // ============================================================
+  // Same day-type colors gym-workouts-tab-preview.html uses for its own
+  // day pills/accents, so a day reads as the same color on both pages.
+  const DAY_DOT_COLORS = {
+    dark: { Push: '#F2C063', Pull: '#7DD3FC', 'Lower A': '#6EE3A4', 'Lower B': '#B794F4', 'Full Body': '#F97066' },
+    light: { Push: '#C2A46F', Pull: '#4F7FBF', 'Lower A': '#2F6B52', 'Lower B': '#6B4A54', 'Full Body': '#B3392F' }
+  };
   function renderMiniTiles() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const dotColors = isLight ? DAY_DOT_COLORS.light : DAY_DOT_COLORS.dark;
+
     const s = readJSON('po_coach_v1', null);
-    if (s && Array.isArray(s.weekdaySplit) && s.weekdaySplit.length === 7) {
-      $('gymVal').textContent = s.weekdaySplit[new Date().getDay()] || '—';
+    const split = (s && Array.isArray(s.weekdaySplit) && s.weekdaySplit.length === 7) ? s.weekdaySplit : null;
+    const todayDow = new Date().getDay();
+    if (split) $('gymVal').textContent = split[todayDow] || '—';
+    const gymDots = $('gymWeekDots');
+    if (gymDots) {
+      // Mon..Sun order (matches the calendar convention every other
+      // page uses), even though weekdaySplit itself is Sun-indexed.
+      const order = [1, 2, 3, 4, 5, 6, 0];
+      gymDots.innerHTML = order.map(dow => {
+        const type = split ? split[dow] : null;
+        const color = type && dotColors[type] ? dotColors[type] : 'var(--border)';
+        return '<span class="mini-week-dot' + (dow === todayDow ? ' is-today' : '') + '" style="background:' + color + '"></span>';
+      }).join('');
     }
+
     const hcp = currentHandicap();
     $('golfVal').textContent = hcp == null ? '—' : hcp.toFixed(1);
+    const golfSpark = $('golfSpark');
+    if (golfSpark) {
+      const rounds = readJSON('golf:rounds', []);
+      const recent = (Array.isArray(rounds) ? rounds.slice() : [])
+        .filter(r => typeof r.differential === 'number')
+        .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0))
+        .slice(-7);
+      if (recent.length >= 2) {
+        const vals = recent.map(r => r.differential);
+        const max = Math.max(1, ...vals);
+        golfSpark.innerHTML = vals.map((v, i) => {
+          const h = Math.max(2, Math.round((v / max) * 22));
+          return '<span style="height:' + h + 'px"' + (i === vals.length - 1 ? ' class="is-today"' : '') + '></span>';
+        }).join('');
+      } else {
+        golfSpark.innerHTML = '';
+      }
+    }
 
     const d = new Date();
     const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     const steps = readJSON('health:steps', {});
     const todaySteps = steps && typeof steps === 'object' ? steps[dk] : null;
     $('healthVal').textContent = todaySteps == null ? '—' : Number(todaySteps).toLocaleString();
+    const healthSpark = $('healthSpark');
+    if (healthSpark) {
+      const weekVals = [];
+      for (let i = 6; i >= 0; i--) {
+        const dd = new Date(); dd.setDate(dd.getDate() - i);
+        const ddk = dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0') + '-' + String(dd.getDate()).padStart(2, '0');
+        weekVals.push((steps && steps[ddk]) || 0);
+      }
+      const max = Math.max(1, ...weekVals);
+      healthSpark.innerHTML = weekVals.map((v, i) => {
+        const h = Math.max(2, Math.round((v / max) * 22));
+        return '<span style="height:' + h + 'px"' + (i === weekVals.length - 1 ? ' class="is-today"' : '') + '></span>';
+      }).join('');
+    }
   }
 
   // ============================================================
@@ -1072,7 +1111,7 @@ body::after {
     }).join('');
   }
 
-  function renderAll() { renderGoals(); renderFinance(); renderStockHoldings(); renderMiniTiles(); }
+  function renderAll() { renderGoals(); renderMiniTiles(); }
   renderAll();
   window.addEventListener('storage', renderAll);
 
