@@ -197,6 +197,13 @@ body::after {
   border-radius: 18px; padding: 18px;
   box-shadow: 0 8px 24px var(--shadow-md);
 }
+/* Light theme: outline goal + overview tiles in the same deep green
+   used for icons/accents elsewhere, so tiles pop against the cream
+   background instead of blending into a near-invisible gray hairline. */
+[data-theme="light"] .goal-card,
+[data-theme="light"] .mini-tile {
+  border-color: color-mix(in srgb, var(--sage) 55%, transparent);
+}
 .goal-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .goal-card-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .goal-card-pct { font-family: var(--font); font-size: 13px; font-weight: 800; color: var(--sage); font-variant-numeric: tabular-nums; }
@@ -323,14 +330,6 @@ body::after {
 .mini-tile-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-tertiary); margin-top: 14px; }
 .mini-tile-val { font-family: var(--font); font-size: 24px; font-weight: 800; color: var(--text-primary); margin-top: 3px; letter-spacing: -0.02em; }
 .mini-tile-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 6px; }
-/* A plain nav tile (Finance) — no stat/sparkline, since the real
-   numbers live on its own page now, one tap away. */
-.mini-tile-nav .mini-tile-label { margin-top: 28px; font-size: 13px; text-transform: none; letter-spacing: 0; color: var(--text-primary); font-weight: 700; }
-/* 7-day sparkline (Steps/Golf) — tiny bars, same technique as the
-   Weekly Goal sparkline on health.html. */
-.mini-spark { display: flex; align-items: flex-end; gap: 3px; height: 22px; margin-top: 10px; }
-.mini-spark span { flex: 1; border-radius: 2px; background: var(--sage); min-height: 2px; opacity: 0.5; }
-.mini-spark span.is-today { opacity: 1; }
 /* Weekly split dots (Workouts) — one per day, colored by day type. */
 .mini-week-dots { display: flex; gap: 5px; margin-top: 12px; }
 .mini-week-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
@@ -441,10 +440,10 @@ body::after {
 
   <div class="section-title">Overview</div>
   <div class="mini-grid">
-    <a class="mini-tile mini-tile-nav" href="FROK-finance-standalone.html#net">
+    <a class="mini-tile" href="FROK-finance-standalone.html#net">
       <div class="mini-tile-top"><i data-lucide="wallet" class="mini-tile-icon"></i><span class="mini-tile-arrow">→</span></div>
-      <div class="mini-tile-label">Finance</div>
-      <div class="mini-tile-sub">Net worth &amp; holdings</div>
+      <div class="mini-tile-label">Net Worth</div>
+      <div class="mini-tile-val" id="financeVal">—</div>
     </a>
     <a class="mini-tile" href="gym-workouts-tab-preview.html">
       <div class="mini-tile-top"><i data-lucide="dumbbell" class="mini-tile-icon"></i><span class="mini-tile-arrow">→</span></div>
@@ -456,13 +455,11 @@ body::after {
       <div class="mini-tile-top"><i data-lucide="flag" class="mini-tile-icon"></i><span class="mini-tile-arrow">→</span></div>
       <div class="mini-tile-label">Handicap</div>
       <div class="mini-tile-val" id="golfVal">—</div>
-      <div class="mini-spark" id="golfSpark"></div>
     </a>
     <a class="mini-tile" href="health.html">
       <div class="mini-tile-top"><i data-lucide="heart-pulse" class="mini-tile-icon"></i><span class="mini-tile-arrow">→</span></div>
       <div class="mini-tile-label">Steps</div>
       <div class="mini-tile-val" id="healthVal">—</div>
-      <div class="mini-spark" id="healthSpark"></div>
     </a>
   </div>
 
@@ -1033,44 +1030,16 @@ body::after {
 
     const hcp = currentHandicap();
     $('golfVal').textContent = hcp == null ? '—' : hcp.toFixed(1);
-    const golfSpark = $('golfSpark');
-    if (golfSpark) {
-      const rounds = readJSON('golf:rounds', []);
-      const recent = (Array.isArray(rounds) ? rounds.slice() : [])
-        .filter(r => typeof r.differential === 'number')
-        .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0))
-        .slice(-7);
-      if (recent.length >= 2) {
-        const vals = recent.map(r => r.differential);
-        const max = Math.max(1, ...vals);
-        golfSpark.innerHTML = vals.map((v, i) => {
-          const h = Math.max(2, Math.round((v / max) * 22));
-          return '<span style="height:' + h + 'px"' + (i === vals.length - 1 ? ' class="is-today"' : '') + '></span>';
-        }).join('');
-      } else {
-        golfSpark.innerHTML = '';
-      }
-    }
 
     const d = new Date();
     const dk = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     const steps = readJSON('health:steps', {});
     const todaySteps = steps && typeof steps === 'object' ? steps[dk] : null;
     $('healthVal').textContent = todaySteps == null ? '—' : Number(todaySteps).toLocaleString();
-    const healthSpark = $('healthSpark');
-    if (healthSpark) {
-      const weekVals = [];
-      for (let i = 6; i >= 0; i--) {
-        const dd = new Date(); dd.setDate(dd.getDate() - i);
-        const ddk = dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0') + '-' + String(dd.getDate()).padStart(2, '0');
-        weekVals.push((steps && steps[ddk]) || 0);
-      }
-      const max = Math.max(1, ...weekVals);
-      healthSpark.innerHTML = weekVals.map((v, i) => {
-        const h = Math.max(2, Math.round((v / max) * 22));
-        return '<span style="height:' + h + 'px"' + (i === weekVals.length - 1 ? ' class="is-today"' : '') + '></span>';
-      }).join('');
-    }
+
+    const { ccy } = displayCcy();
+    const nwTotal = nwCategoryTotal('bank') + nwCategoryTotal('stocks') + nwCategoryTotal('crypto') + nwCategoryTotal('other');
+    $('financeVal').textContent = nwTotal > 0 ? (ccy + ' ' + Math.round(nwTotal).toLocaleString('en-US')) : '—';
   }
 
   // ============================================================

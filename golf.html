@@ -78,6 +78,15 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
 
 .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; margin-bottom: 14px; position: relative; }
 .card-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 10px; }
+.card-eyebrow-dropdown { position: relative; display: inline-block; margin-bottom: 10px; }
+.card-eyebrow-btn { display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-tertiary); background: none; border: none; padding: 0; margin: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.card-eyebrow-btn svg { width: 11px; height: 11px; flex-shrink: 0; transition: transform 0.15s; }
+.card-eyebrow-btn.is-open svg { transform: rotate(180deg); }
+.hcp-mode-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 5; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 4px; display: flex; flex-direction: column; gap: 2px; min-width: 150px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+.hcp-mode-menu[hidden] { display: none; }
+.hcp-mode-menu button { text-align: left; font-family: var(--font-mono); font-size: 12px; font-weight: 600; padding: 8px 10px; border-radius: 8px; border: none; background: none; color: var(--text-secondary); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.hcp-mode-menu button.active { background: var(--accent); color: #04140f; }
+[data-theme="light"] .hcp-mode-menu button.active { color: #fff; }
 
 /* ===== Handicap ===== */
 .hcp-num-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
@@ -309,9 +318,24 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
 
   <!-- Handicap -->
   <div class="card">
-    <div class="card-eyebrow">Handicap Index</div>
-    <div class="hcp-num-row"><span class="hcp-num" id="hcpNum">—</span><span class="hcp-tier" id="hcpTier"></span></div>
-    <div class="hcp-note" id="hcpNote"></div>
+    <div class="card-eyebrow-dropdown">
+      <button type="button" class="card-eyebrow-btn" id="hcpModeBtn">
+        <span id="hcpModeLabel">Handicap Index</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <div class="hcp-mode-menu" id="hcpModeMenu" hidden>
+        <button type="button" data-mode="handicap" class="active">Handicap Index</button>
+        <button type="button" data-mode="scores">Scores</button>
+      </div>
+    </div>
+    <div id="hcpHandicapView">
+      <div class="hcp-num-row"><span class="hcp-num" id="hcpNum">—</span><span class="hcp-tier" id="hcpTier"></span></div>
+      <div class="hcp-note" id="hcpNote"></div>
+    </div>
+    <div id="hcpScoresView" hidden>
+      <div class="hcp-num-row"><span class="hcp-num" id="scoresNum">—</span><span class="hcp-tier" id="scoresTier"></span></div>
+      <div class="hcp-note" id="scoresNote"></div>
+    </div>
     <div class="hcp-range" id="hcpRange">
       <button type="button" data-r="1m">Last month</button>
       <button type="button" data-r="6m">Last 6mo</button>
@@ -482,6 +506,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
 
   let holesFilter = 9;
   let hcpRange = 'all';
+  let hcpMode = 'handicap';
   let courseFilter = null;
   let roundsShown = 5;
 
@@ -600,6 +625,10 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   function renderHandicapSection() {
+    document.getElementById('hcpHandicapView').hidden = hcpMode !== 'handicap';
+    document.getElementById('hcpScoresView').hidden = hcpMode !== 'scores';
+    if (hcpMode === 'scores') { renderScoresSection(); return; }
+
     const rounds = filteredByHoles(allGolfRounds());
     const h = computeHandicapIndex(rounds);
     document.getElementById('hcpNum').textContent = h == null ? '—' : h;
@@ -623,10 +652,60 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
     const scoped = start ? series.filter(p => p.date >= start) : series;
     renderTrendChart('hcpChartSvg', scoped, 'var(--accent)', 'hcp');
   }
+
+  // Scores view: unlike the Handicap view, this ignores the 9/18-hole
+  // toggle entirely and plots raw scores from both round lengths together,
+  // since a score trend is still meaningful across hole counts even though
+  // the handicap index itself must stay scoped to one.
+  function renderScoresSection() {
+    const chrono = allGolfRounds()
+      .filter(r => typeof r.score === 'number')
+      .slice()
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
+    const latest = chrono[chrono.length - 1];
+    document.getElementById('scoresNum').textContent = latest ? latest.score : '—';
+    const tierEl = document.getElementById('scoresTier');
+    if (!latest) { tierEl.style.display = 'none'; }
+    else { tierEl.style.display = 'inline-block'; tierEl.textContent = (latest.holes || 18) + ' holes'; }
+    document.getElementById('scoresNote').textContent = chrono.length
+      ? 'Most recent score — ' + chrono.length + ' round' + (chrono.length === 1 ? '' : 's') + ' logged across 9 & 18 holes.'
+      : 'Log a round to see your score trend.';
+
+    const start = rangeStartDate();
+    const scoped = start ? chrono.filter(r => r.date >= start) : chrono;
+    const series = scoped.map(r => ({ date: r.date, v: r.score }));
+    renderTrendChart('hcpChartSvg', series, 'var(--accent)', 'strokes', d => {
+      const r = scoped.find(x => x.date === d);
+      return fmtShortDate(d) + (r ? ' · ' + (r.holes || 18) + 'H' : '');
+    });
+  }
+
   document.getElementById('hcpRange').querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
       hcpRange = btn.dataset.r;
       document.getElementById('hcpRange').querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      renderHandicapSection();
+    });
+  });
+
+  // Handicap Index / Scores dropdown
+  const hcpModeBtn = document.getElementById('hcpModeBtn');
+  const hcpModeMenu = document.getElementById('hcpModeMenu');
+  hcpModeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = hcpModeMenu.hidden;
+    hcpModeMenu.hidden = !willOpen;
+    hcpModeBtn.classList.toggle('is-open', willOpen);
+  });
+  document.addEventListener('click', () => { hcpModeMenu.hidden = true; hcpModeBtn.classList.remove('is-open'); });
+  hcpModeMenu.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hcpMode = btn.dataset.mode;
+      hcpModeMenu.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('hcpModeLabel').textContent = hcpMode === 'scores' ? 'Scores' : 'Handicap Index';
+      hcpModeMenu.hidden = true;
+      hcpModeBtn.classList.remove('is-open');
       renderHandicapSection();
     });
   });
