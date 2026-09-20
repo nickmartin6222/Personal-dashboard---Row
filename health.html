@@ -91,7 +91,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 /* ---------- week calendar — ported verbatim from
    gym-workouts-tab-preview.html's own .cal-card component ---------- */
-.cal-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; padding: 22px 20px; margin-bottom: 14px; }
+.cal-card { background: var(--bg-card); border: 1.5px solid var(--cream-line); border-radius: 24px; padding: 22px 20px; margin-bottom: 14px; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .cal-month { font-size: 23px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.01em; }
 .cal-nav { display: flex; background: var(--bg-input); border-radius: 999px; padding: 3px; gap: 2px; }
@@ -194,7 +194,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .dist-loop { width: 100%; height: 65px; display: block; overflow: visible; }
 .dist-loop-track { fill: none; stroke: rgba(var(--cream-veil-rgb),0.12); stroke-width: 7; }
 .dist-loop-fill { fill: none; stroke: var(--distance); stroke-width: 7; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.6s ease; }
-.dist-loop-marker { fill: var(--distance); stroke: var(--cream); stroke-width: 2; transition: cx 0.6s ease, cy 0.6s ease; }
+.dist-loop-marker { fill: var(--distance); stroke: var(--cream); stroke-width: 2; }
 .dist-loop-caption { font-size: 10.5px; color: var(--cream-ink-faint); margin-top: 6px; }
 
 .steps-body { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
@@ -629,6 +629,37 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     });
   });
 
+  // Slides the distance-loop marker along the actual curve instead of
+  // snapping straight to the new spot — a plain cx/cy transition cuts
+  // a straight line across the tile rather than tracing the track.
+  let distLoopAnimFrame = null;
+  let distLoopCurrentPct = 0;
+  function animateDistLoopMarker(targetPct) {
+    const pathEl = document.getElementById('distLoopPath');
+    const marker = document.getElementById('distLoopMarker');
+    const totalLen = pathEl.getTotalLength();
+    const startPct = distLoopCurrentPct;
+    if (startPct === targetPct) return;
+    if (distLoopAnimFrame) cancelAnimationFrame(distLoopAnimFrame);
+    const duration = 700;
+    const startTime = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const curPct = startPct + (targetPct - startPct) * eased;
+      const pt = pathEl.getPointAtLength(totalLen * (curPct / 100));
+      marker.setAttribute('cx', pt.x);
+      marker.setAttribute('cy', pt.y);
+      if (t < 1) {
+        distLoopAnimFrame = requestAnimationFrame(step);
+      } else {
+        distLoopCurrentPct = targetPct;
+        distLoopAnimFrame = null;
+      }
+    }
+    distLoopAnimFrame = requestAnimationFrame(step);
+  }
+
   function renderAll() {
     const g = goals();
     const gymTarget = g.calories;
@@ -702,11 +733,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     const distPct = Math.max(0, Math.min(100, Math.round(((dVal || 0) / TEN_K_STEP_KM) * 100)));
     document.getElementById('distLoopFill').style.strokeDashoffset = (100 - distPct);
     document.getElementById('distLoopCaption').textContent = distPct + '% of 10k-step distance';
-    const loopPathEl = document.getElementById('distLoopPath');
-    const loopLen = loopPathEl.getTotalLength();
-    const loopPt = loopPathEl.getPointAtLength(loopLen * (distPct / 100));
-    document.getElementById('distLoopMarker').setAttribute('cx', loopPt.x);
-    document.getElementById('distLoopMarker').setAttribute('cy', loopPt.y);
+    animateDistLoopMarker(distPct);
     const stepMins = Math.round(sVal / 100);
     document.getElementById('stepsSubTime').textContent = stepMins < 60
       ? stepMins + ' min'

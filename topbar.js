@@ -26,23 +26,6 @@
   width: 100%; max-width: 720px;
   display: flex; justify-content: flex-end; align-items: center; gap: 8px;
 }
-.topbar-finance-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 44px; height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 12px;
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s;
-}
-.topbar-finance-btn:hover { background: rgba(255, 255, 255, 0.08); }
-.topbar-finance-icon {
-  font-size: 20px; line-height: 1;
-  filter: grayscale(100%) brightness(1.4);
-  opacity: 0.85;
-}
-.topbar-finance-icon svg { width: 20px; height: 20px; display: block; }
 .home-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 44px; height: 42px;
@@ -140,8 +123,6 @@ body.has-bottombar {
 
 @media (max-width: 480px) {
   .topbar { padding-left: 10px; padding-right: 10px; gap: 6px; }
-  .topbar-finance-btn { width: 40px; height: 38px; }
-  .topbar-finance-icon { font-size: 18px; }
   .home-btn { width: 40px; height: 38px; }
   .theme-btn { width: 48px; height: 28px; }
   .theme-btn .theme-btn-dot { width: 20px; height: 20px; }
@@ -163,14 +144,6 @@ body.has-bottombar {
   border-bottom: none;
   padding-bottom: 20px;
 }
-[data-theme="light"] .topbar-finance-btn {
-  background: #FFFFFF;
-  border-color: rgba(20,18,15,0.12);
-  box-shadow: 0 2px 10px rgba(20,18,15,0.08);
-}
-[data-theme="light"] .topbar-finance-btn:hover {
-  background: rgba(20,18,15,0.06);
-}
 [data-theme="light"] .home-btn {
   color: #003B2F;
   background: #FFFFFF;
@@ -184,9 +157,6 @@ body.has-bottombar {
   background: #FFFFFF;
   border-color: rgba(28,30,27,0.14);
   box-shadow: 0 2px 10px rgba(28,30,27,0.10);
-}
-[data-theme="light"] .topbar-finance-icon {
-  filter: grayscale(100%) brightness(0.7);
 }
 [data-theme="light"] .bottombar {
   background: linear-gradient(180deg, transparent, #F4EFE3 45%);
@@ -245,13 +215,14 @@ body.topbar-modal-open {
 `;
 
   // -------- HTML --------
+  // No finance shortcut in here — every real page already shares the
+  // bottombar below, which has its own Finance tab, so a second wallet
+  // icon up top was pure redundancy everywhere, not just on the
+  // dashboard. #topbarInner still exists as the shared slot the theme
+  // toggle / home button inject into.
   const topbarHtml = `
 <header class="topbar" id="topbar" role="navigation" aria-label="Quick actions">
-  <div class="topbar-inner" id="topbarInner">
-    <a href="FROK-finance-standalone.html#net" class="topbar-finance-btn" id="topbarFinance" aria-label="Finance">
-      <span class="topbar-finance-icon"><i data-lucide="wallet"></i></span>
-    </a>
-  </div>
+  <div class="topbar-inner" id="topbarInner"></div>
 </header>
 `;
 
@@ -291,14 +262,6 @@ body.topbar-modal-open {
   // Pages embedded in an iframe shouldn't render their own chrome again.
   function isEmbedded() {
     try { return window.self !== window.top; } catch (e) { return true; }
-  }
-  // The main dashboard already has its own Finance nav tile (and the
-  // Finance tab in the bottombar below) — the floating wallet shortcut
-  // up top is redundant there specifically, so it's the one page that
-  // skips it.
-  function isMainDashboardPage() {
-    const p = (window.location.pathname || '').toLowerCase();
-    return p === '/' || p === '' || p.endsWith('/index.html');
   }
   function shouldShowChrome() {
     return !isFinancePage() && !isEmbedded();
@@ -349,23 +312,18 @@ body.topbar-modal-open {
 
     if (!shouldShowChrome()) return;
 
-    // Topbar (finance shortcut + the theme toggle/home button injected
-    // separately below) and bottombar are gated independently now — a
-    // page that wants this file's theme toggle but has its OWN bottom
-    // nav (the Fitness/Health family: gym-workouts/gym-stats/health,
-    // all sharing one hand-coded 4-tab bar) hand-codes its own
-    // `id="bottombar"` element to suppress just this file's version,
-    // without losing the topbar. Previously this was one all-or-nothing
-    // guard, which meant a page could only have both or neither.
+    // Topbar (theme toggle/home button injected separately below) and
+    // bottombar are gated independently now — a page that wants this
+    // file's theme toggle but has its OWN bottom nav (the Fitness/
+    // Health family: gym-workouts/gym-stats/health, all sharing one
+    // hand-coded 4-tab bar) hand-codes its own `id="bottombar"` element
+    // to suppress just this file's version, without losing the topbar.
+    // Previously this was one all-or-nothing guard, which meant a page
+    // could only have both or neither.
     if (!document.getElementById('topbar')) {
       const topWrap = document.createElement('div');
       topWrap.innerHTML = topbarHtml.trim();
-      const topbarEl = topWrap.firstChild;
-      if (isMainDashboardPage()) {
-        const financeBtn = topbarEl.querySelector('#topbarFinance');
-        if (financeBtn) financeBtn.remove();
-      }
-      document.body.insertBefore(topbarEl, document.body.firstChild);
+      document.body.insertBefore(topWrap.firstChild, document.body.firstChild);
     }
 
     if (!document.getElementById('bottombar')) {

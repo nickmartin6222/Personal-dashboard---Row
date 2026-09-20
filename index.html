@@ -197,15 +197,6 @@ body::after {
   border-radius: 18px; padding: 18px;
   box-shadow: 0 8px 24px var(--shadow-md);
 }
-/* Outline goal + overview tiles in the accent color, in both themes —
-   matches Nutrition's cream-tile border weight (1.5px, opaque) instead
-   of the near-invisible default hairline. --sage already resolves to
-   the right value per theme (bright mint dark / deep forest light). */
-.goal-card,
-.mini-tile {
-  border-width: 1.5px;
-  border-color: var(--sage);
-}
 .goal-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .goal-card-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .goal-card-pct { font-family: var(--font); font-size: 13px; font-weight: 800; color: var(--sage); font-variant-numeric: tabular-nums; }
@@ -326,6 +317,17 @@ body::after {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .mini-tile:hover { transform: translateY(-2px); box-shadow: 0 12px 30px var(--shadow-lg); }
+/* Outline goal + overview tiles in the accent color, in both themes —
+   matches Nutrition's cream-tile border weight (1.5px, opaque) instead
+   of the near-invisible default hairline. --sage already resolves to
+   the right value per theme (bright mint dark / deep forest light).
+   Declared after both tiles' own base border shorthand so it isn't
+   silently overwritten by it. */
+.goal-card,
+.mini-tile {
+  border-width: 1.5px;
+  border-color: var(--sage);
+}
 .mini-tile-top { display: flex; align-items: center; justify-content: space-between; }
 .mini-tile-icon { width: 22px; height: 22px; stroke-width: 2; color: var(--sage); }
 .mini-tile-arrow { color: var(--text-tertiary); font-size: 16px; }
