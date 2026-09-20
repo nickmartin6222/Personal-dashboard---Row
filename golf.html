@@ -102,11 +102,12 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
 /* ===== Stat tiles ===== */
 .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
 .stat-tile { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 10px; text-align: center; }
-/* Light theme: solid green tile outlines, matching the Nutrition tab's
-   cream-tile border convention (opaque, 1.5px) instead of the faint
-   gray hairline everything else uses. */
-[data-theme="light"] .card,
-[data-theme="light"] .stat-tile {
+/* Solid green tile outlines in both themes, matching the Nutrition
+   tab's cream-tile border convention (opaque, 1.5px) instead of the
+   faint gray hairline everything else uses. --accent already resolves
+   to the right value per theme. */
+.card,
+.stat-tile {
   border-width: 1.5px;
   border-color: var(--accent);
 }
@@ -669,17 +670,21 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
       .filter(r => typeof r.score === 'number')
       .slice()
       .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
-    const avg = chrono.length ? chrono.reduce((s, r) => s + r.score, 0) / chrono.length : null;
+    // Unlike the Handicap number (always last-20/best-8, independent of
+    // the range buttons — only its chart is range-scoped), the Scores
+    // average is meant to move with Last month/6mo/All time, so both
+    // the headline and the chart read from the same range-filtered set.
+    const start = rangeStartDate();
+    const scoped = start ? chrono.filter(r => r.date >= start) : chrono;
+    const avg = scoped.length ? scoped.reduce((s, r) => s + r.score, 0) / scoped.length : null;
     document.getElementById('scoresNum').textContent = avg == null ? '—' : avg.toFixed(1);
     const tierEl = document.getElementById('scoresTier');
     if (avg == null) { tierEl.style.display = 'none'; }
     else { tierEl.style.display = 'inline-block'; tierEl.textContent = 'avg'; }
-    document.getElementById('scoresNote').textContent = chrono.length
-      ? 'Average score across ' + chrono.length + ' ' + holesFilter + '-hole round' + (chrono.length === 1 ? '' : 's') + '.'
+    document.getElementById('scoresNote').textContent = scoped.length
+      ? 'Average score across ' + scoped.length + ' ' + holesFilter + '-hole round' + (scoped.length === 1 ? '' : 's') + '.'
       : 'Log a ' + holesFilter + '-hole round to see your score trend.';
 
-    const start = rangeStartDate();
-    const scoped = start ? chrono.filter(r => r.date >= start) : chrono;
     const series = scoped.map(r => ({ date: r.date, v: r.score }));
     renderTrendChart('hcpChartSvg', series, 'var(--accent)', 'strokes');
   }

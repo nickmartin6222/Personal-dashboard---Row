@@ -241,16 +241,17 @@ button { font-family: inherit; }
 
 /* ---------- rest day ---------- */
 .rest-card { text-align: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 40px 24px; margin-bottom: 14px; }
-/* Light theme: solid green tile outlines, matching the Nutrition tab's
-   cream-tile border convention. The hero tile picks up the day's own
-   --hero-accent (already set per day type for its tag/pattern) instead
-   of a flat green, since it already carries that identity. */
-[data-theme="light"] .cal-card,
-[data-theme="light"] .rest-card {
+/* Solid green tile outlines in both themes, matching the Nutrition
+   tab's cream-tile border convention. The hero tile picks up the
+   day's own --hero-accent (already set per day type for its
+   tag/pattern) instead of a flat green, since it already carries
+   that identity. */
+.cal-card,
+.rest-card {
   border-width: 1.5px;
   border-color: var(--lime);
 }
-[data-theme="light"] .hero-tile {
+.hero-tile {
   border-width: 1.5px;
   border-color: var(--hero-accent, var(--lime));
 }

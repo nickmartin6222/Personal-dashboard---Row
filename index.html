@@ -197,13 +197,12 @@ body::after {
   border-radius: 18px; padding: 18px;
   box-shadow: 0 8px 24px var(--shadow-md);
 }
-/* Light theme: outline goal + overview tiles in the same solid deep
-   green used for cream-tile borders on Nutrition, so tiles pop against
-   the cream background instead of blending into a near-invisible gray
-   hairline — matches that page's border weight (1.5px, opaque), not a
-   faded tint. */
-[data-theme="light"] .goal-card,
-[data-theme="light"] .mini-tile {
+/* Outline goal + overview tiles in the accent color, in both themes —
+   matches Nutrition's cream-tile border weight (1.5px, opaque) instead
+   of the near-invisible default hairline. --sage already resolves to
+   the right value per theme (bright mint dark / deep forest light). */
+.goal-card,
+.mini-tile {
   border-width: 1.5px;
   border-color: var(--sage);
 }
