@@ -199,7 +199,7 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 
 .steps-body { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .steps-count-block { min-width: 0; }
-#stepsBigVal { font-size: 30px; }
+#stepsBigVal { font-size: 30px; cursor: pointer; }
 .steps-count-goal { font-size: 12.5px; color: var(--cream-ink-faint); margin-top: 6px; }
 .steps-ring-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
 .steps-ring {
@@ -229,11 +229,14 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
 .creatine-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; }
 .creatine-check { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; -webkit-tap-highlight-color: transparent; color: var(--text-tertiary); flex-shrink: 0; }
 .creatine-check.on { background: var(--protein); border-color: var(--protein); color: #1a0a02; }
-.creatine-label { font-size: 13px; color: var(--text-tertiary); font-weight: 600; margin-bottom: 2px; }
-.creatine-sub { font-size: 13px; color: var(--text-secondary); }
-.creatine-streak { display: flex; gap: 5px; margin-top: 10px; }
-.creatine-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong); }
-.creatine-dot.hit { background: var(--protein); }
+.creatine-top-row { display: flex; align-items: center; gap: 8px; }
+.creatine-label { font-size: 13px; color: var(--text-tertiary); font-weight: 600; }
+.creatine-streak-badge { font-family: var(--font-mono); font-size: 10px; font-weight: 800; letter-spacing: 0.02em; color: var(--protein); background: color-mix(in srgb, var(--protein) 16%, transparent); padding: 2px 8px; border-radius: 999px; }
+.creatine-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.creatine-bars { display: flex; align-items: flex-end; gap: 5px; height: 26px; margin-top: 10px; }
+.creatine-bar { flex: 1; border-radius: 3px 3px 1px 1px; background: var(--border-strong); height: 22%; transition: height 0.3s ease, background 0.3s ease; }
+.creatine-bar.hit { background: var(--protein); height: 100%; }
+.creatine-bar.is-selected { box-shadow: 0 0 0 2px color-mix(in srgb, var(--protein) 55%, transparent) inset; }
 
 /* ---------- desktop: calories on the left, macros as a flush row list on the right ---------- */
 @media (min-width: 760px) {
@@ -428,10 +431,13 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
   </div>
 
   <div class="cal-card creatine-card">
-    <div style="flex:1">
-      <div class="creatine-label">Creatine</div>
-      <div class="creatine-sub" id="creatineSub">Not taken yet today</div>
-      <div class="creatine-streak" id="creatineStreak"></div>
+    <div style="flex:1; min-width:0;">
+      <div class="creatine-top-row">
+        <span class="creatine-label">Creatine</span>
+        <span class="creatine-streak-badge" id="creatineStreakBadge" hidden></span>
+      </div>
+      <div class="creatine-sub">5g</div>
+      <div class="creatine-bars" id="creatineBars"></div>
     </div>
     <div class="creatine-check" id="creatineCheck">✓</div>
   </div>
@@ -583,6 +589,21 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     const g = goals();
     const v = prompt('Daily step goal:', g.steps);
     if (v && !isNaN(v)) { g.steps = Number(v); saveGoalEdit(g); }
+  });
+  // Tap the step count itself to manually set/correct the selected
+  // day's steps — for backfilling a day Health Auto Export missed, or
+  // fixing one that came through wrong. Same prompt-based pattern as
+  // every other goal edit on this page.
+  document.getElementById('stepsBigVal').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const steps = storeGet('health:steps', {});
+    const dk = dateKey(selectedDate);
+    const v = prompt('Steps for ' + dk + ':', steps[dk] || 0);
+    if (v == null || isNaN(v) || Number(v) < 0) return;
+    steps[dk] = Math.round(Number(v));
+    storeSet('health:steps', steps);
+    renderAll();
+    if (healthSync) healthSync.flush();
   });
 
   // ---------- gym-day vs rest-day target ----------
@@ -748,30 +769,50 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     renderAll();
   });
 
-  // ---------- Creatine — real feature carried over unchanged ----------
-  function last7Dates() {
+  // ---------- Creatine — now follows the selected day (was hardcoded
+  // to today, so you couldn't log a past day), plus a bar-per-day
+  // trailing week and a consecutive-days streak count. ----------
+  function last7DatesEnding(d) {
     const out = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      out.push(dateKey(d));
+      const dd = new Date(d);
+      dd.setDate(dd.getDate() - i);
+      out.push(dateKey(dd));
     }
     return out;
   }
+  function creatineStreakEnding(log, d) {
+    let streak = 0;
+    const dd = new Date(d);
+    while (log[dateKey(dd)]) {
+      streak++;
+      dd.setDate(dd.getDate() - 1);
+    }
+    return streak;
+  }
   function renderCreatine() {
     const log = storeGet('health:creatine', {});
-    const dates = last7Dates();
-    const taken = !!log[todayKey()];
+    const selKey = dateKey(selectedDate);
+    const dates = last7DatesEnding(selectedDate);
+    const taken = !!log[selKey];
     const check = document.getElementById('creatineCheck');
     check.classList.toggle('on', taken);
-    document.getElementById('creatineSub').textContent = taken ? 'Taken' : 'Not taken yet today';
-    document.getElementById('creatineStreak').innerHTML = dates.map(dk =>
-      '<div class="creatine-dot' + (log[dk] ? ' hit' : '') + '"></div>'
+    document.getElementById('creatineBars').innerHTML = dates.map(dk =>
+      '<div class="creatine-bar' + (log[dk] ? ' hit' : '') + (dk === selKey ? ' is-selected' : '') + '"></div>'
     ).join('');
+    const streak = creatineStreakEnding(log, selectedDate);
+    const badge = document.getElementById('creatineStreakBadge');
+    if (streak > 0) {
+      badge.hidden = false;
+      badge.textContent = streak + (streak === 1 ? ' day streak' : ' day streak');
+    } else {
+      badge.hidden = true;
+    }
   }
   document.getElementById('creatineCheck').addEventListener('click', () => {
     const log = storeGet('health:creatine', {});
-    log[todayKey()] = !log[todayKey()];
+    const selKey = dateKey(selectedDate);
+    log[selKey] = !log[selKey];
     storeSet('health:creatine', log);
     renderCreatine();
     if (healthSync) healthSync.flush();
