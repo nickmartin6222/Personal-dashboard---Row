@@ -102,6 +102,14 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
 /* ===== Stat tiles ===== */
 .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
 .stat-tile { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 10px; text-align: center; }
+/* Light theme: solid green tile outlines, matching the Nutrition tab's
+   cream-tile border convention (opaque, 1.5px) instead of the faint
+   gray hairline everything else uses. */
+[data-theme="light"] .card,
+[data-theme="light"] .stat-tile {
+  border-width: 1.5px;
+  border-color: var(--accent);
+}
 .stat-tile-val { font-size: 19px; font-weight: 800; color: var(--text-primary); }
 .stat-tile-label { font-size: 10px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-tertiary); margin-top: 3px; }
 .stat-tile.best {
@@ -653,31 +661,27 @@ main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 90px; padding-top: 
     renderTrendChart('hcpChartSvg', scoped, 'var(--accent)', 'hcp');
   }
 
-  // Scores view: unlike the Handicap view, this ignores the 9/18-hole
-  // toggle entirely and plots raw scores from both round lengths together,
-  // since a score trend is still meaningful across hole counts even though
-  // the handicap index itself must stay scoped to one.
+  // Scores view: same 9/18-hole scoping as the Handicap view (the top
+  // toggle still applies — this is not a combined-both-lengths chart),
+  // just plotting raw scores instead of the derived handicap index.
   function renderScoresSection() {
-    const chrono = allGolfRounds()
+    const chrono = filteredByHoles(allGolfRounds())
       .filter(r => typeof r.score === 'number')
       .slice()
       .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.ts || 0) - (b.ts || 0));
-    const latest = chrono[chrono.length - 1];
-    document.getElementById('scoresNum').textContent = latest ? latest.score : '—';
+    const avg = chrono.length ? chrono.reduce((s, r) => s + r.score, 0) / chrono.length : null;
+    document.getElementById('scoresNum').textContent = avg == null ? '—' : avg.toFixed(1);
     const tierEl = document.getElementById('scoresTier');
-    if (!latest) { tierEl.style.display = 'none'; }
-    else { tierEl.style.display = 'inline-block'; tierEl.textContent = (latest.holes || 18) + ' holes'; }
+    if (avg == null) { tierEl.style.display = 'none'; }
+    else { tierEl.style.display = 'inline-block'; tierEl.textContent = 'avg'; }
     document.getElementById('scoresNote').textContent = chrono.length
-      ? 'Most recent score — ' + chrono.length + ' round' + (chrono.length === 1 ? '' : 's') + ' logged across 9 & 18 holes.'
-      : 'Log a round to see your score trend.';
+      ? 'Average score across ' + chrono.length + ' ' + holesFilter + '-hole round' + (chrono.length === 1 ? '' : 's') + '.'
+      : 'Log a ' + holesFilter + '-hole round to see your score trend.';
 
     const start = rangeStartDate();
     const scoped = start ? chrono.filter(r => r.date >= start) : chrono;
     const series = scoped.map(r => ({ date: r.date, v: r.score }));
-    renderTrendChart('hcpChartSvg', series, 'var(--accent)', 'strokes', d => {
-      const r = scoped.find(x => x.date === d);
-      return fmtShortDate(d) + (r ? ' · ' + (r.holes || 18) + 'H' : '');
-    });
+    renderTrendChart('hcpChartSvg', series, 'var(--accent)', 'strokes');
   }
 
   document.getElementById('hcpRange').querySelectorAll('button').forEach(btn => {

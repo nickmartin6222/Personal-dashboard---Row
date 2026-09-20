@@ -197,12 +197,15 @@ body::after {
   border-radius: 18px; padding: 18px;
   box-shadow: 0 8px 24px var(--shadow-md);
 }
-/* Light theme: outline goal + overview tiles in the same deep green
-   used for icons/accents elsewhere, so tiles pop against the cream
-   background instead of blending into a near-invisible gray hairline. */
+/* Light theme: outline goal + overview tiles in the same solid deep
+   green used for cream-tile borders on Nutrition, so tiles pop against
+   the cream background instead of blending into a near-invisible gray
+   hairline — matches that page's border weight (1.5px, opaque), not a
+   faded tint. */
 [data-theme="light"] .goal-card,
 [data-theme="light"] .mini-tile {
-  border-color: color-mix(in srgb, var(--sage) 55%, transparent);
+  border-width: 1.5px;
+  border-color: var(--sage);
 }
 .goal-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .goal-card-label { font-size: 13px; font-weight: 700; color: var(--text-primary); }
