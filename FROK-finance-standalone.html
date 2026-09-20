@@ -4775,7 +4775,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (typeof initCloudSync !== 'function') return;
   initCloudSync({
     appKey: 'finance-nw',
-    syncedKeys: ['subs', 'wishlist', 'incoming_orders', 'nw_currency', 'stocks:snapshot', 'stocks:lastFetchTs'],
+    syncedKeys: ['subs', 'wishlist', 'incoming_orders', 'nw_currency', 'stocks:snapshot', 'stocks:lastFetchTs', 'fx:rates'],
     syncedPrefixes: ['nw:'],
     onApplied: function () {
       window.dispatchEvent(new Event('storage'));
