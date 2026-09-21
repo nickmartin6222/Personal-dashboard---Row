@@ -253,11 +253,13 @@ body.topbar-modal-open {
 </nav>
 `;
 
-  // Pages where we suppress the app chrome: finance has its own internal
-  // bottom nav and self-contained back button.
+  // Pages where we suppress the app chrome: these still have their own
+  // internal bottom nav and self-contained back button (the real
+  // Finance page moved to the shared chrome — see the bottombar below —
+  // once it dropped its own internal tabs).
   function isFinancePage() {
     const p = (window.location.pathname || '').toLowerCase();
-    return p.endsWith('finance.html') || p.endsWith('frok-finance-standalone.html') || p.includes('finance-preview');
+    return p.endsWith('finance.html') || p.includes('finance-preview');
   }
   // Pages embedded in an iframe shouldn't render their own chrome again.
   function isEmbedded() {
@@ -277,9 +279,6 @@ body.topbar-modal-open {
     // still land on the right tab if opened directly.
     if (p.endsWith('gym.html') || p.endsWith('gym-preview.html') || p.endsWith('gym-workouts-tab-preview.html') || p.endsWith('gym-stats-tab-preview.html') || p.endsWith('health.html')) return 'health';
     if (p.endsWith('golf.html')) return 'golf';
-    // Finance suppresses this bottombar entirely (its own internal tabs
-    // take over instead), so this branch never actually lights up
-    // anything today — kept for consistency/future-proofing.
     if (p.endsWith('frok-finance-standalone.html')) return 'finance';
     return 'main'; // index.html, /, or anything else falls back to main
   }

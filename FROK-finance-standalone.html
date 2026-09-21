@@ -11,6 +11,8 @@
 <script src="/api/config"></script>
 <script src="topbar.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="sync.js" defer></script>
 <!-- Temporary on-device debug console — only loads with ?debug=1 in the
      URL, so it never shows up in normal use. Open this page with that
@@ -30,9 +32,7 @@
 <!--
   Cross-device build — data syncs via Supabase (same pattern as
   golf.html / nutrition.html), so entries made on one device show up
-  on every other one. Nova (the money coach) calls Gemini through the
-  server-side /api/nova proxy — no API key is ever stored in or sent
-  from the browser.
+  on every other one.
 -->
 <style>
 @view-transition { navigation: auto; }
@@ -63,9 +63,9 @@
   --text-secondary: #B8B6B0;
   --text-tertiary: #76746E;
   --text-quaternary: #4D4B47;
-  --border: transparent;
-  --border-soft: transparent;
-  --accent: #E07658;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-soft: rgba(255, 255, 255, 0.05);
+  --accent: #6EE3A4;
   --success: #6EE3A4;
   --warning: #F2C063;
   --danger: #C4366B;
@@ -81,17 +81,9 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: "Fraunces", Georgia, serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   color-scheme: dark;
-  /* Vitality backdrop (aurora/mountains/particles) — same tokens and
-     same light-theme values as index.html, so the toggle looks
-     identical on both pages. */
-  --vty-aurora-1: rgba(110, 227, 164, 0.16);
-  --vty-aurora-2: rgba(255, 226, 181, 0.07);
-  --vty-fade-1: rgba(14, 38, 30, 0.5);
-  --vty-fade-2: rgba(4, 6, 10, 0.95);
-  --vty-particle: rgba(233, 239, 233, 0.7);
-  --vty-particle-glow: rgba(167, 243, 208, 0.5);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -127,66 +119,12 @@ body::after {
   opacity: 0.7;
   pointer-events: none;
 }
-
-/* ===== Vitality atmospheric backdrop (aurora · mountains · particles) ===== */
-/* Layers sit at z-index 0/1/2; dashboard content (.shell) is elevated above. */
-.vty-atmosphere {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    radial-gradient(60% 50% at 50% 30%, var(--vty-aurora-1) 0%, color-mix(in srgb, var(--vty-aurora-1) 35%, transparent) 32%, transparent 65%),
-    radial-gradient(28% 22% at 50% 38%, var(--vty-aurora-2) 0%, transparent 70%),
-    radial-gradient(120% 80% at 50% 100%, var(--vty-fade-1) 0%, var(--vty-fade-2) 75%);
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-}
-.vty-mountains {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
-  height: 30vh;
-  min-height: 180px;
-  pointer-events: none;
-  opacity: 0.8;
-}
-:root[data-theme="light"] .vty-mountains { opacity: 0.4; }
-.vty-mountains svg { width: 100%; height: 100%; display: block; }
-.vty-particles {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  overflow: hidden;
-}
-.vty-particles span {
-  position: absolute;
-  width: 1.5px;
-  height: 1.5px;
-  background: var(--vty-particle);
-  border-radius: 50%;
-  animation: vty-backdrop-drift linear infinite;
-  box-shadow: 0 0 6px var(--vty-particle-glow);
-}
-@keyframes vty-backdrop-drift {
-  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
-  10%  { opacity: 0.7; }
-  90%  { opacity: 0.55; }
-  100% { transform: translate3d(var(--dx, 12px), var(--dy, -100vh), 0); opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .vty-particles span { animation: none; }
-}
-
 .shell {
   position: relative;
   z-index: 5;                 /* sit above the Vitality backdrop layers (0/1/2) */
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 16px 100px;   /* extra bottom padding so tab bar doesn't cover content */
+  padding: 24px 16px 90px;   /* clears the shared bottombar, same value golf.html uses */
 }
 
 /* ===== Back to dashboard ===== */
@@ -273,116 +211,8 @@ body::after {
 .aikey-btn-save:hover { filter: brightness(1.08); color: #07140d; }
 .aikey-warn { font-size: 11px; line-height: 1.5; color: var(--text-tertiary); margin: 16px 0 0; }
 
-/* ===== Bottom tab bar ===== */
-.bottom-tabs {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 100;
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  padding: 8px max(12px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-right));
-  background: linear-gradient(180deg, transparent, rgba(5,5,6,0.92) 30%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-.bottom-tabs::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 12px; right: 12px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
-  pointer-events: none;
-}
-.bot-tab {
-  flex: 1; max-width: 140px;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-tertiary);
-  padding: 9px 14px 8px;
-  border-radius: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-.bot-tab:hover { color: var(--text-secondary); background: rgba(255,255,255,0.025); }
-.bot-tab.active {
-  color: var(--text-primary);
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.10);
-}
-.bot-tab-icon { font-size: 18px; line-height: 1; }
-.bot-tab-label {
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-}
-
 /* Sections: hide non-active when bottom tabs are in use */
 .section[hidden] { display: none !important; }
-
-/* ===== Nova — AI money coach ===== */
-.nova-wrap { display: flex; flex-direction: column; gap: 12px; }
-.nova-messages {
-  display: flex; flex-direction: column; gap: 10px;
-  min-height: 240px; max-height: 58vh; overflow-y: auto;
-  padding: 2px;
-}
-.nova-msg {
-  max-width: 88%; padding: 10px 13px; border-radius: 14px;
-  font-size: 13.5px; line-height: 1.5;
-  white-space: pre-wrap; overflow-wrap: anywhere;
-}
-.nova-msg-user {
-  align-self: flex-end;
-  background: rgba(255,255,255,0.10);
-  color: var(--text-primary);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-bottom-right-radius: 4px;
-}
-.nova-msg-nova {
-  align-self: flex-start;
-  background: rgba(255,255,255,0.03);
-  color: var(--text-secondary);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-bottom-left-radius: 4px;
-}
-.nova-msg-loading { color: var(--text-tertiary); font-style: italic; }
-.nova-suggestions { display: flex; flex-wrap: wrap; gap: 8px; }
-.nova-chip {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.10);
-  color: var(--text-secondary);
-  border-radius: 999px; padding: 7px 13px;
-  font-size: 12px; font-family: inherit; cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.nova-chip:hover { background: rgba(255,255,255,0.07); color: var(--text-primary); }
-.nova-composer { display: flex; gap: 8px; align-items: flex-end; }
-.nova-input {
-  flex: 1; resize: none; min-height: 44px; max-height: 130px;
-  background: rgba(0,0,0,0.30);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: var(--text-primary);
-  border-radius: 12px; padding: 11px 13px;
-  font-family: inherit; font-size: 14px; line-height: 1.4; outline: none;
-}
-.nova-input::placeholder { color: var(--text-tertiary); }
-.nova-input:focus { border-color: rgba(255,255,255,0.22); }
-.nova-send {
-  flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px;
-  background: var(--text-primary); color: #000; border: none; cursor: pointer;
-  font-size: 18px; font-weight: 700; line-height: 1;
-  display: flex; align-items: center; justify-content: center;
-  transition: opacity 0.15s;
-}
-.nova-send:disabled { opacity: 0.4; cursor: default; }
-.nova-disclaimer {
-  font-size: 10.5px; color: var(--text-tertiary);
-  text-align: center; letter-spacing: 0.02em;
-}
 
 .hidden { display: none !important; }
 
@@ -411,12 +241,6 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   opacity: 0.6;
 }
 .section-title-text { display: inline-flex; align-items: center; gap: 8px; }
-.section-title-text::before {
-  content: '⚡';
-  font-size: 14px;
-  color: var(--text-tertiary);
-  opacity: 0.5;
-}
 .section-reorder { display: inline-flex; gap: 6px; opacity: 0.5; }
 .section-reorder button {
   background: transparent;
@@ -434,6 +258,15 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   flex: 1;
   height: 1px;
   background: linear-gradient(90deg, rgba(255,255,255,0.08), transparent);
+}
+
+.page-title {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin-bottom: 18px;
 }
 
 /* Card */
@@ -671,10 +504,8 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-}
-@media (max-width: 720px) {
-  .section .card .card-grid { grid-template-columns: 1fr; }
-}
+}@media (max-width: 720px) {
+  .section .card .card-grid { grid-template-columns: 1fr; }}
 
 /* Stock-style net-worth chart */
 .nw-chart-wrap {
@@ -775,10 +606,8 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid rgba(255,255,255,0.05);
-}
-@media (max-width: 720px) {
-  .nw-chart-stats { grid-template-columns: repeat(2, 1fr); }
-}
+}@media (max-width: 720px) {
+  .nw-chart-stats { grid-template-columns: repeat(2, 1fr); }}
 .nw-stat {
   display: flex; flex-direction: column; gap: 2px;
   padding: 8px 10px;
@@ -807,10 +636,8 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   gap: 12px;
   margin: 14px 0 18px;
   align-items: stretch;
-}
-@media (max-width: 720px) {
-  .nw-overview-grid { grid-template-columns: 1fr; }
-}
+}@media (max-width: 720px) {
+  .nw-overview-grid { grid-template-columns: 1fr; }}
 .nw-overview-grid .nw-chart-wrap { margin: 0; }
 .nw-donut-wrap {
   position: relative;
@@ -912,6 +739,17 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   background: rgba(255, 255, 255, 0.025);
   border-radius: 12px;
 }
+/* Solid accent-colored tile outlines, matching the convention already
+   shipped on every other page (Nutrition's cream tiles, the Dashboard's
+   Overview tiles, Golf's cards) — these four boxes are this page's
+   closest equivalent to a "tile," having previously relied on a faint
+   background tint alone with no border at all. */
+.nw-subcard,
+.nw-chart-wrap,
+.nw-donut-wrap,
+.nw-activity {
+  border: 1.5px solid var(--accent);
+}
 .nw-activity-h {
   display: flex;
   justify-content: space-between;
@@ -992,723 +830,13 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 }
 .nw-activity-empty.hidden { display: none; }
 .nw-activity-list.hidden { display: none; }
-
 /* ============================================================
-   ORDERS — full-spec form (name, cost, ccy, from-category, date)
-   ============================================================ */
-.ord-add-card {
-  background: rgba(255,255,255,0.025) !important;
-  border: 1px solid rgba(255,255,255,0.05) !important;
-}
-.ord-add-eyebrow {
-  font-size: 10px; letter-spacing: 0.18em; font-weight: 800;
-  text-transform: uppercase; color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  margin-bottom: 10px;
-}
-.ord-add-grid {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 0.8fr 1.1fr 1.1fr auto;
-  gap: 6px; align-items: stretch;
-  padding: 4px;
-  background: rgba(0, 0, 0, 0.30);
-  border-radius: 12px;
-}
-@media (max-width: 720px) {
-  .ord-add-grid { grid-template-columns: 1fr 1fr; }
-  .ord-add-grid .ord-input-name { grid-column: 1 / -1; }
-  .ord-add-grid .ord-add-btn    { grid-column: 1 / -1; }
-}
-.ord-input {
-  background: transparent; border: none; outline: none;
-  color: var(--text-primary);
-  font-family: inherit; font-size: 13px;
-  padding: 9px 10px;
-  min-width: 0;
-  -moz-appearance: textfield;
-}
-.ord-input::-webkit-outer-spin-button,
-.ord-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.ord-input::placeholder { color: var(--text-tertiary); }
-.ord-input-cost { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
-.ord-input-ccy, .ord-input-from {
-  background: rgba(255,255,255,0.04);
-  border-radius: 8px;
-  cursor: pointer; font-weight: 600;
-  appearance: none; -webkit-appearance: none;
-  text-align: center;
-}
-.ord-input-from { font-size: 12px; }
-.ord-add-btn {
-  padding: 0 14px;
-  background: linear-gradient(180deg, #6EE3A4, #4FCFA0);
-  color: #04201A; border: none;
-  border-radius: 9px;
-  font-family: inherit; font-size: 13px; font-weight: 700;
-  cursor: pointer; white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(110,227,164,0.22);
-  transition: transform 0.12s, box-shadow 0.18s;
-}
-.ord-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(110,227,164,0.36); }
-.ord-add-btn:active { transform: scale(0.97); }
-.ord-add-preview {
-  margin-top: 10px; padding: 8px 12px;
-  background: rgba(110,227,164,0.06);
-  border: 1px solid rgba(110,227,164,0.14);
-  border-radius: 8px;
-  font-size: 12px; color: var(--text-secondary);
-  font-family: var(--font-mono);
-}
-.ord-add-preview.warn { background: rgba(242,192,99,0.08); border-color: rgba(242,192,99,0.20); color: #F2C063; }
-.ord-add-preview.bad  { background: rgba(249,112,102,0.08); border-color: rgba(249,112,102,0.20); color: #F97066; }
-
-.ord-section-h {
-  display: flex; justify-content: space-between; align-items: baseline;
-  margin: 18px 4px 8px;
-}
-.ord-section-label {
-  font-size: 10px; letter-spacing: 0.18em; font-weight: 800;
-  text-transform: uppercase; color: var(--text-tertiary);
-  font-family: var(--font-mono);
-}
-.ord-section-count {
-  font-size: 11px; color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.ord-card {
-  background: rgba(255,255,255,0.025);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 8px;
-  border-left: 3px solid var(--text-tertiary);
-  transition: background 0.15s;
-}
-.ord-card:hover { background: rgba(255,255,255,0.045); }
-.ord-card.cat-bank   { border-left-color: #7DD3FC; }
-.ord-card.cat-stocks { border-left-color: #7DD3FC; }
-.ord-card.cat-crypto { border-left-color: #F2C063; }
-.ord-card.cat-other  { border-left-color: #B794F4; }
-.ord-card-h {
-  display: grid; grid-template-columns: 1fr auto auto;
-  gap: 12px; align-items: baseline;
-}
-.ord-card-name {
-  font-size: 15px; font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.ord-card-amt {
-  font-size: 17px; font-weight: 700;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono);
-  white-space: nowrap;
-}
-.ord-card-x {
-  background: transparent; border: 1px solid rgba(255,255,255,0.08);
-  color: var(--text-tertiary);
-  cursor: pointer; font-size: 14px;
-  padding: 4px 9px; border-radius: 6px;
-  font-family: inherit; line-height: 1;
-}
-.ord-card-x:hover { color: #F97066; }
-.ord-card-meta {
-  display: flex; flex-wrap: wrap; gap: 10px;
-  margin-top: 8px;
-  font-size: 11px;
-  font-family: var(--font-mono);
-  color: var(--text-tertiary);
-}
-.ord-meta-pill {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 9px; border-radius: 999px;
-  background: rgba(255,255,255,0.04);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-.ord-meta-pill.from { color: var(--text-secondary); }
-.ord-meta-pill.pct.good { color: #6EE3A4; background: rgba(110,227,164,0.10); }
-.ord-meta-pill.pct.warn { color: #F2C063; background: rgba(242,192,99,0.10); }
-.ord-meta-pill.pct.bad  { color: #F97066; background: rgba(249,112,102,0.10); }
-.ord-meta-pill.date { color: var(--text-secondary); }
-.ord-meta-pill.date.soon { color: #F2C063; background: rgba(242,192,99,0.10); }
-.ord-meta-pill.date.today { color: #6EE3A4; background: rgba(110,227,164,0.10); }
-.ord-meta-pill.date.past { color: #F97066; background: rgba(249,112,102,0.10); }
-
-.ord-empty-card {
-  text-align: center; padding: 32px 20px;
-  background: rgba(255,255,255,0.025);
-  border-radius: 14px;
-  border: 1px dashed rgba(255,255,255,0.08);
-}
-.ord-empty-card.hidden { display: none; }
-.ord-empty-icon {
-  font-size: 36px; margin-bottom: 8px;
-  opacity: 0.6;
-}
-.ord-empty-title {
-  font-size: 15px; font-weight: 700;
-  color: var(--text-primary); margin-bottom: 4px;
-}
-.ord-empty-sub {
-  font-size: 12px; color: var(--text-tertiary);
-  line-height: 1.5; max-width: 360px; margin: 0 auto;
-}
-
-/* ============================================================
-   WISHLIST — premium polished UI
-   ============================================================ */
-/* Hero card */
-.wish-hero {
-  background: linear-gradient(135deg, rgba(183,148,244,0.08), rgba(110,227,164,0.04)) !important;
-  border: 1px solid rgba(183,148,244,0.18) !important;
-  position: relative; overflow: hidden;
-}
-.wish-hero::after {
-  content: '';
-  position: absolute;
-  top: -40px; right: -40px;
-  width: 160px; height: 160px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(183,148,244,0.18), transparent 70%);
-  filter: blur(20px);
-  pointer-events: none;
-}
-.wish-hero-top {
-  display: flex; justify-content: space-between; align-items: flex-end;
-  gap: 16px; margin-bottom: 14px; position: relative;
-}
-.wish-hero-eyebrow {
-  font-size: 10px; letter-spacing: 0.20em; font-weight: 700;
-  text-transform: uppercase; color: var(--text-tertiary);
-  margin-bottom: 6px;
-}
-.wish-hero-num {
-  font-size: 32px; font-weight: 700; letter-spacing: -0.025em;
-  font-variant-numeric: tabular-nums; line-height: 1;
-  color: var(--text-primary);
-}
-.wish-hero-pct-wrap { text-align: right; }
-.wish-hero-pct-label {
-  font-size: 10px; letter-spacing: 0.16em; font-weight: 700;
-  text-transform: uppercase; color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  margin-bottom: 4px;
-}
-.wish-hero-pct-num {
-  font-size: 22px; font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono);
-  color: #B794F4;
-}
-.wish-hero-pct-num.warn { color: #F2C063; }
-.wish-hero-pct-num.bad  { color: #F97066; }
-.wish-hero-bar {
-  height: 6px; border-radius: 3px;
-  background: rgba(255,255,255,0.06);
-  overflow: hidden; position: relative;
-}
-.wish-hero-bar-fill {
-  height: 100%; border-radius: 3px;
-  background: linear-gradient(90deg, #B794F4, #6EE3A4);
-  box-shadow: 0 0 8px rgba(183,148,244,0.5);
-  transition: width 0.4s ease;
-}
-.wish-hero-foot {
-  font-size: 11.5px; color: var(--text-tertiary);
-  margin-top: 10px; position: relative;
-  font-family: var(--font-mono);
-}
-
-/* Add card */
-.wish-add-card {
-  background: rgba(255,255,255,0.025) !important;
-  border: 1px solid rgba(255,255,255,0.05) !important;
-}
-.wish-add-eyebrow {
-  font-size: 10px; letter-spacing: 0.18em; font-weight: 800;
-  text-transform: uppercase; color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  margin-bottom: 10px;
-}
-.wish-add-row {
-  display: flex; gap: 6px; align-items: stretch;
-  flex-wrap: wrap;
-  padding: 4px;
-  background: rgba(0, 0, 0, 0.30);
-  border-radius: 12px;
-}
-.wish-input {
-  background: transparent; border: none; outline: none;
-  color: var(--text-primary);
-  font-family: inherit; font-size: 14px;
-  padding: 9px 12px;
-  -moz-appearance: textfield;
-}
-.wish-input::-webkit-outer-spin-button,
-.wish-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.wish-input::placeholder { color: var(--text-tertiary); }
-.wish-input-name { flex: 2; min-width: 160px; }
-.wish-input-amt  { flex: 1; min-width: 80px; max-width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
-.wish-input-ccy {
-  flex: 0 1 80px;
-  background: rgba(255,255,255,0.04);
-  border-radius: 9px;
-  color: var(--text-primary);
-  font-family: inherit; font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  appearance: none; -webkit-appearance: none;
-  text-align: center;
-}
-.wish-add-btn {
-  padding: 0 18px;
-  background: linear-gradient(180deg, #B794F4, #9F7DD4);
-  color: #ffffff; border: none;
-  border-radius: 9px;
-  font-family: inherit; font-size: 14px; font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(183,148,244,0.30);
-  transition: transform 0.12s, box-shadow 0.18s;
-}
-.wish-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(183,148,244,0.45); }
-.wish-add-btn:active { transform: scale(0.97); }
-
-.wish-section-h {
-  display: flex; justify-content: space-between; align-items: baseline;
-  margin: 18px 4px 8px;
-}
-.wish-section-label {
-  font-size: 10px; letter-spacing: 0.18em; font-weight: 800;
-  text-transform: uppercase; color: var(--text-tertiary);
-  font-family: var(--font-mono);
-}
-.wish-section-count {
-  font-size: 11px; color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.wish-empty-card {
-  text-align: center; padding: 32px 20px;
-  background: rgba(255,255,255,0.025);
-  border-radius: 14px;
-  border: 1px dashed rgba(255,255,255,0.08);
-}
-.wish-empty-card.hidden { display: none; }
-.wish-empty-icon {
-  font-size: 36px; margin-bottom: 8px;
-  opacity: 0.6;
-}
-.wish-empty-title {
-  font-size: 15px; font-weight: 700;
-  color: var(--text-primary); margin-bottom: 4px;
-}
-.wish-empty-sub {
-  font-size: 12px; color: var(--text-tertiary);
-  line-height: 1.5; max-width: 320px; margin: 0 auto;
-}
-
-/* ===== Wishlist rows ===== */
-.wish-row {
-  background: rgba(255,255,255,0.025);
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 8px;
-}
-.wish-row-h {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 12px;
-  align-items: center;
-}
-.wish-row-info { min-width: 0; }
-.wish-row-name {
-  font-weight: 600; color: var(--text-primary);
-  font-size: 14px;
-}
-.wish-row-meta {
-  font-size: 11px; color: var(--text-tertiary);
-  margin-top: 2px;
-  font-family: var(--font-mono);
-}
-.wish-row-amt-wrap { text-align: right; line-height: 1.1; }
-.wish-row-amt {
-  font-size: 17px; font-weight: 700;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono);
-}
-.wish-row-pct {
-  font-size: 10.5px; font-weight: 700;
-  margin-top: 3px;
-  font-family: var(--font-mono);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.wish-row-pct.good { color: #6EE3A4; }
-.wish-row-pct.warn { color: #F2C063; }
-.wish-row-pct.bad  { color: #F97066; }
-.wish-row-pct.flat { color: var(--text-tertiary); }
-.wish-row-x {
-  background: transparent; border: 1px solid rgba(255,255,255,0.10);
-  color: var(--text-tertiary);
-  cursor: pointer; font-size: 14px;
-  padding: 4px 8px; border-radius: 6px;
-  font-family: inherit; line-height: 1;
-}
-.wish-row-x:hover { color: #F97066; }
-.wish-row-bar {
-  height: 5px; border-radius: 3px;
-  background: rgba(255,255,255,0.04);
-  margin-top: 10px;
-  overflow: hidden;
-}
-.wish-row-bar-fill {
-  height: 100%; border-radius: 3px;
-  transition: width 0.3s ease;
-}
-.wish-row-bar-fill.good { background: #6EE3A4; box-shadow: 0 0 6px rgba(110,227,164,0.5); }
-.wish-row-bar-fill.warn { background: #F2C063; box-shadow: 0 0 6px rgba(242,192,99,0.5); }
-.wish-row-bar-fill.bad  { background: #F97066; box-shadow: 0 0 6px rgba(249,112,102,0.5); }
-.wish-row-bar-fill.flat { background: rgba(255,255,255,0.20); }
-
-/* ============================================================
-   FINANCE TICKER — rotating Nasdaq-style subscription renewal
-   header at the very top of the finances section.
-   ============================================================ */
-.finance-ticker {
-  display: flex; align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  margin-bottom: 18px;
-  background: linear-gradient(90deg, rgba(110,227,164,0.06), rgba(125,211,252,0.04));
-  border: 1px solid rgba(110,227,164,0.14);
-  border-radius: 12px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  overflow: hidden;
-  position: relative;
-  min-height: 38px;
-  transition: background 0.4s, border-color 0.4s;
-}
-.finance-ticker.hidden { display: none; }
-.finance-ticker.urgent {
-  background: linear-gradient(90deg, rgba(249,112,102,0.10), rgba(249,112,102,0.04));
-  border-color: rgba(249,112,102,0.30);
-  animation: tickerPulse 1.2s ease-in-out infinite;
-}
-@keyframes tickerPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(249,112,102,0.0); }
-  50%      { box-shadow: 0 0 14px 0 rgba(249,112,102,0.30); }
-}
-.ticker-tag {
-  font-size: 9.5px; letter-spacing: 0.18em; font-weight: 800;
-  text-transform: uppercase; color: var(--text-tertiary);
-  padding: 3px 8px;
-  background: rgba(0,0,0,0.30);
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-.finance-ticker.urgent .ticker-tag { color: #F97066; background: rgba(249,112,102,0.10); }
-.ticker-stream {
-  flex: 1;
-  min-width: 0;
-  position: relative;
-  overflow: hidden;
-  height: 18px;
-}
-.ticker-item {
-  position: absolute; inset: 0;
-  display: flex; align-items: center; gap: 12px;
-  white-space: nowrap;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.35s, transform 0.35s;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-}
-.ticker-item.active {
-  opacity: 1;
-  transform: translateY(0);
-}
-.ticker-item-name {
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.ticker-item-amt {
-  font-weight: 700;
-  color: #6EE3A4;
-}
-.finance-ticker.urgent .ticker-item-amt { color: #F97066; }
-.ticker-item-days {
-  color: var(--text-tertiary);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-size: 11px;
-}
-.finance-ticker.urgent .ticker-item-days {
-  color: #F97066;
-  font-weight: 700;
-}
-.ticker-dots {
-  display: flex; gap: 4px;
-  flex-shrink: 0;
-}
-.ticker-dot {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.18);
-  transition: background 0.2s;
-}
-.ticker-dot.active { background: #6EE3A4; }
-.finance-ticker.urgent .ticker-dot.active { background: #F97066; }
-
-/* ============================================================
-   DEDUCT-FROM-NW BUTTON & CHOOSER (in order cards)
-   ============================================================ */
-.ord-card-foot {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed rgba(255,255,255,0.06);
-  display: flex; flex-wrap: wrap; gap: 8px;
-  align-items: center;
-}
-.ord-deduct-btn {
-  background: linear-gradient(180deg, rgba(125,211,252,0.18), rgba(125,211,252,0.08));
-  border: 1px solid rgba(125,211,252,0.30);
-  color: #BFE3F8;
-  font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 7px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.12s, background 0.18s, box-shadow 0.18s;
-}
-.ord-deduct-btn:hover {
-  background: linear-gradient(180deg, rgba(125,211,252,0.28), rgba(125,211,252,0.12));
-  box-shadow: 0 4px 14px rgba(125,211,252,0.22);
-  transform: translateY(-1px);
-}
-.ord-deduct-btn:active { transform: scale(0.97); }
-.ord-deducted-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #6EE3A4;
-  background: rgba(110,227,164,0.10);
-  border: 1px solid rgba(110,227,164,0.20);
-  padding: 5px 10px;
-  border-radius: 999px;
-}
-.ord-deducted-pill::before {
-  content: '✓';
-  font-size: 12px;
-}
-.ord-deduct-undo {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.10);
-  color: var(--text-tertiary);
-  font-family: inherit;
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 4px 9px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.ord-deduct-undo:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.20); }
-
-.ord-deduct-chooser {
-  margin-top: 10px;
-  padding: 12px;
-  background: rgba(0,0,0,0.30);
-  border: 1px solid rgba(125,211,252,0.18);
-  border-radius: 10px;
-}
-.ord-deduct-chooser-title {
-  font-size: 10px; letter-spacing: 0.18em; font-weight: 800;
-  text-transform: uppercase; color: var(--text-tertiary);
-  font-family: var(--font-mono);
-  margin-bottom: 8px;
-}
-.ord-deduct-options {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  margin-bottom: 8px;
-}
-.ord-deduct-opt {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 7px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.ord-deduct-opt:hover {
-  background: rgba(125,211,252,0.10);
-  border-color: rgba(125,211,252,0.30);
-}
-.ord-deduct-opt small {
-  display: block;
-  font-size: 10px;
-  font-family: var(--font-mono);
-  color: var(--text-tertiary);
-  margin-top: 2px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-.ord-deduct-opt.insufficient {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-.ord-deduct-opt.insufficient:hover {
-  background: rgba(255,255,255,0.04);
-  border-color: rgba(255,255,255,0.06);
-}
-.ord-deduct-cancel {
-  background: transparent;
-  border: none;
-  color: var(--text-tertiary);
-  font-family: inherit;
-  font-size: 11px;
-  cursor: pointer;
-  text-decoration: underline;
-}
-.ord-card.is-deducted { opacity: 0.85; }
-.ord-card.is-deducted .ord-card-name { text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: rgba(255,255,255,0.20); }
-.ord-meta-pill.pct.frozen { font-style: italic; }
-.ord-meta-pill.pct.frozen::after { content: ' · frozen'; opacity: 0.6; font-style: normal; }
-
-/* ============================================================
-   SUBSCRIPTION ROW URGENT FLASH — fires when the renewal is
-   ≤ 5 days away (including today / tomorrow / past).
-   ============================================================ */
-.sub-row.is-urgent {
-  background: linear-gradient(135deg, rgba(249,112,102,0.14), rgba(249,112,102,0.06)) !important;
-  border: 1px solid rgba(249,112,102,0.30) !important;
-  animation: subRowPulse 1.4s ease-in-out infinite;
-}
-.sub-row.is-urgent .sub-renew-line {
-  color: #F97066 !important;
-  font-weight: 700;
-}
-@keyframes subRowPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(249,112,102,0); }
-  50%      { box-shadow: 0 0 16px 0 rgba(249,112,102,0.32); }
-}
-
-/* ============================================================
-   DESKTOP / TABLET: lay the Subs add form out as a clean 4-column
-   grid so the 8 controls (name, amount, ccy, period, date, from,
-   auto-deduct, +add) sit in two readable rows instead of cramming
-   into one squashed row.
-   ============================================================ */
-@media (min-width: 601px) {
-  [data-section="subs"] .quick-add {
-    display: grid !important;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: 8px !important;
-    align-items: stretch;
-  }
-  [data-section="subs"] .quick-add > * {
-    flex: none !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    width: 100%;
-  }
-  [data-section="subs"] .quick-add .date-field,
-  [data-section="subs"] .quick-add .sub-auto-toggle {
-    box-sizing: border-box;
-  }
-}
-
-/* ============================================================
-   MOBILE: stack every "add" composer (Subs / Orders / Wishlist)
-   vertically with full-width tappable fields + a big Add button.
-   Without this the forms squeeze 5-6 controls into one row and
-   become unusable on a phone.
+   MOBILE: stack the Net Worth "add" composer vertically with
+   full-width tappable fields — without this the row squeezes 2-3
+   inputs + a button into one line and becomes unusable on a phone.
    ============================================================ */
 @media (max-width: 600px) {
-  /* ---------- Subscriptions add row ---------- */
-  [data-section="subs"] .quick-add {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 8px;
-    gap: 8px;
-  }
-  [data-section="subs"] .quick-add input,
-  [data-section="subs"] .quick-add select,
-  [data-section="subs"] .quick-add button {
-    flex: none !important;
-    max-width: none !important;
-    min-width: 0 !important;
-    width: 100%;
-    padding: 12px 14px !important;
-    font-size: 15px !important;
-  }
-
-  /* ---------- Orders add grid ---------- */
-  .ord-add-grid {
-    grid-template-columns: 1fr !important;
-    gap: 8px;
-    padding: 8px;
-  }
-  .ord-add-grid .ord-input,
-  .ord-add-grid .ord-add-btn {
-    width: 100%;
-    padding: 12px 14px !important;
-    font-size: 15px !important;
-    text-align: left;
-  }
-  .ord-add-grid .ord-input-cost { text-align: right; }
-  .ord-add-grid .ord-input-ccy,
-  .ord-add-grid .ord-input-from { text-align: center; }
-  .ord-add-grid .ord-add-btn { text-align: center; }
-
-  /* ---------- Wishlist add row ---------- */
-  .wish-add-row {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 8px;
-    gap: 8px;
-  }
-  .wish-add-row .wish-input,
-  .wish-add-row .wish-add-btn {
-    flex: none !important;
-    max-width: none !important;
-    min-width: 0 !important;
-    width: 100%;
-    padding: 12px 14px !important;
-    font-size: 15px !important;
-  }
-  .wish-add-row .wish-input-amt { text-align: right; }
-  .wish-add-row .wish-input-ccy { text-align: center; }
-
-  /* ---------- Bigger close (×) and edit buttons in rows ---------- */
-  .ord-card-x, .wish-row-x {
-    padding: 8px 12px !important;
-    font-size: 16px !important;
-  }
-
   /* ---------- Net worth add rows (Bank/Stocks/Crypto/Other) ---------- */
-  /* These never got the same stacking treatment as Subs/Orders/Wishlist
-     above, so on a phone they squeezed 2-3 inputs + a button into one
-     row — same fix applied here. */
   [data-section="net"] .quick-add {
     flex-direction: column;
     align-items: stretch;
@@ -1732,170 +860,6 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   .nw-row { flex-wrap: wrap; row-gap: 4px; }
   .nw-inline-edit-2col { width: 100%; }
   .nw-inline-edit-2col input { flex: 1; width: auto !important; min-width: 0 !important; }
-}
-
-/* ============================================================
-   DATE FIELDS — wrap each date input in a label that shows a
-   📅 emoji prefix so it's obvious what the field is. The native
-   picker icon gets a dark-mode filter so it shows up on the
-   dark background instead of vanishing into it.
-   ============================================================ */
-.date-field {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  background: var(--bg-card);
-  border: 0.5px solid rgba(255,255,255,0.10);
-  border-radius: var(--radius-md);
-  font-family: inherit;
-  color: var(--text-primary);
-  min-width: 0;
-  cursor: pointer;
-}
-.date-field .date-emoji {
-  font-size: 15px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-.date-field input[type="date"] {
-  background: transparent !important;
-  border: none !important;
-  outline: none;
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 13px;
-  padding: 0 !important;
-  margin: 0 !important;
-  min-width: 0;
-  flex: 1;
-  width: 100%;
-  color-scheme: dark;
-}
-input[type="date"] { color-scheme: dark; }
-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(0.85);
-  opacity: 0.7;
-  cursor: pointer;
-}
-@media (max-width: 600px) {
-  .date-field {
-    width: 100%;
-    padding: 12px 14px;
-  }
-  .date-field input[type="date"] { font-size: 15px !important; }
-}
-
-/* ============================================================
-   SUBSCRIPTION AUTO-DEDUCT TOGGLE
-   ============================================================ */
-.sub-auto-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: var(--bg-card);
-  border: 0.5px solid rgba(255,255,255,0.10);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  font-family: inherit;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-.sub-auto-toggle input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-.sub-auto-track {
-  position: relative;
-  display: inline-block;
-  width: 30px;
-  height: 16px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.10);
-  transition: background 0.2s;
-  flex-shrink: 0;
-}
-.sub-auto-thumb {
-  position: absolute;
-  top: 2px; left: 2px;
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  background: #FAFAFA;
-  transition: transform 0.2s, background 0.2s;
-}
-.sub-auto-toggle input:checked ~ .sub-auto-track {
-  background: #6EE3A4;
-}
-.sub-auto-toggle input:checked ~ .sub-auto-track .sub-auto-thumb {
-  transform: translateX(14px);
-  background: #04201A;
-}
-.sub-auto-toggle input:checked ~ .sub-auto-label {
-  color: #6EE3A4;
-  font-weight: 700;
-}
-.sub-auto-label {
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* In-row toggle (smaller) for individual sub rows */
-.sub-row-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 999px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  font-weight: 700;
-}
-.sub-row-toggle.is-on {
-  background: rgba(110,227,164,0.10);
-  border-color: rgba(110,227,164,0.30);
-  color: #6EE3A4;
-}
-.sub-row-toggle .sub-row-toggle-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: rgba(255,255,255,0.25);
-}
-.sub-row-toggle.is-on .sub-row-toggle-dot {
-  background: #6EE3A4;
-  box-shadow: 0 0 6px rgba(110,227,164,0.7);
-}
-
-.sub-from-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  background: rgba(125,211,252,0.10);
-  border: 1px solid rgba(125,211,252,0.20);
-  border-radius: 999px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: #BFE3F8;
-  font-weight: 700;
-}
-
-@media (max-width: 600px) {
-  .sub-auto-toggle { width: 100%; justify-content: space-between; padding: 12px 14px; }
 }
 
 /* ===== Light theme overrides =====
@@ -1924,7 +888,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   --text-quaternary: #C7C4B8;
   --border: rgba(46, 46, 46, 0.08);
   --border-soft: rgba(46, 46, 46, 0.05);
-  --accent: #C2A46F;
+  --accent: #003B2F;
   --success: #2F6B52;
   --warning: #C2A46F;
   --danger: #6B3B3B;
@@ -1933,14 +897,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   --input-bg: rgba(46,46,46,0.04);
   --input-border: rgba(46,46,46,0.16);
   color-scheme: light;
-  /* Same values as index.html's light theme, so the atmospheric
-     backdrop matches exactly on both pages. */
-  --vty-aurora-1: rgba(194, 164, 111, 0.14);
-  --vty-aurora-2: rgba(194, 164, 111, 0.05);
-  --vty-fade-1: rgba(0, 59, 47, 0.14);
-  --vty-fade-2: rgba(0, 59, 47, 0);
-  --vty-particle: rgba(46, 46, 46, 0.30);
-  --vty-particle-glow: rgba(47, 107, 82, 0.35);
 }
 [data-theme="light"] body::before {
   background:
@@ -1958,17 +914,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 [data-theme="light"] .fin-back-btn:hover,
 [data-theme="light"] .fin-back-btn:active {
   background: rgba(46,46,46,0.06);
-}
-[data-theme="light"] .bottom-tabs {
-  background: linear-gradient(180deg, transparent, rgba(237,238,233,0.94) 30%);
-}
-[data-theme="light"] .bottom-tabs::before {
-  background: linear-gradient(90deg, transparent, rgba(46,46,46,0.12), transparent);
-}
-[data-theme="light"] .bot-tab:hover { background: rgba(46,46,46,0.03); }
-[data-theme="light"] .bot-tab.active {
-  background: rgba(46,46,46,0.06);
-  border-color: rgba(46,46,46,0.12);
 }
 [data-theme="light"] .aikey-overlay { background: rgba(46,46,46,0.35); }
 [data-theme="light"] .aikey-modal {
@@ -1990,29 +935,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-color: rgba(46,46,46,0.12);
 }
 [data-theme="light"] .aikey-btn:hover { background: rgba(46,46,46,0.07); }
-[data-theme="light"] .nova-msg-user {
-  background: rgba(46,46,46,0.08);
-  border-color: rgba(46,46,46,0.10);
-}
-
-
-/* ============================================================
-   AUTO-GENERATED light-theme overrides (scripted pass, same approach
-   used for gym.html) — mirrors every rule above using a hardcoded
-   dark-mode literal with a light equivalent: rgba(255,255,255,X) ->
-   rgba(46,46,46,X) neutral-tint inversion, rgba(0,0,0,X)/#0A0A0B/
-   #050506 dark backgrounds -> cream/light-ink-tint, white text -> dark
-   ink. Colored/brand accents (mint success green, purple Nova
-   gradient, warning/danger) are left untouched — they already read
-   fine on both backgrounds. box-shadow/filter are left untouched too
-   (a soft dark shadow still works on a light card). Regenerate via
-   script rather than hand-editing if the rules above change.
-   ============================================================ */
-[data-theme="light"] .nova-msg-nova { align-self: flex-start; background: rgba(46,46,46,0.03); color: var(--text-secondary); border: 1px solid rgba(46,46,46,0.06); border-bottom-left-radius: 4px; }
-[data-theme="light"] .nova-chip { background: rgba(46,46,46,0.04); border: 1px solid rgba(46,46,46,0.10); color: var(--text-secondary); border-radius: 999px; padding: 7px 13px; font-size: 12px; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-[data-theme="light"] .nova-chip:hover { background: rgba(46,46,46,0.07); color: var(--text-primary); }
-[data-theme="light"] .nova-input { flex: 1; resize: none; min-height: 44px; max-height: 130px; background: rgba(46,46,46,0.04); border: 1px solid rgba(46,46,46,0.12); color: var(--text-primary); border-radius: 12px; padding: 11px 13px; font-family: inherit; font-size: 14px; line-height: 1.4; outline: none; }
-[data-theme="light"] .nova-input:focus { border-color: rgba(46,46,46,0.22); }
 [data-theme="light"] .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(46,46,46,0.08), transparent); }
 [data-theme="light"] .card::before { content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 1px; background: linear-gradient(90deg, transparent, rgba(46,46,46,0.16), transparent); pointer-events: none; }
 [data-theme="light"] .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; padding: 3px 9px 3px 8px; border-radius: 999px; margin: 2px; font-weight: 700; letter-spacing: 0.04em; border: none; background: rgba(46,46,46,0.05); color: var(--text-secondary); font-family: var(--font-mono); text-transform: uppercase; }
@@ -2040,39 +962,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 [data-theme="light"] .nw-activity-list::-webkit-scrollbar-thumb { background: rgba(46,46,46,0.10); border-radius: 2px; }
 [data-theme="light"] .nw-activity-row { display: grid; grid-template-columns: 4px 1fr auto auto auto; gap: 10px; align-items: center; padding: 8px 12px; background: rgba(46,46,46,0.025); border-radius: 8px; font-size: 12.5px; transition: background 0.15s; }
 [data-theme="light"] .nw-activity-row:hover { background: rgba(46,46,46,0.05); }
-[data-theme="light"] .ord-add-card { background: rgba(46,46,46,0.025) !important; border: 1px solid rgba(46,46,46,0.05) !important; }
-[data-theme="light"] .ord-add-grid { display: grid; grid-template-columns: 1.6fr 1fr 0.8fr 1.1fr 1.1fr auto; gap: 6px; align-items: stretch; padding: 4px; background: rgba(46,46,46,0.04); border-radius: 12px; }
-[data-theme="light"] .ord-input-ccy,
-[data-theme="light"] .ord-input-from { background: rgba(46,46,46,0.04); border-radius: 8px; cursor: pointer; font-weight: 600; appearance: none; -webkit-appearance: none; text-align: center; }
-[data-theme="light"] .ord-card { background: rgba(46,46,46,0.025); border-radius: 14px; padding: 14px 16px; margin-bottom: 8px; border-left: 3px solid var(--text-tertiary); transition: background 0.15s; }
-[data-theme="light"] .ord-card:hover { background: rgba(46,46,46,0.045); }
-[data-theme="light"] .ord-card-x { background: transparent; border: 1px solid rgba(46,46,46,0.08); color: var(--text-tertiary); cursor: pointer; font-size: 14px; padding: 4px 9px; border-radius: 6px; font-family: inherit; line-height: 1; }
-[data-theme="light"] .ord-meta-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: rgba(46,46,46,0.04); font-weight: 700; letter-spacing: 0.04em; }
-[data-theme="light"] .ord-empty-card { text-align: center; padding: 32px 20px; background: rgba(46,46,46,0.025); border-radius: 14px; border: 1px dashed rgba(46,46,46,0.08); }
-[data-theme="light"] .wish-hero-bar { height: 6px; border-radius: 3px; background: rgba(46,46,46,0.06); overflow: hidden; position: relative; }
-[data-theme="light"] .wish-add-card { background: rgba(46,46,46,0.025) !important; border: 1px solid rgba(46,46,46,0.05) !important; }
-[data-theme="light"] .wish-add-row { display: flex; gap: 6px; align-items: stretch; flex-wrap: wrap; padding: 4px; background: rgba(46,46,46,0.04); border-radius: 12px; }
-[data-theme="light"] .wish-input-ccy { flex: 0 1 80px; background: rgba(46,46,46,0.04); border-radius: 9px; color: var(--text-primary); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; appearance: none; -webkit-appearance: none; text-align: center; }
-[data-theme="light"] .wish-add-btn { padding: 0 18px; background: linear-gradient(180deg, #B794F4, #9F7DD4); color: #2E2E2E; border: none; border-radius: 9px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 4px 14px rgba(183,148,244,0.30); transition: transform 0.12s, box-shadow 0.18s; }
-[data-theme="light"] .wish-empty-card { text-align: center; padding: 32px 20px; background: rgba(46,46,46,0.025); border-radius: 14px; border: 1px dashed rgba(46,46,46,0.08); }
-[data-theme="light"] .wish-row { background: rgba(46,46,46,0.025); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
-[data-theme="light"] .wish-row-x { background: transparent; border: 1px solid rgba(46,46,46,0.10); color: var(--text-tertiary); cursor: pointer; font-size: 14px; padding: 4px 8px; border-radius: 6px; font-family: inherit; line-height: 1; }
-[data-theme="light"] .wish-row-bar { height: 5px; border-radius: 3px; background: rgba(46,46,46,0.04); margin-top: 10px; overflow: hidden; }
-[data-theme="light"] .wish-row-bar-fill.flat { background: rgba(46,46,46,0.20); }
-[data-theme="light"] .ticker-tag { font-size: 9.5px; letter-spacing: 0.18em; font-weight: 800; text-transform: uppercase; color: var(--text-tertiary); padding: 3px 8px; background: rgba(46,46,46,0.04); border-radius: 999px; flex-shrink: 0; }
-[data-theme="light"] .ticker-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(46,46,46,0.18); transition: background 0.2s; }
-[data-theme="light"] .ord-card-foot { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(46,46,46,0.06); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-[data-theme="light"] .ord-deduct-undo { background: transparent; border: 1px solid rgba(46,46,46,0.10); color: var(--text-tertiary); font-family: inherit; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px; border-radius: 6px; cursor: pointer; }
-[data-theme="light"] .ord-deduct-undo:hover { color: var(--text-primary); border-color: rgba(46,46,46,0.20); }
-[data-theme="light"] .ord-deduct-chooser { margin-top: 10px; padding: 12px; background: rgba(46,46,46,0.04); border: 1px solid rgba(125,211,252,0.18); border-radius: 10px; }
-[data-theme="light"] .ord-deduct-opt { background: rgba(46,46,46,0.04); border: 1px solid rgba(46,46,46,0.06); color: var(--text-primary); font-family: inherit; font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 8px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
-[data-theme="light"] .ord-deduct-opt.insufficient:hover { background: rgba(46,46,46,0.04); border-color: rgba(46,46,46,0.06); }
-[data-theme="light"] .ord-card.is-deducted .ord-card-name { text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: rgba(46,46,46,0.20); }
-[data-theme="light"] .date-field { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; background: var(--bg-card); border: 0.5px solid rgba(46,46,46,0.10); border-radius: var(--radius-md); font-family: inherit; color: var(--text-primary); min-width: 0; cursor: pointer; }
-[data-theme="light"] .sub-auto-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--bg-card); border: 0.5px solid rgba(46,46,46,0.10); border-radius: var(--radius-md); cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; font-family: inherit; font-size: 12px; color: var(--text-secondary); }
-[data-theme="light"] .sub-auto-track { position: relative; display: inline-block; width: 30px; height: 16px; border-radius: 999px; background: rgba(46,46,46,0.10); transition: background 0.2s; flex-shrink: 0; }
-[data-theme="light"] .sub-row-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(46,46,46,0.04); border: 1px solid rgba(46,46,46,0.08); border-radius: 999px; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); font-weight: 700; }
-[data-theme="light"] .sub-row-toggle .sub-row-toggle-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(46,46,46,0.25); }
 
 /* ============================================================
    Hand-tuned on top of the auto-generated pass above: these are
@@ -2090,14 +979,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 [data-theme="light"] .nw-donut-wrap,
 [data-theme="light"] .nw-activity {
   background: #FFFFFF;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--accent);
 }
 /* !important to match (and beat) the base rule's own !important —
    otherwise the base dark-mode declaration would win regardless of
    this being more specific/later in the cascade. */
 [data-theme="light"] .nw-subcard {
   background: #FFFFFF !important;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--accent);
 }
 [data-theme="light"] .nw-activity-row {
   background: var(--card-soft);
@@ -2106,38 +995,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 </head>
 <body>
 
-<!-- ===== Vitality atmospheric backdrop (aurora · mountains · particles) ===== -->
-<div id="vty-backdrop" aria-hidden="true">
-  <div class="vty-atmosphere"></div>
-  <div class="vty-mountains">
-    <svg viewBox="0 0 1600 420" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="vty-mt-far" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#0d1a17" stop-opacity="0"></stop>
-          <stop offset="55%" stop-color="#0d1a17" stop-opacity=".55"></stop>
-          <stop offset="100%" stop-color="#0d1a17" stop-opacity=".95"></stop>
-        </linearGradient>
-        <linearGradient id="vty-mt-near" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#050a09" stop-opacity=".4"></stop>
-          <stop offset="60%" stop-color="#050a09" stop-opacity=".95"></stop>
-          <stop offset="100%" stop-color="#050a09" stop-opacity="1"></stop>
-        </linearGradient>
-      </defs>
-      <path d="M0,300 L120,230 L210,260 L320,180 L430,220 L560,150 L680,210 L820,170 L960,220 L1100,180 L1240,240 L1380,200 L1500,250 L1600,220 L1600,420 L0,420 Z" fill="url(#vty-mt-far)"></path>
-      <path d="M0,360 L100,320 L220,340 L340,290 L460,330 L590,300 L720,340 L860,310 L1000,350 L1140,310 L1280,355 L1420,320 L1540,360 L1600,340 L1600,420 L0,420 Z" fill="url(#vty-mt-near)"></path>
-    </svg>
-  </div>
-  <div class="vty-particles" id="vty-particles"></div>
-</div>
-
 <div class="shell">
 
-<!-- ===== FINANCE TICKER (rotating subscription renewals) ===== -->
-<div class="finance-ticker hidden" id="financeTicker">
-  <span class="ticker-tag" id="tickerTag">RENEWS</span>
-  <div class="ticker-stream" id="tickerStream"></div>
-  <div class="ticker-dots" id="tickerDots"></div>
-</div>
+<div class="page-title">Finance</div>
 
 <!-- ===== NET WORTH ===== -->
 <div class="section" data-section="net">
@@ -2250,7 +1110,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     <div class="card-grid" style="gap:10px">
       <!-- Bank accounts -->
       <div class="card nw-subcard">
-        <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span>🏦 Bank accounts</span><span id="bankTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
+        <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span style="display:inline-flex;align-items:center;gap:6px"><i data-lucide="landmark" style="width:14px;height:14px"></i>Bank accounts</span><span id="bankTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
         <div id="bankList" class="nw-list"></div>
         <div class="quick-add">
           <input type="text" placeholder="Account name" id="bankName" />
@@ -2260,7 +1120,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
       </div>
       <!-- Stocks / Investments -->
       <div class="card nw-subcard">
-        <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span>📈 Stocks / Investments</span><span id="stocksTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
+        <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span style="display:inline-flex;align-items:center;gap:6px"><i data-lucide="trending-up" style="width:14px;height:14px"></i>Stocks / Investments</span><span id="stocksTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
         <div id="stocksList" class="nw-list"></div>
 
         <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--accent);margin-top:10px">For live pricing</div>
@@ -2283,193 +1143,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   </div>
 </div>
 
-<!-- ===== ACTIVE SUBSCRIPTIONS ===== -->
-<div class="section" data-section="subs">
-  <div class="section-title">
-    <span class="section-title-text">ACTIVE SUBSCRIPTIONS</span>
-  </div>
-  <div class="card" style="background:linear-gradient(135deg, rgba(83,74,183,0.07), rgba(216,90,48,0.05));border:1px solid rgba(83,74,183,0.20)">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:12px">
-      <div>
-        <div style="font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;font-weight:500">Monthly burn</div>
-        <div id="subsTotal" style="font-size:28px;font-weight:700;color:var(--text-primary);line-height:1.1;margin-top:2px">AUD 0 <span style="font-size:13px;color:var(--text-tertiary);font-weight:500">/ mo</span></div>
-        <div id="subsYearly" style="font-size:11px;color:var(--text-tertiary);margin-top:2px"></div>
-      </div>
-      <div id="subsCount" style="font-size:11px;color:var(--text-tertiary)"></div>
-    </div>
-    <div id="subsList"></div>
-    <div class="empty-state" id="subsEmpty">No subscriptions yet</div>
-    <div class="quick-add" style="flex-wrap:wrap;gap:6px">
-      <input type="text" placeholder="Service (e.g. Netflix)" id="subName" style="flex:1.5;min-width:120px" />
-      <input type="number" placeholder="Amount" id="subAmount" step="0.01" style="flex:1;max-width:100px" />
-      <select id="subCurrency" style="padding:6px 10px;border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary);max-width:90px">
-        <option value="AUD" selected>AUD</option>
-        <option value="CHF">CHF</option>
-        <option value="USD">USD</option>
-        <option value="EUR">EUR</option>
-        <option value="GBP">GBP</option>
-      </select>
-      <select id="subPeriod" style="padding:6px 10px;border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary);max-width:100px">
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
-        <option value="weekly">Weekly</option>
-      </select>
-      <label class="date-field" title="Next renewal date" style="min-width:150px"><span class="date-emoji" aria-hidden="true">📅</span><input type="date" id="subRenewal" /></label>
-      <select id="subFromCat" title="Which net worth account to deduct from" style="padding:6px 10px;border:0.5px solid var(--border);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary);min-width:130px">
-        <option value="">No accounts yet</option>
-      </select>
-      <label class="sub-auto-toggle" title="Auto-deduct from the linked account on each renewal">
-        <input type="checkbox" id="subAutoDeduct" />
-        <span class="sub-auto-track"><span class="sub-auto-thumb"></span></span>
-        <span class="sub-auto-label">Auto-deduct</span>
-      </label>
-      <button class="quick-add-btn" id="subAddBtn" onclick="window.__addSub && window.__addSub()">+ Add</button>
-    </div>
-  </div>
 </div>
-
-<!-- ===== INCOMING ORDERS ===== -->
-<div class="section" data-section="incoming">
-  <div class="section-title">
-    <span class="section-title-text">INCOMING ORDERS</span>
-  </div>
-
-  <!-- Add card with cost + currency + from-category + arrival date -->
-  <div class="card ord-add-card">
-    <div class="ord-add-eyebrow">+ NEW ORDER</div>
-    <div class="ord-add-grid">
-      <input type="text"   id="ordName"   placeholder="Item (e.g. New iPhone)" class="ord-input ord-input-name">
-      <input type="number" id="ordCost"   placeholder="Cost" step="0.01" class="ord-input ord-input-cost">
-      <select id="ordCurrency" class="ord-input ord-input-ccy">
-        <option value="AUD" selected>AUD</option>
-        <option value="CHF">CHF</option>
-        <option value="USD">USD</option>
-        <option value="EUR">EUR</option>
-        <option value="GBP">GBP</option>
-      </select>
-      <select id="ordFromCat" class="ord-input ord-input-from" title="Which net worth account this comes out of">
-        <option value="">No accounts yet</option>
-      </select>
-      <label class="date-field ord-input-date" title="Expected arrival"><span class="date-emoji" aria-hidden="true">📅</span><input type="date" id="ordArrival" /></label>
-      <button class="ord-add-btn" id="ordAddBtn" onclick="window.__addOrder && window.__addOrder()">+ Add Order</button>
-    </div>
-    <div class="ord-add-preview" id="ordAddPreview">Type a cost — preview will show what % of net worth it takes.</div>
-  </div>
-
-  <!-- Items list -->
-  <div class="ord-section-h">
-    <span class="ord-section-label">ITEMS ON THE WAY</span>
-    <span class="ord-section-count" id="ordCount">0 items</span>
-  </div>
-  <div id="ordList"></div>
-  <div class="ord-empty-card" id="ordEmpty">
-    <div class="ord-empty-icon">📦</div>
-    <div class="ord-empty-title">Nothing on the way</div>
-    <div class="ord-empty-sub">Log an order above. Pick the account it comes out of, the expected arrival date, and the dashboard will show what % of your net worth it costs.</div>
-  </div>
-</div>
-
-<!-- ===== WISHLIST ===== -->
-<div class="section" data-section="wish">
-  <div class="section-title">
-    <span class="section-title-text">WISHLIST</span>
-  </div>
-  <!-- Hero card with stats -->
-  <div class="card wish-hero">
-    <div class="wish-hero-top">
-      <div>
-        <div class="wish-hero-eyebrow">WISHLIST TOTAL</div>
-        <div class="wish-hero-num" id="wishTotal">AUD 0</div>
-      </div>
-      <div class="wish-hero-pct-wrap">
-        <div class="wish-hero-pct-label">% OF NET WORTH</div>
-        <div class="wish-hero-pct-num" id="wishPctOfNwHero">—</div>
-      </div>
-    </div>
-    <div class="wish-hero-bar">
-      <div class="wish-hero-bar-fill" id="wishHeroFill" style="width:0%"></div>
-    </div>
-    <div class="wish-hero-foot" id="wishPctOfNw">Add net worth first to see this as a %</div>
-  </div>
-
-  <!-- Add row -->
-  <div class="card wish-add-card">
-    <div class="wish-add-eyebrow">+ ADD AN ITEM</div>
-    <div class="wish-add-row">
-      <input type="text"   id="wishName"   placeholder="Item name (e.g. New iPhone Pro Max)" class="wish-input wish-input-name">
-      <input type="number" id="wishAmount" placeholder="Cost" step="0.01" class="wish-input wish-input-amt">
-      <select id="wishCurrency" class="wish-input wish-input-ccy">
-        <option value="AUD" selected>AUD</option>
-        <option value="CHF">CHF</option>
-        <option value="USD">USD</option>
-        <option value="EUR">EUR</option>
-        <option value="GBP">GBP</option>
-      </select>
-      <button class="wish-add-btn" id="wishAddBtn" onclick="window.__addWish && window.__addWish()">+ Add</button>
-    </div>
-  </div>
-
-  <!-- Items list -->
-  <div class="wish-section-h">
-    <span class="wish-section-label">YOUR WISHES</span>
-    <span class="wish-section-count" id="wishCount">0 items</span>
-  </div>
-  <div id="wishList"></div>
-  <div class="wish-empty-card" id="wishEmpty">
-    <div class="wish-empty-icon">🎯</div>
-    <div class="wish-empty-title">No wishes yet</div>
-    <div class="wish-empty-sub">Add anything you're saving for — the dashboard will calculate what % of your net worth it'd cost.</div>
-  </div>
-</div>
-
-<!-- ===== NOVA — AI money coach ===== -->
-<div class="section" data-section="nova" hidden>
-  <div class="section-title">
-    <span class="section-title-text">NOVA · MONEY COACH</span>
-  </div>
-  <div class="card nova-wrap">
-    <div class="nova-messages" id="novaMessages">
-      <div class="nova-msg nova-msg-nova">Hey — I'm Nova, your money coach. I can see your net worth, subscriptions, incoming orders and wishlist. Ask me anything, or tap a starter below.</div>
-    </div>
-    <div class="nova-suggestions" id="novaSuggestions">
-      <button class="nova-chip" data-q="How am I doing financially? Give me a quick read on my net worth.">How am I doing?</button>
-      <button class="nova-chip" data-q="Where can I realistically cut back on my spending?">Where can I cut back?</button>
-      <button class="nova-chip" data-q="Can I afford everything on my wishlist right now?">Afford my wishlist?</button>
-      <button class="nova-chip" data-q="Which of my subscriptions should I review or cancel?">Review my subs</button>
-    </div>
-    <div class="nova-composer">
-      <textarea id="novaInput" class="nova-input" rows="1" placeholder="Ask Nova about your money…"></textarea>
-      <button id="novaSend" class="nova-send" aria-label="Send message">→</button>
-    </div>
-    <div class="nova-disclaimer">Nova gives general guidance, not regulated financial advice.</div>
-  </div>
-</div>
-
-</div>
-
-<!-- ===== BOTTOM TAB BAR ===== -->
-<nav class="bottom-tabs" id="bottomTabs" aria-label="Sections">
-  <button class="bot-tab active" data-tab="net">
-    <span class="bot-tab-icon">📊</span>
-    <span class="bot-tab-label">Net Worth</span>
-  </button>
-  <button class="bot-tab" data-tab="subs">
-    <span class="bot-tab-icon">🔁</span>
-    <span class="bot-tab-label">Subs</span>
-  </button>
-  <button class="bot-tab" data-tab="incoming">
-    <span class="bot-tab-icon">📦</span>
-    <span class="bot-tab-label">Orders</span>
-  </button>
-  <button class="bot-tab" data-tab="wish">
-    <span class="bot-tab-icon">🎯</span>
-    <span class="bot-tab-label">Wishlist</span>
-  </button>
-  <button class="bot-tab" data-tab="nova">
-    <span class="bot-tab-icon">✨</span>
-    <span class="bot-tab-label">Nova</span>
-  </button>
-</nav>
 
 <script>
 (function() {
@@ -2492,70 +1166,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
-
-  // ============================================================
-  // AI BRIDGE — Nova calls Gemini through the server-side /api/nova
-  // proxy (mirrors /api/stock-price.js). No key is ever stored in or
-  // sent from the browser. Function name kept as callClaude() even
-  // though the model swapped — /api/nova.js translates both
-  // directions so this function's own request/response shape (and
-  // every call site) didn't need to change.
-  // ============================================================
-  async function callClaude(body) {
-    const r = await fetch('/api/nova', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      const msg = (data && data.error && (data.error.message || data.error)) || ('Nova API error (' + r.status + ')');
-      const e = new Error(msg); e.code = 'API'; throw e;
-    }
-    return data;
-  }
-
-  // ============================================================
-  // ORD_FROM_META — must be hoisted to the top of the IIFE.
-  // renderOrders runs as part of the FIRST renderAllNetWorth call
-  // (long before the ORDERS section is reached) and will TDZ-crash
-  // the whole script if any saved orders trigger the render path
-  // and ORD_FROM_META hasn't been initialized yet.
-  // ============================================================
-  const ORD_FROM_META = {
-    bank:   { name: 'Bank',   color: '#7DD3FC' },
-    stocks: { name: 'Stocks', color: '#7DD3FC' }
-  };
-
-  // ============================================================
-  // BOTTOM TABS — switch between Net Worth / Subs / Orders.
-  // Active tab persisted in localStorage.
-  // ============================================================
-  const TAB_KEY = 'finance_active_tab';
-  const tabs = document.querySelectorAll('.bot-tab');
-  const sections = document.querySelectorAll('.section[data-section]');
-  function setActiveTab(name) {
-    tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-    sections.forEach(s => {
-      if (s.dataset.section === name) s.removeAttribute('hidden');
-      else s.setAttribute('hidden', '');
-    });
-    storeSet(TAB_KEY, name);
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }
-  tabs.forEach(b => b.addEventListener('click', () => setActiveTab(b.dataset.tab)));
-  // An inbound link with a #tab hash (the dashboard's Finance card, the
-  // shared topbar icon) always wins over whatever tab was last open —
-  // otherwise landing on Nova once meant every future visit from
-  // outside the page reopened Nova instead of the main Net Worth view.
-  // A bare reload/refresh (no hash) still restores the last tab as before.
-  const VALID_TABS = ['net','subs','incoming','wish','nova'];
-  const hashTab = (location.hash || '').replace('#', '');
-  const savedTab = storeGet(TAB_KEY);
-  const initialTab = VALID_TABS.includes(hashTab) ? hashTab
-    : (savedTab && VALID_TABS.includes(savedTab) ? savedTab : 'net');
-  setActiveTab(initialTab);
-  if (hashTab) history.replaceState(null, '', location.pathname + location.search);
 
   // ============================================================
   // NET WORTH (copied from the main dashboard, verbatim logic)
@@ -2671,7 +1281,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         try { localStorage.setItem('fx:rates', JSON.stringify(exchangeRates)); } catch (e) {}
         freezeUnanchoredRates();
         renderAllNetWorth();
-        if (typeof renderSubs === 'function') renderSubs();
       }
     } catch (e) {}
   }
@@ -3131,9 +1740,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     renderNetWorthChart();
     renderAllocationDonut(sliceTotals, grand);
     renderActivity();
-    if (typeof renderWishlist === 'function') renderWishlist();
-    if (typeof renderOrders   === 'function') renderOrders();
-    if (typeof updateOrdPreview === 'function') updateOrdPreview();
   }
 
   // ============================================================
@@ -3217,8 +1823,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   // ============================================================
   const NW_SLICE_META = {
     bank:   { name: 'Bank',     color: '#7DD3FC' },
-    stocks: { name: 'Stocks',   color: '#7DD3FC' },
-    subs:   { name: 'Subs/yr',  color: '#F97066' }
+    stocks: { name: 'Stocks',   color: '#7DD3FC' }
   };
   function donutArcPath(cx, cy, rOuter, rInner, startAngle, endAngle) {
     const x1o = cx + rOuter * Math.cos(startAngle);
@@ -3265,14 +1870,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
         }
       });
     });
-    // Subs annualized — one aggregate slice (no per-sub breakdown here).
-    const subItems = storeGet('subs') || [];
-    const annualSubsCHF = subItems.reduce((s, it) => s + monthlyEquivalent(it) * 12, 0);
-    if (annualSubsCHF > 0) {
-      const meta = NW_SLICE_META.subs;
-      slices.push({ key: 'subs', name: meta.name, color: meta.color, value: annualSubsCHF });
-    }
-
     const sliceTotal = slices.reduce((s, x) => s + x.value, 0);
 
     if (!slices.length || sliceTotal <= 0) {
@@ -3668,7 +2265,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     currencyEl.addEventListener('change', () => {
       storeSet(CURRENCY_KEY, currencyEl.value);
       renderAllNetWorth();
-      renderSubs();
     });
   }
   renderAllNetWorth();
@@ -3680,1091 +2276,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   new MutationObserver(() => renderAllNetWorth())
     .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-  // ============================================================
-  // SUBSCRIPTIONS
-  // ============================================================
-  const subsList = document.getElementById('subsList');
-  const subsEmpty = document.getElementById('subsEmpty');
-  const subsTotal = document.getElementById('subsTotal');
-  const subsYearly = document.getElementById('subsYearly');
-  const subsCount = document.getElementById('subsCount');
-  const subAddBtn = document.getElementById('subAddBtn');
-  const subName = document.getElementById('subName');
-  const subAmount = document.getElementById('subAmount');
-  const subPeriod = document.getElementById('subPeriod');
-
-  function monthlyEquivalent(item) {
-    const a = Number(item.amount) || 0;
-    if (item.period === 'yearly') return a / 12;
-    if (item.period === 'weekly') return a * 4.345;
-    return a;
-  }
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-  function formatRenewal(iso) {
-    if (!iso) return '';
-    const isoSafe = (typeof iso === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(iso)) ? iso + 'T00:00' : iso;
-    const d = new Date(isoSafe);
-    if (isNaN(d)) return iso;
-    const now = new Date();
-    const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const diffDays = Math.round((dayStart - todayStart) / (1000 * 60 * 60 * 24));
-    const dateLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    let prefix = '';
-    if (diffDays < 0) prefix = 'past · ';
-    else if (diffDays === 0) prefix = 'today · ';
-    else if (diffDays === 1) prefix = 'tomorrow · ';
-    else if (diffDays <= 7) prefix = 'in ' + diffDays + 'd · ';
-    return prefix + dateLabel;
-  }
-
-  function renderSubs() {
-    if (!subsList) return;
-    // Auto-deduct any matured renewals before painting
-    processAutoDeductSubs();
-    // Keep the From-account dropdown synced with current NW accounts
-    populateSubFromSelect();
-    const items = storeGet('subs') || [];
-    subsList.innerHTML = '';
-    if (!items.length) {
-      subsEmpty.style.display = 'flex';
-      subsTotal.innerHTML = fmtMoney(0) + ' <span style="font-size:13px;color:var(--text-tertiary);font-weight:500">/ mo</span>';
-      subsYearly.textContent = '';
-      subsCount.textContent = '';
-      return;
-    }
-    subsEmpty.style.display = 'none';
-    let monthly = 0;
-    items.forEach((it, idx) => {
-      const m = monthlyEquivalent(it);
-      monthly += m;
-      // Days until next renewal (rolls past dates forward by the period so
-      // a "Renews Apr 28 · monthly" sub shows the *next* upcoming renewal).
-      let daysToRenew = null;
-      if (it.renewal && typeof nextRenewalDate === 'function') {
-        const next = nextRenewalDate(it.renewal, it.period);
-        if (next) {
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-          daysToRenew = Math.round((next.getTime() - today) / 86400000);
-        }
-      }
-      const isUrgent = daysToRenew != null && daysToRenew <= 5;
-      const row = document.createElement('div');
-      row.className = 'sub-row' + (isUrgent ? ' is-urgent' : '');
-      row.style.cssText = 'display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:12px 14px;background:rgba(255,255,255,0.025);border-radius:var(--radius-md);margin-bottom:8px;gap:12px;';
-      const renewLine = it.renewal
-        ? '<div class="sub-renew-line" style="font-size:10px;color:#F2C063;margin-top:3px">↻ Renews ' + formatRenewal(it.renewal) + '</div>'
-        : '';
-      // Linked NW account + auto-deduct toggle pills
-      let metaLine = '';
-      const pills = [];
-      if (it.fromCat && it.fromAccount) {
-        pills.push('<span class="sub-from-pill">from · ' + escapeHtml(it.fromAccount) + '</span>');
-      }
-      pills.push(
-        '<button class="sub-row-toggle' + (it.autoDeduct ? ' is-on' : '') + '" data-sub-toggle="' + idx + '" type="button" title="Auto-deduct from the linked account on each renewal">'
-        + '<span class="sub-row-toggle-dot"></span>'
-        + (it.autoDeduct ? 'Auto-deduct ON' : 'Auto-deduct off')
-        + '</button>'
-      );
-      metaLine = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' + pills.join('') + '</div>';
-
-      const left = document.createElement('div');
-      left.style.cssText = 'min-width:0';
-      left.innerHTML = '<div style="font-weight:600;color:var(--text-primary);font-size:14px">' + escapeHtml(it.name) + '</div>' +
-        '<div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;text-transform:capitalize">' + it.period + '</div>' +
-        renewLine +
-        metaLine;
-      const cost = document.createElement('div');
-      cost.style.cssText = 'text-align:right;line-height:1.1';
-      const bigNum = fmtMoney(m);
-      const origHint = (it.entered_currency && it.entered_currency !== 'CHF' && it.entered_amount != null)
-        ? '<div style="font-size:10px;color:var(--text-tertiary);margin-top:2px">billed ' + it.entered_currency + ' ' + Number(it.entered_amount).toLocaleString('en-US', { minimumFractionDigits: it.entered_amount % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 }) + ' / ' + it.period + '</div>'
-        : (it.period !== 'monthly'
-            ? '<div style="font-size:10px;color:var(--text-tertiary);margin-top:2px">billed ' + fmtMoney(it.amount) + ' / ' + it.period + '</div>'
-            : '');
-      cost.innerHTML = '<div style="font-size:20px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums">' + bigNum + '</div>' +
-        '<div style="font-size:10px;color:var(--text-tertiary);margin-top:1px">/ month</div>' +
-        origHint;
-      const actions = document.createElement('div');
-      actions.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:center';
-      const editBtn = document.createElement('button');
-      editBtn.title = 'Edit';
-      editBtn.style.cssText = 'background:transparent;border:1px solid var(--input-border);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:5px;font-family:inherit;line-height:1';
-      editBtn.textContent = '✏';
-      editBtn.addEventListener('click', () => editSubInline(idx));
-      const del = document.createElement('button');
-      del.title = 'Delete';
-      del.style.cssText = 'background:transparent;border:1px solid var(--input-border);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:3px 7px;border-radius:5px;font-family:inherit;line-height:1';
-      del.textContent = '×';
-      del.addEventListener('click', () => {
-        if (!confirm('Delete "' + it.name + '"?')) return;
-        items.splice(idx, 1); storeSet('subs', items); renderSubs();
-      });
-      actions.appendChild(editBtn);
-      actions.appendChild(del);
-      row.appendChild(left); row.appendChild(cost); row.appendChild(actions);
-      subsList.appendChild(row);
-    });
-    // Wire row-level auto-deduct toggle buttons
-    subsList.querySelectorAll('[data-sub-toggle]').forEach(b => {
-      b.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const i = parseInt(b.dataset.subToggle, 10);
-        const arr = storeGet('subs') || [];
-        if (!arr[i]) return;
-        if (!arr[i].autoDeduct && (!arr[i].fromCat || !arr[i].fromAccount)) {
-          alert('Pick a "From account" first (use the ✏ edit button) so the deduction knows where to take the money from.');
-          return;
-        }
-        arr[i].autoDeduct = !arr[i].autoDeduct;
-        storeSet('subs', arr);
-        renderSubs();
-      });
-    });
-    subsTotal.innerHTML = fmtMoney(monthly) + ' <span style="font-size:13px;color:var(--text-tertiary);font-weight:500">/ mo</span>';
-    subsYearly.textContent = '~' + fmtMoney(monthly * 12) + ' per year';
-    subsCount.textContent = items.length + (items.length === 1 ? ' subscription' : ' subscriptions');
-    // Re-render the donut so the subs slice updates with the latest annualized total
-    if (typeof renderAllNetWorth === 'function') renderAllNetWorth();
-  }
-
-  // ============================================================
-  // Build/refresh the From-account dropdown in the subs add form,
-  // mirroring the same source-of-truth used by the orders form.
-  // ============================================================
-  function populateSubFromSelect() {
-    const sel = document.getElementById('subFromCat');
-    if (!sel) return;
-    const prev = sel.value;
-    const accounts = (typeof listAllNwAccounts === 'function') ? listAllNwAccounts() : [];
-    const ICONS = { bank: '🏦', stocks: '📈' };
-    if (!accounts.length) {
-      sel.innerHTML = '<option value="">No accounts yet</option>';
-      sel.disabled = true;
-      return;
-    }
-    sel.disabled = false;
-    sel.innerHTML = accounts.map(a => {
-      const value = a.catKey + '::' + a.itemName;
-      return '<option value="' + value + '">' + ICONS[a.catKey] + ' ' + escapeHtml(a.itemName) + '</option>';
-    }).join('');
-    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
-  }
-
-  // ============================================================
-  // AUTO-DEDUCT — runs every time subs are rendered. For each sub
-  // whose autoDeduct is ON and whose renewal date has arrived (or
-  // passed), subtract the bill from the linked NW account, log the
-  // activity, and roll the renewal date forward to the next cycle.
-  // Idempotent via `lastDeductedAt` so refreshing the page doesn't
-  // double-charge.
-  // ============================================================
-  function processAutoDeductSubs() {
-    const items = storeGet('subs') || [];
-    if (!items.length) return false;
-    const now = new Date();
-    const todayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    let changed = false;
-    items.forEach(it => {
-      if (!it.autoDeduct || !it.renewal || !it.fromCat || !it.fromAccount) return;
-      const isoSafe = (typeof it.renewal === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(it.renewal)) ? it.renewal + 'T00:00' : it.renewal;
-      let renewalDate = new Date(isoSafe);
-      if (isNaN(renewalDate)) return;
-      let safety = 0;
-      while (renewalDate.getTime() <= todayMs && safety++ < 200) {
-        const renewalMs = new Date(renewalDate.getFullYear(), renewalDate.getMonth(), renewalDate.getDate()).getTime();
-        if (!(it.lastDeductedAt && it.lastDeductedAt >= renewalMs)) {
-          const nwItems = storeGet('nw:' + it.fromCat) || [];
-          const idx = nwItems.findIndex(x => String(x.name) === String(it.fromAccount));
-          if (idx < 0) break;
-          const cost = Number(it.amount) || 0;
-          nwItems[idx].amount = (Number(nwItems[idx].amount) || 0) - cost;
-          storeSet('nw:' + it.fromCat, nwItems);
-          logActivity(it.fromCat, nwItems[idx].name, -cost, 'edit');
-          it.lastDeductedAt = renewalMs;
-          changed = true;
-        }
-        if (it.period === 'weekly') renewalDate.setDate(renewalDate.getDate() + 7);
-        else if (it.period === 'yearly') renewalDate.setFullYear(renewalDate.getFullYear() + 1);
-        else renewalDate.setMonth(renewalDate.getMonth() + 1);
-      }
-      const newRenewal = renewalDate.getFullYear() + '-' + String(renewalDate.getMonth() + 1).padStart(2, '0') + '-' + String(renewalDate.getDate()).padStart(2, '0');
-      if (newRenewal !== it.renewal) {
-        it.renewal = newRenewal;
-        changed = true;
-      }
-    });
-    if (changed) storeSet('subs', items);
-    return changed;
-  }
-
-  function editSubInline(idx) {
-    const items = storeGet('subs') || [];
-    const it = items[idx];
-    if (!it) return;
-    const rows = subsList.querySelectorAll('.sub-row');
-    const row = rows[idx];
-    if (!row) return;
-    const enteredCcy = it.entered_currency || 'CHF';
-    const enteredAmt = it.entered_amount != null ? it.entered_amount : it.amount;
-    const periodOpts = ['monthly','yearly','weekly'].map(p =>
-      '<option value="' + p + '"' + (p === it.period ? ' selected' : '') + '>' + p.charAt(0).toUpperCase() + p.slice(1) + '</option>'
-    ).join('');
-    const ccyOpts = ['CHF','USD','EUR','GBP','AUD'].map(c =>
-      '<option value="' + c + '"' + (c === enteredCcy ? ' selected' : '') + '>' + c + '</option>'
-    ).join('');
-    // Build From-account options from the live NW accounts
-    const accounts = (typeof listAllNwAccounts === 'function') ? listAllNwAccounts() : [];
-    const ICONS = { bank: '🏦', stocks: '📈' };
-    const currentFrom = (it.fromCat && it.fromAccount) ? (it.fromCat + '::' + it.fromAccount) : '';
-    const fromOpts = '<option value="">No account linked</option>' + accounts.map(a => {
-      const v = a.catKey + '::' + a.itemName;
-      return '<option value="' + v + '"' + (v === currentFrom ? ' selected' : '') + '>' + ICONS[a.catKey] + ' ' + escapeHtml(a.itemName) + '</option>';
-    }).join('');
-    row.innerHTML = '';
-    row.style.gridTemplateColumns = '1fr';
-    row.style.padding = '14px';
-    const form = document.createElement('div');
-    form.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center';
-    form.innerHTML =
-      '<input type="text" class="se-name" value="' + escapeHtml(it.name) + '" style="flex:1.5;min-width:120px;padding:6px 10px;border:0.5px solid rgba(255,255,255,0.10);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary)" />' +
-      '<input type="number" step="0.01" class="se-amt" value="' + Number(enteredAmt).toFixed(2) + '" style="width:90px;padding:6px 10px;border:0.5px solid rgba(255,255,255,0.10);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary)" />' +
-      '<select class="se-ccy" style="padding:6px 10px;border:0.5px solid rgba(255,255,255,0.10);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary)">' + ccyOpts + '</select>' +
-      '<select class="se-per" style="padding:6px 10px;border:0.5px solid rgba(255,255,255,0.10);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary)">' + periodOpts + '</select>' +
-      '<label class="date-field" style="min-width:140px"><span class="date-emoji" aria-hidden="true">📅</span><input type="date" class="se-ren" value="' + (it.renewal && /^\d{4}-\d{2}-\d{2}/.test(it.renewal) ? it.renewal.slice(0,10) : '') + '" /></label>' +
-      '<select class="se-from" style="padding:6px 10px;border:0.5px solid rgba(255,255,255,0.10);border-radius:var(--radius-md);font-size:12px;font-family:inherit;background:var(--bg-card);color:var(--text-primary);min-width:130px">' + fromOpts + '</select>' +
-      '<label class="sub-auto-toggle" style="padding:6px 10px"><input type="checkbox" class="se-auto"' + (it.autoDeduct ? ' checked' : '') + ' /><span class="sub-auto-track"><span class="sub-auto-thumb"></span></span><span class="sub-auto-label">Auto-deduct</span></label>' +
-      '<button class="se-save quick-add-btn">Save</button>' +
-      '<button class="se-cancel" style="background:transparent;border:1px solid var(--input-border);color:var(--text-tertiary);cursor:pointer;font-size:12px;padding:6px 10px;border-radius:var(--radius-md);font-family:inherit">Cancel</button>';
-    row.appendChild(form);
-    const save = () => {
-      const newName = row.querySelector('.se-name').value.trim();
-      const newAmtRaw = parseFloat(row.querySelector('.se-amt').value);
-      const newCcy = row.querySelector('.se-ccy').value;
-      const newPer = row.querySelector('.se-per').value;
-      const newRen = row.querySelector('.se-ren').value || null;
-      const newFromVal = row.querySelector('.se-from').value;
-      const newAuto = row.querySelector('.se-auto').checked;
-      let newFromCat = null, newFromAccount = null;
-      if (newFromVal) {
-        const ix = newFromVal.indexOf('::');
-        if (ix > 0) { newFromCat = newFromVal.slice(0, ix); newFromAccount = newFromVal.slice(ix + 2); }
-      }
-      if (newAuto && (!newFromCat || !newFromAccount)) {
-        alert('Pick a "From account" — auto-deduct needs somewhere to take the money from.');
-        return;
-      }
-      if (!newName || isNaN(newAmtRaw)) return;
-      const rate = exchangeRates[newCcy] || 1;
-      items[idx] = { ...it, name: newName, amount: newAmtRaw / rate, period: newPer, renewal: newRen, entered_amount: newAmtRaw, entered_currency: newCcy, fromCat: newFromCat, fromAccount: newFromAccount, autoDeduct: newAuto };
-      storeSet('subs', items); renderSubs();
-    };
-    const cancel = () => renderSubs();
-    row.querySelector('.se-save').addEventListener('click', save);
-    row.querySelector('.se-cancel').addEventListener('click', cancel);
-    row.querySelectorAll('input').forEach(i => {
-      i.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') save();
-        else if (e.key === 'Escape') cancel();
-      });
-    });
-    row.querySelector('.se-name').focus();
-  }
-
-  function doSubAdd() {
-    try {
-      const nEl = document.getElementById('subName');
-      const aEl = document.getElementById('subAmount');
-      const ccEl = document.getElementById('subCurrency');
-      const pEl = document.getElementById('subPeriod');
-      const rEl = document.getElementById('subRenewal');
-      const fEl = document.getElementById('subFromCat');
-      const tEl = document.getElementById('subAutoDeduct');
-      if (!nEl || !aEl) return;
-      const n = (nEl.value || '').trim();
-      const aRaw = parseFloat(aEl.value);
-      if (!n || isNaN(aRaw)) { nEl.focus(); return; }
-      const enteredCcy = ccEl ? ccEl.value : 'CHF';
-      const rate = exchangeRates[enteredCcy] || 1;
-      const amountCHF = aRaw / rate;
-      // Parse "From" selection — value is "catKey::accountName"
-      let fromCat = null, fromAccount = null;
-      if (fEl && fEl.value) {
-        const ix = fEl.value.indexOf('::');
-        if (ix > 0) { fromCat = fEl.value.slice(0, ix); fromAccount = fEl.value.slice(ix + 2); }
-      }
-      const autoDeduct = !!(tEl && tEl.checked);
-      // Guard: auto-deduct requires a linked account
-      if (autoDeduct && (!fromCat || !fromAccount)) {
-        alert('Pick a "From account" first — auto-deduct needs to know where to take the money from.');
-        return;
-      }
-      const items = storeGet('subs') || [];
-      items.push({
-        name: n, amount: amountCHF,
-        period: pEl ? pEl.value : 'monthly',
-        renewal: rEl && rEl.value ? rEl.value : null,
-        entered_amount: aRaw,
-        entered_currency: enteredCcy,
-        fromCat: fromCat,
-        fromAccount: fromAccount,
-        autoDeduct: autoDeduct,
-        lastDeductedAt: null
-      });
-      storeSet('subs', items);
-      nEl.value = ''; aEl.value = '';
-      if (rEl) rEl.value = '';
-      if (tEl) tEl.checked = false;
-      renderSubs();
-    } catch (e) { console.error('subAdd failed', e); }
-  }
-  // Add button uses event delegation (see safety-net at the bottom).
-  // Enter key on the inputs still triggers add directly.
-  if (subName)   subName.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSubAdd(); });
-  if (subAmount) subAmount.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSubAdd(); });
-  renderSubs();
-
-  // ============================================================
-  // WISHLIST — items with % of net worth.
-  // Each item is { name, amountCHF, ts, ccy }. Stored in 'wishlist'.
-  // Colors: <5% green, 5-25% amber, >25% red.
-  // ============================================================
-  // NOTE: don't use consts here — renderWishlist gets called from inside
-  // renderAllNetWorth which runs BEFORE this section's code (temporal dead
-  // zone). All DOM lookups happen inside the function body instead.
-  function nwGrandCHF() {
-    let g = 0;
-    NW_CATS.forEach(cat => {
-      const items = storeGet('nw:' + cat.key) || [];
-      items.forEach(it => { g += Number(it.amount) || 0; });
-    });
-    return g;
-  }
-  function pctClass(pct) {
-    if (pct < 5)  return 'good';
-    if (pct < 25) return 'warn';
-    return 'bad';
-  }
-  function renderWishlist() {
-    const wishList    = document.getElementById('wishList');
-    const wishEmpty   = document.getElementById('wishEmpty');
-    const wishTotalEl = document.getElementById('wishTotal');
-    const wishPctEl   = document.getElementById('wishPctOfNw');
-    const wishCountEl = document.getElementById('wishCount');
-    const heroPctEl   = document.getElementById('wishPctOfNwHero');
-    const heroFill    = document.getElementById('wishHeroFill');
-    if (!wishList) return;
-    const items = storeGet('wishlist') || [];
-    const grand = nwGrandCHF();
-    let total = 0;
-    items.forEach(it => { total += Number(it.amount) || 0; });
-
-    // Hero: total + huge % + color-coded
-    if (wishTotalEl) wishTotalEl.textContent = fmtMoney(total);
-    if (grand > 0) {
-      const pct = (total / grand) * 100;
-      const cls = pctClass(pct);
-      if (heroPctEl) {
-        heroPctEl.textContent = pct.toFixed(2) + '%';
-        heroPctEl.className = 'wish-hero-pct-num' + (cls === 'good' ? '' : (cls === 'warn' ? ' warn' : ' bad'));
-      }
-      if (heroFill) heroFill.style.width = Math.min(100, pct) + '%';
-      if (wishPctEl) wishPctEl.textContent = 'Your wishlist is ' + pct.toFixed(2) + '% of your ' + fmtMoney(grand) + ' net worth';
-    } else {
-      if (heroPctEl) { heroPctEl.textContent = '—'; heroPctEl.className = 'wish-hero-pct-num'; }
-      if (heroFill) heroFill.style.width = '0%';
-      if (wishPctEl) wishPctEl.textContent = 'Add accounts in Net Worth first to see this as a %';
-    }
-    if (wishCountEl) wishCountEl.textContent = items.length + (items.length === 1 ? ' item' : ' items');
-
-    wishList.innerHTML = '';
-    if (!items.length) { if (wishEmpty) wishEmpty.classList.remove('hidden'); return; }
-    if (wishEmpty) wishEmpty.classList.add('hidden');
-
-    // Sort largest first so the biggest dreams sit at the top
-    items.slice().sort((a, b) => (b.amount || 0) - (a.amount || 0)).forEach((it) => {
-      const idx = items.indexOf(it);
-      const cost = Number(it.amount) || 0;
-      const pct = grand > 0 ? (cost / grand) * 100 : null;
-      const cls = pct == null ? 'flat' : pctClass(pct);
-      const pctText = pct == null ? '—' : pct.toFixed(2) + '%';
-      const fillPct = Math.min(100, pct == null ? 0 : pct);
-      const monthsToSave = (grand > 0 && cost > 0) ? Math.ceil(cost / Math.max(1, grand * 0.05)) : null; // rough: if you saved 5%/mo
-      const row = document.createElement('div');
-      row.className = 'wish-row';
-      row.innerHTML =
-          '<div class="wish-row-h">'
-        + '<div class="wish-row-info">'
-        +   '<div class="wish-row-name">' + escapeHtml(it.name) + '</div>'
-        +   '<div class="wish-row-meta">' + (it.entered_currency || 'CHF') + ' ' + Number(it.entered_amount != null ? it.entered_amount : it.amount).toLocaleString('en-US', {maximumFractionDigits: 2}) + ' · added ' + fmtActivityDate(it.ts || Date.now()) + '</div>'
-        + '</div>'
-        + '<div class="wish-row-amt-wrap">'
-        +   '<div class="wish-row-amt">' + fmtMoney(cost) + '</div>'
-        +   '<div class="wish-row-pct ' + cls + '">' + pctText + ' of NW</div>'
-        + '</div>'
-        + '<button class="wish-row-x" data-i="' + idx + '" aria-label="Remove">×</button>'
-        + '</div>'
-        + '<div class="wish-row-bar"><div class="wish-row-bar-fill ' + cls + '" style="width:' + fillPct + '%"></div></div>';
-      wishList.appendChild(row);
-    });
-    wishList.querySelectorAll('.wish-row-x').forEach(b => {
-      b.addEventListener('click', () => {
-        const i = parseInt(b.dataset.i, 10);
-        const arr = storeGet('wishlist') || [];
-        arr.splice(i, 1);
-        storeSet('wishlist', arr);
-        renderWishlist();
-      });
-    });
-  }
-  function doWishAdd() {
-    try {
-      const nEl = document.getElementById('wishName');
-      const aEl = document.getElementById('wishAmount');
-      const cEl = document.getElementById('wishCurrency');
-      if (!nEl || !aEl) return;
-      const n = (nEl.value || '').trim();
-      const aRaw = parseFloat(aEl.value);
-      if (!n || isNaN(aRaw)) { nEl.focus(); return; }
-      const enteredCcy = cEl ? cEl.value : 'CHF';
-      const rate = exchangeRates[enteredCcy] || 1;
-      const amountCHF = aRaw / rate;
-      const arr = storeGet('wishlist') || [];
-      arr.push({
-        name: n, amount: amountCHF, ts: Date.now(),
-        entered_amount: aRaw, entered_currency: enteredCcy
-      });
-      storeSet('wishlist', arr);
-      nEl.value = ''; aEl.value = '';
-      renderWishlist();
-    } catch (e) { console.error('wishAdd failed', e); }
-  }
-  // Add button uses inline onclick + delegation. Enter on the inputs:
-  const _wishName   = document.getElementById('wishName');
-  const _wishAmount = document.getElementById('wishAmount');
-  if (_wishName)   _wishName.addEventListener('keydown', (e) => { if (e.key === 'Enter') doWishAdd(); });
-  if (_wishAmount) _wishAmount.addEventListener('keydown', (e) => { if (e.key === 'Enter') doWishAdd(); });
-  renderWishlist();
-
-  // ============================================================
-  // ADD-BUTTON BULLETPROOFING — three independent paths:
-  //   1. inline onclick attribute (in the HTML) calls window.__addX
-  //   2. document-level click delegation matches by id
-  //   3. Enter-key on the inputs (already wired above)
-  // Any one working is enough — but together they're impossible to break.
-  // ============================================================
-  window.__addSub  = doSubAdd;
-  window.__addWish = doWishAdd;
-  document.addEventListener('click', (e) => {
-    const t = e.target.closest('button');
-    if (!t) return;
-    // Skip if the button already has an inline onclick (it'll fire that itself).
-    if (t.hasAttribute('onclick')) return;
-    if (t.id === 'subAddBtn')  { e.preventDefault(); doSubAdd();  }
-    if (t.id === 'wishAddBtn') { e.preventDefault(); doWishAdd(); }
-  });
-
-  // ============================================================
-  // INCOMING ORDERS — full-spec: name, cost (CHF base), currency,
-  // fromCat, expectedDate, ts. Stored under 'incoming_orders'.
-  // (ORD_FROM_META is declared at the top of this IIFE — see the
-  // header — because renderOrders runs as part of the very first
-  // renderAllNetWorth, which fires *before* this section is reached.
-  // Declaring it here would put it in the TDZ for that first call
-  // and crash the whole script if any orders were already saved.)
-  // ============================================================
-  function ordPctClass(pct) {
-    if (pct < 5)  return 'good';
-    if (pct < 25) return 'warn';
-    return 'bad';
-  }
-  function ordFmtArrival(iso) {
-    if (!iso) return null;
-    const isoSafe = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso + 'T00:00' : iso;
-    const d = new Date(isoSafe);
-    if (isNaN(d)) return null;
-    const now = new Date();
-    const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const diffDays = Math.round((dayStart - todayStart) / 86400000);
-    const dateLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    let cls = '', prefix = '';
-    if (diffDays < 0)        { cls = 'past';  prefix = 'late · '; }
-    else if (diffDays === 0) { cls = 'today'; prefix = 'today · '; }
-    else if (diffDays === 1) { cls = 'soon';  prefix = 'tomorrow · '; }
-    else if (diffDays <= 7)  { cls = 'soon';  prefix = 'in ' + diffDays + 'd · '; }
-    return { cls, label: prefix + dateLabel };
-  }
-  // Build the flat list of every NW account (across all 4 categories) so
-  // both the "From" dropdown on the add form AND the deduct chooser share
-  // the same source of truth.
-  function listAllNwAccounts() {
-    const out = [];
-    NW_CATS.forEach(cat => {
-      const items = storeGet('nw:' + cat.key) || [];
-      items.forEach((it, idx) => {
-        out.push({
-          catKey: cat.key,
-          itemIdx: idx,
-          itemName: String(it.name || ''),
-          amountCHF: Number(it.amount) || 0
-        });
-      });
-    });
-    return out;
-  }
-  // Refill the order add-form's "From" select with the user's actual NW
-  // accounts, preserving the current selection if that account still exists.
-  function populateOrdFromSelect() {
-    const sel = document.getElementById('ordFromCat');
-    if (!sel) return;
-    const accounts = listAllNwAccounts();
-    const prev = sel.value;
-    const ICONS = { bank: '🏦', stocks: '📈' };
-    if (!accounts.length) {
-      sel.innerHTML = '<option value="">No accounts yet</option>';
-      sel.disabled = true;
-      return;
-    }
-    sel.disabled = false;
-    sel.innerHTML = accounts.map(a => {
-      const value = a.catKey + '::' + a.itemName;
-      return '<option value="' + value + '">' + ICONS[a.catKey] + ' ' + escapeHtml(a.itemName) + '</option>';
-    }).join('');
-    if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
-  }
-  function renderOrders() {
-    const list = document.getElementById('ordList');
-    const empty = document.getElementById('ordEmpty');
-    const count = document.getElementById('ordCount');
-    if (!list) return;
-    // Refresh the "From" dropdown so newly added/renamed/deleted NW accounts show up.
-    populateOrdFromSelect();
-    const items = storeGet('incoming_orders') || [];
-    const grand = nwGrandCHF();
-    if (count) count.textContent = items.length + (items.length === 1 ? ' item' : ' items');
-    // Always clear before painting — earlier this re-rendered as an APPEND
-    // (so every NW change duplicated the cards). Now it's an idempotent paint.
-    list.innerHTML = '';
-    if (!items.length) {
-      if (empty) empty.classList.remove('hidden');
-      return;
-    }
-    if (empty) empty.classList.add('hidden');
-    // Sort: arrival date soonest first, undated last
-    items.slice().sort((a, b) => {
-      if (!a.date) return 1;
-      if (!b.date) return -1;
-      return a.date.localeCompare(b.date);
-    }).forEach(o => {
-      const cost = Number(o.amount) || 0;
-      const isDeducted = !!o.deductedAt;
-      // Use frozen pct once deducted; live pct otherwise.
-      let pct, pctText, pctCls;
-      if (isDeducted && typeof o.pctAtDeduction === 'number') {
-        pct = o.pctAtDeduction;
-        pctText = pct.toFixed(2) + '% of NW';
-        pctCls = ordPctClass(pct) + ' frozen';
-      } else if (grand > 0) {
-        pct = (cost / grand) * 100;
-        pctText = pct.toFixed(2) + '% of NW';
-        pctCls = ordPctClass(pct);
-      } else {
-        pct = null;
-        pctText = '— of NW';
-        pctCls = '';
-      }
-      const fromMeta = ORD_FROM_META[o.fromCat] || ORD_FROM_META.bank;
-      const fromAccountLabel = o.fromAccount ? escapeHtml(o.fromAccount) : fromMeta.name;
-      const arr = ordFmtArrival(o.date);
-      const arrHtml = arr
-        ? '<span class="ord-meta-pill date ' + arr.cls + '">' + arr.label + '</span>'
-        : '<span class="ord-meta-pill date">no arrival</span>';
-      const row = document.createElement('div');
-      row.className = 'ord-card cat-' + (o.fromCat || 'bank') + (isDeducted ? ' is-deducted' : '');
-      const footHtml = isDeducted
-        ? '<div class="ord-card-foot">'
-          +   '<span class="ord-deducted-pill">Deducted from ' + escapeHtml(o.deductedFrom && o.deductedFrom.name ? o.deductedFrom.name : fromAccountLabel) + '</span>'
-          +   '<button class="ord-deduct-undo" data-undo-id="' + o.id + '">Undo</button>'
-          + '</div>'
-        : '<div class="ord-card-foot">'
-          +   '<button class="ord-deduct-btn" data-deduct-id="' + o.id + '">− Deduct from net worth</button>'
-          + '</div>';
-      row.innerHTML =
-          '<div class="ord-card-h">'
-        +   '<div class="ord-card-name">' + escapeHtml(o.name) + '</div>'
-        +   '<div class="ord-card-amt">' + fmtMoney(cost) + '</div>'
-        +   '<button class="ord-card-x" data-id="' + o.id + '" aria-label="Remove">×</button>'
-        + '</div>'
-        + '<div class="ord-card-meta">'
-        +   '<span class="ord-meta-pill from">from · ' + fromAccountLabel + '</span>'
-        +   '<span class="ord-meta-pill pct ' + pctCls + '">' + pctText + '</span>'
-        +   arrHtml
-        + '</div>'
-        + footHtml;
-      list.appendChild(row);
-    });
-    // Wire up delete (×), deduct, and undo buttons.
-    list.querySelectorAll('.ord-card-x').forEach(b => {
-      b.addEventListener('click', () => {
-        const id = b.dataset.id;
-        const arr = (storeGet('incoming_orders') || []).filter(x => x.id !== id);
-        storeSet('incoming_orders', arr);
-        renderOrders();
-      });
-    });
-    list.querySelectorAll('.ord-deduct-btn').forEach(b => {
-      b.addEventListener('click', () => openDeductChooser(b.dataset.deductId, b.closest('.ord-card')));
-    });
-    list.querySelectorAll('.ord-deduct-undo').forEach(b => {
-      b.addEventListener('click', () => undoDeduct(b.dataset.undoId));
-    });
-  }
-  // ============================================================
-  // DEDUCT — open the inline chooser of NW accounts. Picking one
-  // subtracts the order amount from that account (in CHF), logs the
-  // activity, freezes the order's % at the moment of deduction, and
-  // marks the order as deducted (with no further % updates).
-  // ============================================================
-  function openDeductChooser(orderId, cardEl) {
-    if (!cardEl) return;
-    // Toggle: if a chooser already exists in this card, remove it.
-    const existing = cardEl.querySelector('.ord-deduct-chooser');
-    if (existing) { existing.remove(); return; }
-    const order = (storeGet('incoming_orders') || []).find(x => x.id === orderId);
-    if (!order) return;
-    const accounts = listAllNwAccounts();
-    if (!accounts.length) {
-      alert('Add at least one net worth account before deducting.');
-      return;
-    }
-    const ICONS = { bank: '🏦', stocks: '📈' };
-    const cost = Number(order.amount) || 0;
-    const optsHtml = accounts.map(a => {
-      const insufficient = a.amountCHF < cost - 0.005;
-      const cls = 'ord-deduct-opt' + (insufficient ? ' insufficient' : '');
-      return '<button class="' + cls + '" '
-        + 'data-cat="' + a.catKey + '" '
-        + 'data-name="' + escapeHtml(a.itemName) + '" '
-        + (insufficient ? 'data-insuf="1" ' : '')
-        + '>'
-        + ICONS[a.catKey] + ' ' + escapeHtml(a.itemName)
-        + '<small>' + fmtMoney(a.amountCHF) + (insufficient ? ' · not enough' : ' available') + '</small>'
-        + '</button>';
-    }).join('');
-    const chooser = document.createElement('div');
-    chooser.className = 'ord-deduct-chooser';
-    chooser.innerHTML =
-        '<div class="ord-deduct-chooser-title">Deduct ' + fmtMoney(cost) + ' from…</div>'
-      + '<div class="ord-deduct-options">' + optsHtml + '</div>'
-      + '<button class="ord-deduct-cancel" type="button">cancel</button>';
-    cardEl.appendChild(chooser);
-    chooser.querySelectorAll('.ord-deduct-opt').forEach(b => {
-      b.addEventListener('click', () => {
-        if (b.dataset.insuf === '1') {
-          if (!confirm('That account doesn\'t have enough — deduct anyway? (it will go negative)')) return;
-        }
-        confirmDeduct(orderId, b.dataset.cat, b.dataset.name);
-      });
-    });
-    chooser.querySelector('.ord-deduct-cancel').addEventListener('click', () => chooser.remove());
-  }
-  function confirmDeduct(orderId, catKey, itemName) {
-    const orders = storeGet('incoming_orders') || [];
-    const oIdx = orders.findIndex(x => x.id === orderId);
-    if (oIdx < 0) return;
-    const order = orders[oIdx];
-    if (order.deductedAt) return; // already deducted
-    const items = storeGet('nw:' + catKey) || [];
-    const itemIdx = items.findIndex(it => String(it.name) === String(itemName));
-    if (itemIdx < 0) {
-      alert('That account no longer exists. Refresh the chooser.');
-      return;
-    }
-    const cost = Number(order.amount) || 0;
-    const grandBefore = nwGrandCHF();
-    const pctAtDeduction = grandBefore > 0 ? (cost / grandBefore) * 100 : 0;
-    // Subtract from the chosen NW account
-    items[itemIdx].amount = (Number(items[itemIdx].amount) || 0) - cost;
-    storeSet('nw:' + catKey, items);
-    logActivity(catKey, items[itemIdx].name, -cost, 'edit');
-    // Mark the order as deducted with frozen %
-    orders[oIdx] = {
-      ...order,
-      deductedAt: Date.now(),
-      pctAtDeduction: pctAtDeduction,
-      deductedFrom: { cat: catKey, name: items[itemIdx].name }
-    };
-    storeSet('incoming_orders', orders);
-    renderAllNetWorth();   // re-paints NW totals, donut, activity, and orders
-  }
-  function undoDeduct(orderId) {
-    const orders = storeGet('incoming_orders') || [];
-    const oIdx = orders.findIndex(x => x.id === orderId);
-    if (oIdx < 0) return;
-    const order = orders[oIdx];
-    if (!order.deductedAt || !order.deductedFrom) return;
-    const cost = Number(order.amount) || 0;
-    const items = storeGet('nw:' + order.deductedFrom.cat) || [];
-    const itemIdx = items.findIndex(it => String(it.name) === String(order.deductedFrom.name));
-    if (itemIdx >= 0) {
-      items[itemIdx].amount = (Number(items[itemIdx].amount) || 0) + cost;
-      storeSet('nw:' + order.deductedFrom.cat, items);
-      logActivity(order.deductedFrom.cat, items[itemIdx].name, cost, 'edit');
-    }
-    orders[oIdx] = { ...order, deductedAt: null, pctAtDeduction: null, deductedFrom: null };
-    storeSet('incoming_orders', orders);
-    renderAllNetWorth();
-  }
-  // Wire renderOrders into the global render so it stays in sync with NW changes
-  const _prevRenderAll = (typeof renderAllNetWorth === 'function') ? renderAllNetWorth : null;
-  // The "From" select uses values like "bank::star one". Split into parts.
-  function parseFromValue(v) {
-    const s = String(v || '');
-    const ix = s.indexOf('::');
-    if (ix < 0) return { cat: 'bank', name: '' };
-    return { cat: s.slice(0, ix), name: s.slice(ix + 2) };
-  }
-  // Live preview on the add card — updates as user types the cost
-  function updateOrdPreview() {
-    const costEl = document.getElementById('ordCost');
-    const ccyEl  = document.getElementById('ordCurrency');
-    const fromEl = document.getElementById('ordFromCat');
-    const prev   = document.getElementById('ordAddPreview');
-    if (!prev) return;
-    const aRaw = parseFloat(costEl && costEl.value);
-    if (!costEl || isNaN(aRaw) || aRaw <= 0) {
-      prev.textContent = 'Type a cost — preview will show what % of net worth it takes.';
-      prev.className = 'ord-add-preview';
-      return;
-    }
-    const ccy = ccyEl ? ccyEl.value : 'CHF';
-    const rate = exchangeRates[ccy] || 1;
-    const amountCHF = aRaw / rate;
-    const grand = nwGrandCHF();
-    const parsed = parseFromValue(fromEl ? fromEl.value : '');
-    const fromName = parsed.name || (ORD_FROM_META[parsed.cat] || ORD_FROM_META.bank).name;
-    if (grand > 0) {
-      const pct = (amountCHF / grand) * 100;
-      const cls = ordPctClass(pct);
-      prev.textContent = fmtMoney(amountCHF) + ' from ' + fromName + ' · ' + pct.toFixed(2) + '% of your ' + fmtMoney(grand) + ' net worth';
-      prev.className = 'ord-add-preview ' + (cls === 'good' ? '' : cls);
-    } else {
-      prev.textContent = fmtMoney(amountCHF) + ' from ' + fromName + ' · add net worth first to see %';
-      prev.className = 'ord-add-preview';
-    }
-  }
-  function doOrdAdd() {
-    try {
-      const nEl = document.getElementById('ordName');
-      const aEl = document.getElementById('ordCost');
-      const cEl = document.getElementById('ordCurrency');
-      const fEl = document.getElementById('ordFromCat');
-      const dEl = document.getElementById('ordArrival');
-      if (!nEl || !aEl) return;
-      const n = (nEl.value || '').trim();
-      const aRaw = parseFloat(aEl.value);
-      if (!n || isNaN(aRaw)) { nEl.focus(); return; }
-      const ccy = cEl ? cEl.value : 'CHF';
-      const rate = exchangeRates[ccy] || 1;
-      const amountCHF = aRaw / rate;
-      const parsed = parseFromValue(fEl ? fEl.value : '');
-      const arr = storeGet('incoming_orders') || [];
-      arr.push({
-        id: 'o_' + Date.now() + '_' + Math.floor(Math.random() * 9999),
-        name: n,
-        amount: amountCHF,
-        entered_amount: aRaw,
-        entered_currency: ccy,
-        fromCat: parsed.cat || 'bank',
-        fromAccount: parsed.name || null,    // the actual NW item the user picked
-        date: dEl && dEl.value ? dEl.value : null,
-        ts: Date.now(),
-        deductedAt: null,
-        pctAtDeduction: null,
-        deductedFrom: null
-      });
-      storeSet('incoming_orders', arr);
-      nEl.value = ''; aEl.value = '';
-      if (dEl) dEl.value = '';
-      updateOrdPreview();
-      renderOrders();
-    } catch (e) { console.error('ordAdd failed', e); }
-  }
-  window.__addOrder = doOrdAdd;
-  // Wire live-preview listeners
-  ['ordCost','ordCurrency','ordFromCat'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', updateOrdPreview);
-    if (el) el.addEventListener('change', updateOrdPreview);
-  });
-  ['ordName','ordCost'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') doOrdAdd(); });
-  });
-  renderOrders();
-  updateOrdPreview();
-
-  // ============================================================
-  // FINANCE TICKER — rotates through upcoming subscription renewals
-  // every 5 seconds. Flashes red whenever the currently displayed sub
-  // renews in 5 days or fewer. Hides itself if there are no renewals.
-  // ============================================================
-  // Roll a renewal date forward by the period until it's >= today, so a
-  // sub that renewed Apr 28 (monthly) auto-shows the next renewal date
-  // instead of "past". Returns a Date.
-  function nextRenewalDate(isoDate, period) {
-    const isoSafe = (typeof isoDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(isoDate)) ? isoDate + 'T00:00' : isoDate;
-    let d = new Date(isoSafe);
-    if (isNaN(d)) return null;
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    let safety = 0;
-    while (d < today && safety++ < 600) {
-      if (period === 'weekly')      d.setDate(d.getDate() + 7);
-      else if (period === 'yearly') d.setFullYear(d.getFullYear() + 1);
-      else                          d.setMonth(d.getMonth() + 1); // monthly default
-    }
-    return d;
-  }
-  function buildTickerEntries() {
-    const subs = storeGet('subs') || [];
-    const out = [];
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    subs.forEach(s => {
-      if (!s.renewal) return;
-      const next = nextRenewalDate(s.renewal, s.period);
-      if (!next) return;
-      const days = Math.round((next.getTime() - today) / 86400000);
-      // Use the period-local cost for what the user actually pays at renewal,
-      // not the monthlyEquivalent — this ticker shows "what's about to hit".
-      out.push({
-        name: s.name,
-        amount: Number(s.amount) || 0,
-        days,
-        period: s.period
-      });
-    });
-    out.sort((a, b) => a.days - b.days);
-    return out;
-  }
-  let tickerIdx = 0;
-  let tickerTimer = null;
-  let tickerLastSig = '';   // signature of last-painted entries — skip re-paint if unchanged
-  let tickerLastEntries = [];
-  function tickerSig(entries) {
-    return entries.map(e => e.name + '|' + e.amount + '|' + e.days + '|' + (e.period || '')).join('~');
-  }
-  function paintTickerActive(wrap, stream, dots, entries) {
-    if (tickerIdx >= entries.length) tickerIdx = 0;
-    const items = stream.querySelectorAll('.ticker-item');
-    const dotEls = dots.querySelectorAll('.ticker-dot');
-    items.forEach((el, i) => el.classList.toggle('active', i === tickerIdx));
-    dotEls.forEach((el, i) => el.classList.toggle('active', i === tickerIdx));
-    const cur = entries[tickerIdx];
-    wrap.classList.toggle('urgent', !!(cur && cur.days <= 5));
-  }
-  function renderTicker() {
-    const wrap   = document.getElementById('financeTicker');
-    const stream = document.getElementById('tickerStream');
-    const dots   = document.getElementById('tickerDots');
-    if (!wrap || !stream || !dots) return;
-    const entries = buildTickerEntries();
-    const sig = tickerSig(entries);
-    // Fast path: nothing changed — don't repaint, don't disturb rotation.
-    if (sig === tickerLastSig) {
-      // Refresh urgent state in case the active item ticked closer (days didn't change but it's nice to keep in sync)
-      if (entries.length) paintTickerActive(wrap, stream, dots, entries);
-      return;
-    }
-    tickerLastSig = sig;
-    tickerLastEntries = entries;
-    if (!entries.length) {
-      wrap.classList.add('hidden');
-      stream.innerHTML = '';
-      dots.innerHTML = '';
-      if (tickerTimer) { clearInterval(tickerTimer); tickerTimer = null; }
-      return;
-    }
-    wrap.classList.remove('hidden');
-    if (tickerIdx >= entries.length) tickerIdx = 0;
-
-    // Paint the items as overlapping absolute layers; .active is the visible one
-    stream.innerHTML = entries.map((e, i) => {
-      const daysLabel = e.days < 0
-        ? Math.abs(e.days) + 'd late'
-        : e.days === 0
-          ? 'TODAY'
-          : e.days === 1
-            ? 'TOMORROW'
-            : 'in ' + e.days + 'd';
-      return '<div class="ticker-item' + (i === tickerIdx ? ' active' : '') + '" data-i="' + i + '">'
-        +   '<span class="ticker-item-name">' + escapeHtml(e.name) + '</span>'
-        +   '<span class="ticker-item-amt">' + fmtMoney(e.amount) + '</span>'
-        +   '<span class="ticker-item-days">' + daysLabel + '</span>'
-        + '</div>';
-    }).join('');
-    dots.innerHTML = entries.map((_, i) =>
-      '<span class="ticker-dot' + (i === tickerIdx ? ' active' : '') + '"></span>'
-    ).join('');
-    paintTickerActive(wrap, stream, dots, entries);
-
-    if (tickerTimer) { clearInterval(tickerTimer); tickerTimer = null; }
-    if (entries.length > 1) {
-      tickerTimer = setInterval(() => {
-        if (!tickerLastEntries.length) return;
-        tickerIdx = (tickerIdx + 1) % tickerLastEntries.length;
-        const w = document.getElementById('financeTicker');
-        const s = document.getElementById('tickerStream');
-        const d = document.getElementById('tickerDots');
-        if (w && s && d) paintTickerActive(w, s, d, tickerLastEntries);
-      }, 5000);
-    }
-  }
-  // Drive the ticker on a 1s heartbeat — bulletproof and avoids any
-  // fragile wrapping of renderSubs (which broke the add buttons before).
-  // The actual swap is gated by tickerTimer's own 5s interval inside
-  // renderTicker; this loop just keeps the data fresh whenever subs change.
-  function safeRenderTicker() {
-    try { renderTicker(); } catch (e) { console.error('ticker render failed', e); }
-  }
-  safeRenderTicker();
-  setInterval(safeRenderTicker, 1500);
-
-  // ============================================================
-  // NOVA — AI money coach. Sends the chat + a snapshot of the user's
-  // finances to Gemini (via callClaude -> /api/nova) and renders the reply.
-  // ============================================================
-  (function initNova() {
-    const messagesEl = document.getElementById('novaMessages');
-    const inputEl    = document.getElementById('novaInput');
-    const sendBtn    = document.getElementById('novaSend');
-    const suggEl     = document.getElementById('novaSuggestions');
-    if (!messagesEl || !inputEl || !sendBtn) return;
-
-    const convo = []; // [{ role:'user'|'assistant', content:string }]
-
-    // Snapshot of everything Nova should be able to reason about.
-    // Converts CHF (the canonical internal currency) to the user's
-    // actual display currency before handing anything to Nova — it
-    // used to send raw CHF numbers with just a "currency: AUD" label
-    // attached, which read as instruction-only and got ignored,
-    // so Nova was quoting CHF figures back as if they were AUD.
-    function gatherFinance() {
-      const symbol = currencyEl ? currencyEl.value : 'CHF';
-      const rate = exchangeRates[symbol] || 1;
-      const breakdown = {};
-      let netWorthCHF = 0;
-      ['bank', 'stocks'].forEach(k => {
-        const items = storeGet('nw:' + k) || [];
-        breakdown[k] = items.map(it => ({ name: it.name, amount: Math.round((Number(it.amount) || 0) * rate) }));
-        items.forEach(it => { netWorthCHF += Number(it.amount) || 0; });
-      });
-      return {
-        currency: symbol,
-        netWorth: Math.round(netWorthCHF * rate),
-        accounts: breakdown,
-        subscriptions: storeGet('subs') || [],
-        incomingOrders: storeGet('incoming_orders') || [],
-        wishlist: storeGet('wishlist') || []
-      };
-    }
-
-    function addBubble(role, text) {
-      const el = document.createElement('div');
-      el.className = 'nova-msg nova-msg-' + role;
-      el.textContent = text;
-      messagesEl.appendChild(el);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-      return el;
-    }
-
-    async function send(text) {
-      text = (text != null ? text : inputEl.value || '').trim();
-      if (!text || sendBtn.disabled) return;
-      inputEl.value = '';
-      inputEl.style.height = 'auto';
-      if (suggEl) suggEl.style.display = 'none';
-
-      addBubble('user', text);
-      convo.push({ role: 'user', content: text });
-
-      sendBtn.disabled = true;
-      const pending = addBubble('nova', 'Nova is thinking…');
-      pending.classList.add('nova-msg-loading');
-
-      const system =
-        "You are Nova, the built-in money coach for a personal net-worth dashboard. "
-        + "A JSON snapshot of the user's own finances is included below — use it to give "
-        + "specific, grounded, practical guidance about their money.\n\n"
-        + "How to respond:\n"
-        + "- Be warm, direct and concise. Lead with the answer, then a short reason. A few "
-        + "sentences or a tight bulleted list — never an essay.\n"
-        + "- Ground every claim in their actual data. Quote real figures (with the currency "
-        + "shown) instead of speaking in generalities. If the snapshot doesn't contain what "
-        + "you'd need, say so and ask one focused follow-up question.\n"
-        + "- Every amount in the snapshot is already in \"currency\" — the user's real display "
-        + "currency. Always show that same currency code with any figure you quote. Subscriptions "
-        + "list a cost and billing period; orders are incoming purchases; wishlist items are "
-        + "things they're saving for.\n"
-        + "- You give general financial education and guidance, not regulated investment, tax "
-        + "or legal advice. For big or irreversible money decisions, remind them to confirm "
-        + "with a qualified professional.\n"
-        + "- Never invent balances, holdings or transactions that aren't in the snapshot.\n"
-        + "- Reply with your final answer only — no internal reasoning, no \"Based on...\" preamble.\n\n"
-        + "Finance snapshot (JSON):\n" + JSON.stringify(gatherFinance());
-
-      try {
-        // model is set server-side now (GEMINI_MODEL in /api/nova.js) —
-        // this field is unused but harmless to leave off entirely.
-        const data = await callClaude({
-          max_tokens: 1024,
-          system: system,
-          messages: convo
-        });
-        pending.classList.remove('nova-msg-loading');
-        const reply = (data.content || [])
-          .filter(b => b && b.type === 'text').map(b => b.text).join('').trim() || '(no response)';
-        pending.textContent = reply;
-        convo.push({ role: 'assistant', content: reply });
-      } catch (e) {
-        pending.classList.remove('nova-msg-loading');
-        pending.textContent = '⚠ ' + ((e && e.message) || "Couldn't reach Nova.");
-      } finally {
-        sendBtn.disabled = false;
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      }
-    }
-
-    // Auto-grow the textarea as the user types.
-    inputEl.addEventListener('input', () => {
-      inputEl.style.height = 'auto';
-      inputEl.style.height = Math.min(inputEl.scrollHeight, 130) + 'px';
-    });
-    inputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-    });
-    sendBtn.addEventListener('click', () => send());
-    if (suggEl) suggEl.querySelectorAll('[data-q]').forEach(chip => {
-      chip.addEventListener('click', () => send(chip.dataset.q));
-    });
-  })();
-
-
   // Re-render every section when cloud sync pulls in a remote change
   // (dispatched as a 'storage' event by the initCloudSync onApplied
   // hook below) — without this, a value entered on another device only
   // shows up here after a manual reload.
   window.addEventListener('storage', () => {
     renderAllNetWorth();
-    renderSubs();
-    renderWishlist();
-    renderOrders();
   });
 
 })();
@@ -4775,7 +2292,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (typeof initCloudSync !== 'function') return;
   initCloudSync({
     appKey: 'finance-nw',
-    syncedKeys: ['subs', 'wishlist', 'incoming_orders', 'nw_currency', 'stocks:snapshot', 'stocks:lastFetchTs', 'fx:rates'],
+    syncedKeys: ['nw_currency', 'stocks:snapshot', 'stocks:lastFetchTs', 'fx:rates'],
     syncedPrefixes: ['nw:'],
     onApplied: function () {
       window.dispatchEvent(new Event('storage'));
@@ -4784,43 +2301,11 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-<!-- ===== Vitality backdrop — particle spawner ===== -->
-<script id="vty-backdrop-js">
-(function () {
-  // Drifting mint particle field: fewer dots on narrow viewports,
-  // random direction + duration per dot.
-  function spawnParticles() {
-    var root = document.getElementById('vty-particles');
-    if (!root) return;
-    root.innerHTML = '';
-    var N = window.innerWidth < 640 ? 14 : 24;
-    for (var i = 0; i < N; i++) {
-      var s = document.createElement('span');
-      s.style.left = (Math.random() * 100) + '%';
-      s.style.top = (60 + Math.random() * 40) + '%';
-      var size = 1.2 + Math.random() * 1.2;
-      s.style.width = s.style.height = size + 'px';
-      var dur = 22 + Math.random() * 28;
-      s.style.animationDuration = dur + 's';
-      s.style.animationDelay = (-Math.random() * dur) + 's';
-      s.style.setProperty('--dx', (Math.random() * 30 - 15) + 'px');
-      s.style.setProperty('--dy', -(60 + Math.random() * 50) + 'vh');
-      root.appendChild(s);
-    }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', spawnParticles);
-  } else {
-    spawnParticles();
-  }
-})();
-</script>
-
 <!-- Build marker — bumped on every meaningful change to this file, so
      it's possible to tell at a glance whether you're looking at a
      cached copy or the actual latest deploy. Compare against what
      Claude tells you the current build is. -->
-<div style="position:fixed;bottom:4px;left:8px;z-index:1;font-family:ui-monospace,monospace;font-size:9px;color:rgba(255,255,255,0.15);pointer-events:none;">build 2026-09-10a</div>
+<div style="position:fixed;bottom:4px;left:8px;z-index:1;font-family:ui-monospace,monospace;font-size:9px;color:rgba(255,255,255,0.15);pointer-events:none;">build 2026-09-21a</div>
 
 </body>
 </html>
