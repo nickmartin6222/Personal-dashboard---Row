@@ -57,13 +57,6 @@
     const LAST_PUSHED_KEY = '__sync_lastPushed_' + appKey;
     let lastSyncedJson = null;
     try { lastSyncedJson = localStorage.getItem(LAST_PUSHED_KEY); } catch (e) {}
-    // Set the instant any local write happens after boot. The initial
-    // remote pull below is async (a network round-trip) — if the user
-    // logs something before it resolves, applying that stale pull would
-    // silently wipe out what they just entered. When this is true by the
-    // time the pull comes back, local is newer than what we fetched, so
-    // push local up instead of overwriting it with the fetched copy.
-    let localChangedSinceBoot = false;
     // Set once the initial pull-vs-push decision below has actually run.
     // CRITICAL: pushNow() refuses to push until this is true — without
     // it, an unrelated write that lands before the initial remote fetch
@@ -115,11 +108,11 @@
     const origRemove = localStorage.removeItem.bind(localStorage);
     localStorage.setItem = function (k, v) {
       origSet(k, v);
-      try { if (!suppressSync && writeMatches(k)) { localChangedSinceBoot = true; schedulePush(); } } catch (e) {}
+      try { if (!suppressSync && writeMatches(k)) { schedulePush(); } } catch (e) {}
     };
     localStorage.removeItem = function (k) {
       origRemove(k);
-      try { if (!suppressSync && writeMatches(k)) { localChangedSinceBoot = true; schedulePush(); } } catch (e) {}
+      try { if (!suppressSync && writeMatches(k)) { schedulePush(); } } catch (e) {}
     };
 
     function applyRemote(remote) {
@@ -219,22 +212,33 @@
       supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       try {
         const currentLocalJson = JSON.stringify(collect());
-        // Local differs from the last CONFIRMED push from this browser
+        // Local differs from the last CONFIRMED push FROM THIS BROWSER
         // (persisted across page loads, not just this session) — real
         // unsynced changes are sitting here, most likely from a push
-        // that never completed (crash, closed too fast, offline).
+        // that never completed (crash, closed too fast, offline). This
+        // is the ONLY signal allowed to make local win over a non-empty
+        // remote (see below) — deliberately narrower than it used to be.
         const hasUnsyncedLocalChanges = lastSyncedJson != null && currentLocalJson !== lastSyncedJson;
-        // Nothing has EVER been confirmed pushed from this browser for
-        // this appKey, but there's real local data — the exact rollout
-        // scenario where sync just got wired up on a page that was
-        // already holding real, never-synced data (a logged workout, an
-        // edited goal). Without this, the pull below would treat remote
-        // as authoritative and silently overwrite it.
-        const isFirstSyncWithData = lastSyncedJson == null && currentLocalJson !== '{}';
         const { data, error } = await supa
           .from('app_state').select('data').eq('key', appKey).maybeSingle();
         if (!error && data && data.data && Object.keys(data.data).length > 0) {
-          if (localChangedSinceBoot || hasUnsyncedLocalChanges || isFirstSyncWithData) {
+          // Remote already has real data. The ONLY reason to push local
+          // over it is hasUnsyncedLocalChanges — a genuine prior push
+          // from THIS browser that didn't make it up. Deliberately NOT
+          // gated on "local changed since boot" or "never synced before
+          // but local isn't empty": this page's own script can write to
+          // synced keys (an exchange-rate cache refresh, an eager first
+          // render before this pull even resolves) well before the real
+          // remote data has been pulled down — on a browser that's never
+          // confirmed a push, that self-inflicted write used to read as
+          // "local has real changes, push it", which upserts an
+          // incomplete local snapshot straight over the real remote row
+          // (a full replace, not a merge) and silently deletes whatever
+          // keys this tab hadn't loaded yet. That's the exact bug that
+          // wiped real net-worth data. A browser with no confirmed push
+          // of its own has nothing worth preserving over an already-
+          // established remote state, full stop.
+          if (hasUnsyncedLocalChanges) {
             schedulePush();
           } else {
             lastSyncedJson = JSON.stringify(data.data);
