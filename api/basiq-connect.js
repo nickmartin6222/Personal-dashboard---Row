@@ -19,10 +19,13 @@
 const BASIQ_BASE = 'https://au-api.basiq.io';
 
 async function getServerToken(apiKey) {
+  // Basiq API keys are already the credential to send as-is — no extra
+  // base64-wrapping needed (that was the bug: double-encoding produced
+  // a header Basiq's /token endpoint rejected outright).
   const r = await fetch(BASIQ_BASE + '/token', {
     method: 'POST',
     headers: {
-      Authorization: 'Basic ' + Buffer.from(apiKey + ':').toString('base64'),
+      Authorization: 'Basic ' + apiKey,
       'Content-Type': 'application/x-www-form-urlencoded',
       'basiq-version': '3.0',
     },
@@ -37,7 +40,7 @@ async function getClientToken(apiKey, userId) {
   const r = await fetch(BASIQ_BASE + '/token', {
     method: 'POST',
     headers: {
-      Authorization: 'Basic ' + Buffer.from(apiKey + ':').toString('base64'),
+      Authorization: 'Basic ' + apiKey,
       'Content-Type': 'application/x-www-form-urlencoded',
       'basiq-version': '3.0',
     },
