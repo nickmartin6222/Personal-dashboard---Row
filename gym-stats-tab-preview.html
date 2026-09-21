@@ -1726,7 +1726,14 @@ section { margin-bottom: 22px; }
     if (typeof initCloudSync === 'function') {
       initCloudSync({
         appKey: 'po-coach',
-        syncedKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_custom_exercises'],
+        // po_coach_weights is the one key this page actually writes to
+        // (the body-weight log) — stays a real synced key. Everything
+        // else here is read-only display (exercise history, PRs), so
+        // it's pull-only: navigating away must never re-push a stale
+        // copy over a workout just logged on the Workouts page itself
+        // (see sync.js).
+        syncedKeys: ['po_coach_weights'],
+        pullOnlyKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_photos', 'po_coach_custom_exercises'],
         onApplied: function () {
           try {
             var rawW2 = localStorage.getItem('po_coach_weights');

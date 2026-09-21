@@ -1131,7 +1131,11 @@ body::after {
     if (typeof initCloudSync !== 'function') return;
     initCloudSync({
       appKey: 'po-coach',
-      syncedKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_custom_exercises'],
+      // Read-only — this page only shows a workouts mini-tile, never
+      // writes any of these. Pull-only so navigating away never
+      // re-pushes a stale copy over a workout just logged on the
+      // actual Workouts page (see sync.js).
+      pullOnlyKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_custom_exercises'],
       onApplied: function () { window.dispatchEvent(new Event('storage')); }
     });
   });

@@ -984,7 +984,11 @@ html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text-sec
     // blank tile) since there was already a fallback in place.
     initCloudSync({
       appKey: 'po-coach',
-      syncedKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_custom_exercises'],
+      // Read-only here — this page only checks po_coach_v1 for its own
+      // gym/rest-day detection, never writes any of these. Pull-only so
+      // navigating away never re-pushes a stale copy over a workout
+      // just logged on the actual Workouts page (see sync.js).
+      pullOnlyKeys: ['po_coach_v1', 'po_coach_workout_done', 'po_coach_weights', 'po_coach_photos', 'po_coach_custom_exercises'],
       onApplied: function () { window.dispatchEvent(new Event('storage')); }
     });
   });

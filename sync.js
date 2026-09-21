@@ -2,8 +2,20 @@
 // Shared cloud-sync helper for the dashboard.
 // Each page calls initCloudSync({...}) once with its config:
 //   appKey         — string row key in the public.app_state table
-//   syncedKeys     — exact localStorage keys to mirror
+//   syncedKeys     — exact localStorage keys to mirror (read AND write —
+//                    local changes to these get pushed up)
 //   syncedPrefixes — localStorage key prefixes to mirror (e.g. 'goals:')
+//   pullOnlyKeys   — exact localStorage keys this page reads but never
+//                    writes (e.g. a page showing another page's data in
+//                    a mini-tile). Pulled/applied like syncedKeys, but
+//                    NEVER included in this page's own push payload —
+//                    without this, a page that only ever *displays*
+//                    someone else's data would still re-push its own
+//                    (possibly stale) copy of it on every local write to
+//                    ANYTHING it owns, or on every navigation-away
+//                    (flushOnUnload fires on every page leave), silently
+//                    clobbering a genuinely newer edit made on the
+//                    actual owning page moments earlier.
 //   onApplied      — optional callback after remote state has been applied
 //
 // Requires:
@@ -22,6 +34,7 @@
     const appKey = config && config.appKey;
     const syncedKeys = (config && config.syncedKeys) || [];
     const syncedPrefixes = (config && config.syncedPrefixes) || [];
+    const pullOnlyKeys = (config && config.pullOnlyKeys) || [];
     const onApplied = config && config.onApplied;
     if (!appKey) return;
     if (!window.supabase) return;
@@ -52,7 +65,8 @@
     // push local up instead of overwriting it with the fetched copy.
     let localChangedSinceBoot = false;
 
-    function matches(k) {
+    // Write-eligible: this page may push local changes to these keys.
+    function writeMatches(k) {
       if (!k) return false;
       if (syncedKeys.indexOf(k) !== -1) return true;
       for (let i = 0; i < syncedPrefixes.length; i++) {
@@ -60,17 +74,23 @@
       }
       return false;
     }
-    function listAllKeys() {
+    // Read-eligible: everything write-eligible, plus pull-only keys this
+    // page mirrors for display but must never push back up.
+    function readMatches(k) {
+      if (writeMatches(k)) return true;
+      return pullOnlyKeys.indexOf(k) !== -1;
+    }
+    function listKeys(matchFn) {
       const out = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (matches(k)) out.push(k);
+        if (matchFn(k)) out.push(k);
       }
       return out;
     }
     function collect() {
       const out = {};
-      for (const k of listAllKeys()) {
+      for (const k of listKeys(writeMatches)) {
         const v = localStorage.getItem(k);
         if (v == null) continue;
         try { out[k] = JSON.parse(v); } catch (e) { out[k] = v; }
@@ -82,11 +102,11 @@
     const origRemove = localStorage.removeItem.bind(localStorage);
     localStorage.setItem = function (k, v) {
       origSet(k, v);
-      try { if (!suppressSync && matches(k)) { localChangedSinceBoot = true; schedulePush(); } } catch (e) {}
+      try { if (!suppressSync && writeMatches(k)) { localChangedSinceBoot = true; schedulePush(); } } catch (e) {}
     };
     localStorage.removeItem = function (k) {
       origRemove(k);
-      try { if (!suppressSync && matches(k)) { localChangedSinceBoot = true; schedulePush(); } } catch (e) {}
+      try { if (!suppressSync && writeMatches(k)) { localChangedSinceBoot = true; schedulePush(); } } catch (e) {}
     };
 
     function applyRemote(remote) {
@@ -95,14 +115,14 @@
       let changed = false;
       try {
         for (const k of Object.keys(remote)) {
-          if (!matches(k)) continue;
+          if (!readMatches(k)) continue;
           const incoming = JSON.stringify(remote[k]);
           const local = localStorage.getItem(k);
           if (local !== incoming) {
             try { origSet(k, incoming); changed = true; } catch (e) {}
           }
         }
-        for (const k of listAllKeys()) {
+        for (const k of listKeys(readMatches)) {
           if (!(k in remote)) {
             try { origRemove(k); changed = true; } catch (e) {}
           }
@@ -216,7 +236,7 @@
     window.addEventListener('beforeunload', flushOnUnload);
     window.addEventListener('pagehide', flushOnUnload);
     window.addEventListener('storage', (e) => {
-      if (e.key && matches(e.key)) schedulePush();
+      if (e.key && writeMatches(e.key)) schedulePush();
     });
 
     return { flush: flushNow };
