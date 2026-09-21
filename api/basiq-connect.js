@@ -104,6 +104,26 @@ export default async function handler(req, res) {
       });
     }
 
+    // Basiq won't generate a consent link without a valid mobile number
+    // on the user record — pass ?mobile=+61...  once to set it (safe to
+    // include on every call, it's a no-op if already set to this value).
+    const mobile = req.query.mobile;
+    if (mobile) {
+      const updateResp = await fetch(BASIQ_BASE + '/users/' + encodeURIComponent(userId), {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + serverToken,
+          'Content-Type': 'application/json',
+          'basiq-version': '3.0',
+        },
+        body: JSON.stringify({ mobile: String(mobile) }),
+      });
+      const updated = await updateResp.json().catch(() => ({}));
+      if (!updateResp.ok) {
+        return res.status(502).json({ error: 'Basiq user update (mobile) failed', basiq: updated });
+      }
+    }
+
     const clientToken = await getClientToken(apiKey, userId);
     // Basiq's hosted Consent UI — logs you into Macquarie on THEIR page,
     // never sends your bank credentials through this server.
