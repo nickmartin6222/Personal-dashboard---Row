@@ -64,6 +64,19 @@
     // time the pull comes back, local is newer than what we fetched, so
     // push local up instead of overwriting it with the fetched copy.
     let localChangedSinceBoot = false;
+    // Set once the initial pull-vs-push decision below has actually run.
+    // CRITICAL: pushNow() refuses to push until this is true — without
+    // it, an unrelated write that lands before the initial remote fetch
+    // resolves (e.g. an exchange-rate refresh, which is a totally
+    // separate fetch that can simply finish first) would schedule a
+    // push built from collect() BEFORE this tab has pulled its real
+    // synced data down at all. That push would upsert an incomplete
+    // snapshot over the real remote row — a full replace, not a merge —
+    // silently wiping any key this tab hadn't loaded yet. This is
+    // exactly what happened to real net-worth data once; the gate below
+    // is the fix.
+    let initialSyncDone = false;
+    let pendingPushAfterInit = false;
 
     // Write-eligible: this page may push local changes to these keys.
     function writeMatches(k) {
@@ -140,6 +153,13 @@
     }
     async function pushNow() {
       if (!supa) return;
+      if (!initialSyncDone) {
+        // Defer — see the comment on initialSyncDone above. Re-attempted
+        // automatically once init() below finishes either applying the
+        // real remote state or deciding local should win.
+        pendingPushAfterInit = true;
+        return;
+      }
       const state = collect();
       const json = JSON.stringify(state);
       if (json === lastSyncedJson) return;
@@ -167,6 +187,13 @@
       return pushNow();
     }
     function flushOnUnload() {
+      // Same gate as pushNow() — never fire a snapshot before the
+      // initial pull has resolved (see initialSyncDone above). Worst
+      // case here, a tab closed within that first instant just misses
+      // flushing an in-flight edit on the way out, same as any other
+      // best-effort unload save can already miss — nothing new lost,
+      // and nothing risked overwritten.
+      if (!initialSyncDone) return;
       const state = collect();
       const json = JSON.stringify(state);
       if (json === lastSyncedJson) return;
@@ -216,7 +243,11 @@
         } else if (Object.keys(collect()).length > 0) {
           schedulePush();
         }
-      } catch (e) {}
+      } catch (e) {
+      } finally {
+        initialSyncDone = true;
+        if (pendingPushAfterInit) { pendingPushAfterInit = false; schedulePush(); }
+      }
       supa.channel('app_state_' + appKey)
         .on('postgres_changes', {
           event: '*',
