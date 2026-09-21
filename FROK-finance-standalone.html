@@ -66,6 +66,11 @@
   --border: rgba(255, 255, 255, 0.07);
   --border-soft: rgba(255, 255, 255, 0.05);
   --accent: #6EE3A4;
+  /* Ink color for text sitting ON TOP of a solid --accent fill (the
+     hero Net Worth tile) — same #07140d already used for aikey-btn-save
+     text on a --success-filled button elsewhere in this file, reused
+     rather than inventing a new value. */
+  --accent-ink: #07140D;
   --success: #6EE3A4;
   --warning: #F2C063;
   --danger: #C4366B;
@@ -810,7 +815,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   text-transform: uppercase;
 }
 .nw-activity-amt {
-  font-size: 13px; font-weight: 700;
+  font-size: 14.5px; font-weight: 800;
   font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
   white-space: nowrap;
@@ -862,6 +867,84 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   .nw-inline-edit-2col input { flex: 1; width: auto !important; min-width: 0 !important; }
 }
 
+/* ===== Hero tiles (Net worth / Savings / Investment portfolio) =====
+   Everything here reads var(--accent)/var(--success)/var(--trend-down)/
+   var(--text-*) tokens only, so both themes are handled automatically
+   by the existing root blocks above — no separate [data-theme="light"]
+   overrides needed for this block. */
+.fin-hero-row { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 12px; }
+.fin-tile {
+  border-radius: var(--radius-lg); padding: 16px 18px 14px; min-height: 96px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  border: 1.5px solid var(--accent); background: var(--glass-bg);
+}
+.fin-tile.hero { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.fin-tile-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.85; }
+.fin-tile-figure { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 26px; font-weight: 800; margin-top: 8px; letter-spacing: -0.01em; }
+.fin-tile-delta { font-size: 12.5px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.fin-tile-delta.up { color: var(--success); } .fin-tile-delta.down { color: var(--trend-down); }
+.fin-tile.hero .fin-tile-delta.up, .fin-tile.hero .fin-tile-delta.down { color: var(--accent-ink); opacity: 0.85; }
+@media (max-width: 720px) { .fin-hero-row { grid-template-columns: 1fr; } }
+
+/* ===== Portfolio — pronounced holding cards =====
+   Replaces the old thin .nw-row list rows. renderNetWorthCategory()
+   still creates the exact same name/ticker/amount elements with the
+   exact same classes + click handlers (beginNwNameEdit etc.) — only
+   the surrounding card markup/CSS is new, so tap-to-edit keeps working
+   unchanged underneath this. */
+.holding-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 9px; }
+.holding-card {
+  background: var(--card-soft); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 11px 12px 12px;
+}
+.holding-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-bottom: 9px; }
+.holding-avatar {
+  width: 28px; height: 28px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--tint) 18%, transparent); color: var(--tint); flex-shrink: 0;
+}
+.holding-avatar svg { width: 14px; height: 14px; }
+.holding-controls { display: flex; align-items: center; gap: 6px; }
+.holding-name { color: var(--text-primary); font-size: 13.5px; font-weight: 700; line-height: 1.25; display: block; }
+.holding-metarow { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.holding-value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 16.5px !important; font-weight: 800 !important; margin-top: 9px; display: block; }
+.holding-pill {
+  font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; font-variant-numeric: tabular-nums;
+}
+.holding-pill.up { color: var(--success); background: color-mix(in srgb, var(--success) 16%, transparent); }
+.holding-pill.down { color: var(--trend-down); background: color-mix(in srgb, var(--trend-down) 16%, transparent); }
+.fin-add-trigger {
+  display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); background: transparent;
+  color: var(--text-secondary); font-family: var(--font); font-size: 11px; font-weight: 700;
+  padding: 5px 10px; border-radius: 999px; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.fin-add-trigger:hover { background: var(--bg-card); color: var(--text-primary); }
+
+/* ===== Centered add-new modal ===== */
+.fin-modal-veil {
+  position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+  padding: 20px; background: rgba(5,5,6,0.6); backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none; transition: opacity 0.18s;
+}
+.fin-modal-veil.open { opacity: 1; pointer-events: auto; }
+.fin-modal {
+  width: 100%; max-width: 420px; background: var(--bg); border: 1px solid var(--glass-border-strong, var(--border));
+  border-radius: var(--radius-lg); padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  transform: translateY(8px) scale(0.98); transition: transform 0.18s;
+}
+.fin-modal-veil.open .fin-modal { transform: translateY(0) scale(1); }
+.fin-modal-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.fin-modal-title { font-family: var(--font-heading); font-weight: 600; font-size: 19px; color: var(--text-primary); }
+.fin-modal-close {
+  width: 28px; height: 28px; border-radius: 8px; border: 0; background: var(--bg-card); color: var(--text-secondary);
+  cursor: pointer; font-size: 14px; line-height: 1;
+}
+.fin-tabbar { display: flex; gap: 4px; background: var(--bg-card); padding: 3px; border-radius: 999px; margin-bottom: 16px; }
+.fin-tabbar button {
+  flex: 1; border: 0; background: transparent; padding: 8px; border-radius: 999px; font-family: var(--font);
+  font-size: 12.5px; font-weight: 700; color: var(--text-secondary); cursor: pointer;
+}
+.fin-tabbar button.on { background: var(--accent); color: var(--accent-ink); }
+
 /* ===== Light theme overrides =====
    Additive only — mirrors the same pass done on finance.html. Covers
    the page shell, back/AI-key buttons, bottom tab bar, and the AI key
@@ -889,6 +972,10 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   --border: rgba(46, 46, 46, 0.08);
   --border-soft: rgba(46, 46, 46, 0.05);
   --accent: #003B2F;
+  /* Same reasoning as the dark root's --accent-ink — light text for the
+     hero tile's solid --accent fill, reusing this theme's own --bg
+     value (#F4EFE3) rather than a new literal. */
+  --accent-ink: #F4EFE3;
   --success: #2F6B52;
   --warning: #C2A46F;
   --danger: #6B3B3B;
@@ -1005,20 +1092,35 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
     <span class="section-title-text">NET WORTH</span>
   </div>
   <div class="card" style="background:transparent;border:none !important;box-shadow:none;padding:0;overflow:visible">
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:14px">
-      <div>
-        <div style="font-size:11px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:0.04em;font-weight:500">Total net worth</div>
-        <div id="netWorthTotal" style="font-size:34px;font-weight:700;color:var(--text-primary);line-height:1.05;margin-top:2px">AUD 0</div>
-        <div id="netWorthBreakdown" style="font-size:11px;color:var(--text-tertiary);margin-top:4px"></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <select id="netWorthCurrency" style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit;cursor:pointer">
+        <option value="AUD" selected>AUD</option>
+        <option value="CHF">CHF</option>
+        <option value="USD">USD</option>
+        <option value="EUR">EUR</option>
+        <option value="GBP">GBP</option>
+      </select>
+    </div>
+    <div class="fin-hero-row" style="margin-bottom:14px">
+      <div class="fin-tile hero">
+        <div class="fin-tile-label">Net worth</div>
+        <div>
+          <div class="fin-tile-figure" id="heroNetFigure">AUD 0</div>
+          <div class="fin-tile-delta" id="heroNetDelta" hidden></div>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <select id="netWorthCurrency" style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit;cursor:pointer">
-          <option value="AUD" selected>AUD</option>
-          <option value="CHF">CHF</option>
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-          <option value="GBP">GBP</option>
-        </select>
+      <div class="fin-tile">
+        <div class="fin-tile-label">Savings</div>
+        <div>
+          <div class="fin-tile-figure" id="heroSavingsFigure">AUD 0</div>
+        </div>
+      </div>
+      <div class="fin-tile">
+        <div class="fin-tile-label">Investment portfolio</div>
+        <div>
+          <div class="fin-tile-figure" id="heroInvestFigure">AUD 0</div>
+          <div class="fin-tile-delta" id="heroInvestDelta" hidden></div>
+        </div>
       </div>
     </div>
 
@@ -1110,39 +1212,73 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
     <div class="card-grid" style="gap:10px">
       <!-- Bank accounts -->
       <div class="card nw-subcard">
-        <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span style="display:inline-flex;align-items:center;gap:6px"><i data-lucide="landmark" style="width:14px;height:14px"></i>Bank accounts</span><span id="bankTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
-        <div id="bankList" class="nw-list"></div>
-        <div class="quick-add">
-          <input type="text" placeholder="Account name" id="bankName" />
-          <input type="number" placeholder="Amount" id="bankAmount" step="0.01" />
-          <button class="quick-add-btn" id="bankAddBtn">+</button>
+        <div class="label" style="display:flex;justify-content:space-between;align-items:center">
+          <span style="display:inline-flex;align-items:center;gap:6px"><i data-lucide="landmark" style="width:14px;height:14px"></i>Bank accounts</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span id="bankTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span>
+            <button type="button" class="fin-add-trigger" data-add-tab="bank">+ Add new</button>
+          </span>
         </div>
+        <div id="bankList" class="holding-grid"></div>
       </div>
       <!-- Stocks / Investments -->
       <div class="card nw-subcard">
-        <div class="label" style="display:flex;justify-content:space-between;align-items:center"><span style="display:inline-flex;align-items:center;gap:6px"><i data-lucide="trending-up" style="width:14px;height:14px"></i>Stocks / Investments</span><span id="stocksTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span></div>
-        <div id="stocksList" class="nw-list"></div>
-
-        <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--accent);margin-top:10px">For live pricing</div>
-        <div class="quick-add" style="margin-top:6px">
-          <input type="text" placeholder="Ticker, e.g. IVV.AX" id="stocksTicker" style="text-transform:uppercase" />
-          <input type="number" placeholder="Units held (or leave blank)" id="stocksUnits" step="0.0001" />
+        <div class="label" style="display:flex;justify-content:space-between;align-items:center">
+          <span style="display:inline-flex;align-items:center;gap:6px"><i data-lucide="trending-up" style="width:14px;height:14px"></i>Stocks / Investments</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span id="stocksTotal" style="font-size:13px;color:var(--text-primary);font-weight:600">0</span>
+            <button type="button" class="fin-add-trigger" data-add-tab="stocks">+ Add new</button>
+          </span>
         </div>
-        <div style="font-size:10.5px;color:var(--text-tertiary);margin-top:6px;line-height:1.4">
-          Know your exact units? Enter them. Don't? Just enter a ticker and skip to Value below — units get worked out from that value ÷ today's price once it's fetched.
-        </div>
-
-        <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--text-tertiary);margin-top:12px">Name + value</div>
-        <div class="quick-add" style="margin-top:6px">
-          <input type="text" placeholder="Name (e.g. Vanguard S&P 500)" id="stocksName" />
-          <input type="number" placeholder="Value" id="stocksAmount" step="0.01" />
-          <button class="quick-add-btn" id="stocksAddBtn">+</button>
-        </div>
+        <div id="stocksList" class="holding-grid"></div>
       </div>
     </div>
   </div>
 </div>
 
+</div>
+
+<!-- Centered "Add new" modal — the same bank/stock composer fields that
+     used to sit inline in each subcard above, just relocated here. Same
+     element ids, so the existing add wiring further down (NW_CATS.forEach
+     ... addBtn.addEventListener) keeps working completely unchanged. -->
+<div class="fin-modal-veil" id="finAddVeil">
+  <div class="fin-modal">
+    <div class="fin-modal-h">
+      <div class="fin-modal-title">Add new</div>
+      <button type="button" class="fin-modal-close" id="finAddClose" aria-label="Close">✕</button>
+    </div>
+    <div class="fin-tabbar" id="finAddTabs">
+      <button type="button" data-tab="bank" class="on">Bank account</button>
+      <button type="button" data-tab="stocks">Stock / investment</button>
+    </div>
+
+    <div id="finBankPanel">
+      <div class="quick-add">
+        <input type="text" placeholder="Account name" id="bankName" />
+        <input type="number" placeholder="Amount" id="bankAmount" step="0.01" />
+        <button class="quick-add-btn" id="bankAddBtn">+</button>
+      </div>
+    </div>
+
+    <div id="finStockPanel" style="display:none">
+      <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--accent)">For live pricing</div>
+      <div class="quick-add" style="margin-top:6px">
+        <input type="text" placeholder="Ticker, e.g. IVV.AX" id="stocksTicker" style="text-transform:uppercase" />
+        <input type="number" placeholder="Units held (or leave blank)" id="stocksUnits" step="0.0001" />
+      </div>
+      <div style="font-size:10.5px;color:var(--text-tertiary);margin-top:6px;line-height:1.4">
+        Know your exact units? Enter them. Don't? Just enter a ticker and skip to Value below — units get worked out from that value ÷ today's price once it's fetched.
+      </div>
+
+      <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--text-tertiary);margin-top:12px">Name + value</div>
+      <div class="quick-add" style="margin-top:6px">
+        <input type="text" placeholder="Name (e.g. Vanguard S&P 500)" id="stocksName" />
+        <input type="number" placeholder="Value" id="stocksAmount" step="0.01" />
+        <button class="quick-add-btn" id="stocksAddBtn">+</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1165,6 +1301,16 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   function todayLocalDateKey() {
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  // Pre-existing bug found while verifying this change: called by both
+  // the donut legend and the activity log, but never defined anywhere
+  // in this file — threw a ReferenceError (uncaught, since neither
+  // caller is wrapped in try/catch) the instant either one had a real
+  // name to render, which silently aborted the rest of renderAllNetWorth()
+  // every time. Fixed here rather than left as pre-existing, since it
+  // was breaking real, already-shipped functionality.
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
   // ============================================================
@@ -1202,6 +1348,16 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
     'ndq.ax': 'pink',     // Nasdaq
     'macquarie': 'purpleLight',
     'travel': 'blue'
+  };
+  // Hand-drawn lucide-style icons for the holding-card avatars, built
+  // fresh on every render (see renderNetWorthCategory) — inline SVG
+  // rather than <i data-lucide> so they render immediately without
+  // depending on topbar.js's one-time lucide.createIcons() call, which
+  // only sweeps the page at initial chrome-injection time and wouldn't
+  // pick up elements created dynamically afterward.
+  const ICON_SVG = {
+    landmark: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 10 4l7 4.5"/><path d="M4.5 8.5v7M8 8.5v7M12 8.5v7M15.5 8.5v7"/><path d="M3 17h14"/></svg>',
+    trending: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13.5l5-5 3.5 3.5L17 5.5"/><path d="M12.5 5.5H17V10"/></svg>'
   };
   function defaultItemColor(catKey, it) {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
@@ -1427,7 +1583,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
       const itRate = (!it.ticker && it.rateAtAdd > 0 && it.rateCcy === symbolNow) ? it.rateAtAdd : (exchangeRates[symbolNow] || 1);
       displayTotal += (Number(it.amount) || 0) * itRate;
       const row = document.createElement('div');
-      row.className = 'nw-row';
+      row.className = 'holding-card';
 
       const swatch = document.createElement('input');
       swatch.type = 'color';
@@ -1441,7 +1597,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
       swatch.addEventListener('change', renderAllNetWorth);
 
       const name = document.createElement('span');
-      name.className = 'nw-name nw-name-edit';
+      name.className = 'nw-name nw-name-edit holding-name';
       name.textContent = it.name;
       name.title = 'Tap to rename' + (it.dateAdded ? ' · added ' + it.dateAdded : '');
       name.addEventListener('click', () => beginNwNameEdit(name, items, idx, cat.key));
@@ -1459,11 +1615,10 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
         chg = document.createElement('span');
         const up = it.lastChangePercent >= 0;
         chg.textContent = (up ? '+' : '') + it.lastChangePercent.toFixed(2) + '%';
-        chg.style.cssText = 'flex-shrink:0;font-size:11px;font-weight:700;font-family:var(--font-mono);' +
-          'color:' + (up ? 'var(--success)' : 'var(--trend-down)') + ';';
+        chg.className = 'holding-pill ' + (up ? 'up' : 'down');
       }
       const amt = document.createElement('span');
-      amt.className = 'nw-amt nw-amt-edit';
+      amt.className = 'nw-amt nw-amt-edit holding-value';
       const neverPriced = it.ticker && !it.amount && !it.lastPrice;
       amt.textContent = neverPriced ? 'Pending price…' : (it.ticker ? fmtMoney(it.amount) : fmtMoneyFrozen(it.amount, it));
       if (neverPriced) amt.style.opacity = '0.55';
@@ -1505,18 +1660,36 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
         renderAllNetWorth();
       });
       row.appendChild(swatch);
+      const top = document.createElement('div');
+      top.className = 'holding-top';
+      const avatar = document.createElement('div');
+      avatar.className = 'holding-avatar';
+      avatar.style.setProperty('--tint', cat.key === 'stocks' ? 'var(--cat-stocks)' : 'var(--accent)');
+      avatar.innerHTML = ICON_SVG[cat.key === 'stocks' ? 'trending' : 'landmark'];
+      const controls = document.createElement('div');
+      controls.className = 'holding-controls';
+      controls.appendChild(swatch);
+      controls.appendChild(del);
+      top.appendChild(avatar);
+      top.appendChild(controls);
+      row.appendChild(top);
+
       row.appendChild(name);
-      if (tickerEl) row.appendChild(tickerEl);
-      if (chg) row.appendChild(chg);
+      if (tickerEl || chg) {
+        const metaRow = document.createElement('div');
+        metaRow.className = 'holding-metarow';
+        if (tickerEl) metaRow.appendChild(tickerEl);
+        if (chg) metaRow.appendChild(chg);
+        row.appendChild(metaRow);
+      }
       row.appendChild(amt);
-      row.appendChild(del);
       list.appendChild(row);
       // Visible (not just tooltip — tooltips don't work on mobile touch)
       // reason a ticker is stuck on "Pending price…", so it's actually
       // diagnosable from the phone that's stuck, not just desktop hover.
       if (neverPriced && it.lastPriceError) {
         const errRow = document.createElement('div');
-        errRow.style.cssText = 'padding:0 0 6px 30px;margin-top:-4px;font-size:10.5px;color:var(--trend-down);opacity:0.85;';
+        errRow.style.cssText = 'grid-column:1/-1;font-size:10.5px;color:var(--trend-down);opacity:0.85;';
         errRow.textContent = it.ticker + ': ' + it.lastPriceError;
         list.appendChild(errRow);
       }
@@ -1740,6 +1913,62 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
     renderNetWorthChart();
     renderAllocationDonut(sliceTotals, grand);
     renderActivity();
+    renderHeroTiles(grand, sliceTotals);
+  }
+
+  // ============================================================
+  // HERO TILES — Net worth / Savings / Investment portfolio. Pure
+  // presentation on top of numbers already computed above (sliceTotals,
+  // grand) — no new storage, no new computation of the totals
+  // themselves. Deltas are only shown where a REAL figure backs them:
+  // Net worth mirrors the already-real chart delta; Investment
+  // portfolio is a genuine weighted average of held stocks' live
+  // lastChangePercent; Savings gets no delta at all, since a manually
+  // typed bank balance has no real daily-change figure to attach.
+  // ============================================================
+  function weightedStockChangePct() {
+    const items = (storeGet('nw:stocks') || []).filter(it => it.ticker && typeof it.lastChangePercent === 'number' && it.amount > 0);
+    if (!items.length) return null;
+    const totalCHF = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+    if (!(totalCHF > 0)) return null;
+    return items.reduce((s, it) => s + it.lastChangePercent * it.amount, 0) / totalCHF;
+  }
+  function renderHeroTiles(grand, sliceTotals) {
+    const netFig = document.getElementById('heroNetFigure');
+    const savFig = document.getElementById('heroSavingsFigure');
+    const invFig = document.getElementById('heroInvestFigure');
+    if (!netFig || !savFig || !invFig) return;
+    netFig.textContent = fmtMoney(grand);
+    savFig.textContent = fmtMoney(sliceTotals.bank || 0);
+    invFig.textContent = fmtMoney(sliceTotals.stocks || 0);
+
+    const netDeltaEl = document.getElementById('heroNetDelta');
+    const chartDeltaEl = document.getElementById('nwChartDelta');
+    if (netDeltaEl && chartDeltaEl) {
+      const txt = chartDeltaEl.textContent;
+      if (txt && txt !== '—') {
+        netDeltaEl.hidden = false;
+        netDeltaEl.textContent = txt + ' · ' + (CHART_RANGE_LABEL[chartRange] || '').toLowerCase();
+        netDeltaEl.classList.toggle('up', chartDeltaEl.classList.contains('up'));
+        netDeltaEl.classList.toggle('down', chartDeltaEl.classList.contains('down'));
+      } else {
+        netDeltaEl.hidden = true;
+      }
+    }
+
+    const invDeltaEl = document.getElementById('heroInvestDelta');
+    if (invDeltaEl) {
+      const pct = weightedStockChangePct();
+      if (pct == null) {
+        invDeltaEl.hidden = true;
+      } else {
+        const up = pct >= 0;
+        invDeltaEl.hidden = false;
+        invDeltaEl.textContent = (up ? '+' : '') + pct.toFixed(2) + '% today';
+        invDeltaEl.classList.toggle('up', up);
+        invDeltaEl.classList.toggle('down', !up);
+      }
+    }
   }
 
   // ============================================================
@@ -1903,21 +2132,6 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
         angle += sliceAngle;
       });
       svg.innerHTML = html;
-      if (!nwDonutAnimatedIn) {
-        // Fan out: each wedge pops in from a slightly shrunk/invisible
-        // state, staggered so they read as sweeping around the ring
-        // rather than all popping at once — same treatment as the home
-        // dashboard's allocation donut.
-        const wedges = svg.querySelectorAll('.nw-donut-slice');
-        wedges.forEach(el => { el.style.opacity = '0'; el.style.transform = 'scale(0.5)'; });
-        requestAnimationFrame(() => {
-          wedges.forEach((el, i) => {
-            el.style.transition = 'opacity 1.2s ease ' + (i * 200) + 'ms, transform 1.2s cubic-bezier(.34,1.56,.64,1) ' + (i * 200) + 'ms';
-            el.style.opacity = '1';
-            el.style.transform = 'scale(1)';
-          });
-        });
-      }
     }
     nwDonutAnimatedIn = true;
 
@@ -2258,6 +2472,34 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
     if (tickerInput) tickerInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
     if (unitsInput) unitsInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdd(); });
   });
+
+  // ============================================================
+  // ADD-NEW MODAL — just open/close/tab-switch chrome around the
+  // bank/stock composer fields (now living inside it, see HTML above).
+  // Deliberately does NOT touch doAdd()/addBtn wiring below — those
+  // are 100% getElementById-based, so relocating the inputs into this
+  // modal changed nothing about how adding actually works.
+  // ============================================================
+  (function setupFinAddModal() {
+    const veil = document.getElementById('finAddVeil');
+    const tabs = document.getElementById('finAddTabs');
+    const bankPanel = document.getElementById('finBankPanel');
+    const stockPanel = document.getElementById('finStockPanel');
+    if (!veil || !tabs || !bankPanel || !stockPanel) return;
+    function setTab(tab) {
+      tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+      bankPanel.style.display = tab === 'stocks' ? 'none' : '';
+      stockPanel.style.display = tab === 'stocks' ? '' : 'none';
+    }
+    function openModal(tab) { setTab(tab || 'bank'); veil.classList.add('open'); }
+    function closeModal() { veil.classList.remove('open'); }
+    tabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+    document.querySelectorAll('.fin-add-trigger').forEach(b => b.addEventListener('click', () => openModal(b.dataset.addTab)));
+    const closeBtn = document.getElementById('finAddClose');
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    veil.addEventListener('click', (e) => { if (e.target === veil) closeModal(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+  })();
 
   if (currencyEl) {
     const savedCur = storeGet(CURRENCY_KEY);
