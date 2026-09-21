@@ -1,0 +1,114 @@
+// ============================================================
+// GET /api/basiq-connect?key=<BASIQ_SYNC_SECRET>
+// One-time setup step: creates (or reuses) a Basiq "user" for you and
+// returns a link to Basiq's own hosted login page, where you connect
+// Macquarie by entering your real online-banking credentials directly
+// into Basiq's page — this server never sees them.
+//
+// The Basiq user id is stored in the same Supabase app_state row the
+// rest of Finance uses (key "finance-nw", field "basiq:userId"), so
+// this only needs to run once. Re-running it is safe — it reuses the
+// stored id instead of creating a second user.
+//
+// Env vars needed on Vercel:
+//   BASIQ_API_KEY     — from dashboard.basiq.io -> your Application
+//   BASIQ_SYNC_SECRET — any string you make up, shared with basiq-sync
+//   SUPABASE_URL / SUPABASE_ANON_KEY — already set for the rest of the app
+// ============================================================
+
+const BASIQ_BASE = 'https://au-api.basiq.io';
+
+async function getServerToken(apiKey) {
+  const r = await fetch(BASIQ_BASE + '/token', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Basic ' + Buffer.from(apiKey + ':').toString('base64'),
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'basiq-version': '3.0',
+    },
+    body: 'scope=SERVER_ACCESS',
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error('Basiq auth failed: ' + JSON.stringify(data));
+  return data.access_token;
+}
+
+async function getClientToken(apiKey, userId) {
+  const r = await fetch(BASIQ_BASE + '/token', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Basic ' + Buffer.from(apiKey + ':').toString('base64'),
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'basiq-version': '3.0',
+    },
+    body: 'scope=CLIENT_ACCESS&userId=' + encodeURIComponent(userId),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error('Basiq client-token failed: ' + JSON.stringify(data));
+  return data.access_token;
+}
+
+export default async function handler(req, res) {
+  const secret = process.env.BASIQ_SYNC_SECRET;
+  if (!secret) return res.status(500).json({ error: 'BASIQ_SYNC_SECRET not set on the server' });
+  if (req.query.key !== secret) return res.status(401).json({ error: 'unauthorized — add ?key=<BASIQ_SYNC_SECRET> to the URL' });
+
+  const apiKey = process.env.BASIQ_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'BASIQ_API_KEY not set on the server' });
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase env vars not set on the server' });
+  const restHeaders = {
+    apikey: SUPABASE_KEY,
+    Authorization: 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json',
+  };
+
+  try {
+    const getUrl = SUPABASE_URL + '/rest/v1/app_state?key=eq.finance-nw&select=data';
+    const getResp = await fetch(getUrl, { headers: restHeaders });
+    const rows = await getResp.json().catch(() => []);
+    const state = (Array.isArray(rows) && rows[0] && rows[0].data) || {};
+
+    const serverToken = await getServerToken(apiKey);
+    let userId = state['basiq:userId'];
+
+    if (!userId) {
+      const createResp = await fetch(BASIQ_BASE + '/users', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + serverToken,
+          'Content-Type': 'application/json',
+          'basiq-version': '3.0',
+        },
+        // Basiq requires SOME identifier — a placeholder email is fine,
+        // it's never emailed, just used as the account key on their side.
+        body: JSON.stringify({ email: 'nick-dashboard@example.com' }),
+      });
+      const created = await createResp.json().catch(() => ({}));
+      if (!createResp.ok || !created.id) {
+        return res.status(502).json({ error: 'Basiq user creation failed', basiq: created });
+      }
+      userId = created.id;
+
+      const putUrl = SUPABASE_URL + '/rest/v1/app_state?on_conflict=key';
+      state['basiq:userId'] = userId;
+      await fetch(putUrl, {
+        method: 'POST',
+        headers: Object.assign({ Prefer: 'resolution=merge-duplicates' }, restHeaders),
+        body: JSON.stringify({ key: 'finance-nw', data: state, updated_at: new Date().toISOString() }),
+      });
+    }
+
+    const clientToken = await getClientToken(apiKey, userId);
+    // Basiq's hosted Consent UI — logs you into Macquarie on THEIR page,
+    // never sends your bank credentials through this server.
+    const connectUrl = 'https://consent.basiq.io/home?token=' + encodeURIComponent(clientToken) + '&action=connect';
+
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).json({ ok: true, userId, connectUrl, note: 'Open connectUrl in a browser and log into Macquarie there.' });
+  } catch (e) {
+    return res.status(502).json({ error: 'basiq-connect failed: ' + (e && e.message ? e.message : String(e)) });
+  }
+}
