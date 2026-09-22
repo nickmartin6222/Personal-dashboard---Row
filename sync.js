@@ -189,8 +189,21 @@
       } catch (e) {}
     };
 
+    // Best-known snapshot of the FULL remote row (every key, not just
+    // this page's own) — kept in sync on every pull, applied-or-not, so
+    // a push never has to guess what the rest of the row currently
+    // holds. See pushNow()/flushOnUnload() for why this matters: this
+    // appKey can be a row multiple pages contribute DIFFERENT keys to
+    // (e.g. po-coach: Workouts owns po_coach_v1, Stats owns only
+    // po_coach_weights) — blindly upserting collect() (this page's own
+    // keys only) replaces the WHOLE row and silently deletes every key
+    // this page doesn't own. This is exactly what wiped real workout
+    // data: Stats logging a body-weight entry pushed {po_coach_weights}
+    // alone, and Supabase upsert doesn't merge, it replaces.
+    let lastKnownRemoteData = {};
     function applyRemote(remote) {
       if (!remote || typeof remote !== 'object') return false;
+      lastKnownRemoteData = remote;
       suppressSync = true;
       let changed = false;
       try {
@@ -218,6 +231,20 @@
       lastSyncedJson = json;
       try { origSet(LAST_PUSHED_KEY, json); } catch (e) {}
     }
+    // Overlays this page's own writeMatches keys onto a full remote
+    // snapshot — added/changed keys take the local value, a key this
+    // page owns but no longer has locally (a real deletion) is dropped,
+    // and every key this page doesn't own passes through untouched.
+    // This is what makes it safe for a page that only owns PART of a
+    // shared row to push at all.
+    function mergeOwnKeysInto(remoteSnapshot, localState) {
+      const merged = Object.assign({}, remoteSnapshot || {});
+      for (const k of Object.keys(merged)) {
+        if (writeMatches(k) && !(k in localState)) delete merged[k];
+      }
+      Object.assign(merged, localState);
+      return merged;
+    }
     async function pushNow() {
       if (!supa) return;
       if (!initialSyncDone) {
@@ -231,11 +258,18 @@
       const json = JSON.stringify(state);
       if (json === lastSyncedJson) return;
       try {
+        // Fetch the latest remote row right before writing — safer than
+        // trusting a possibly-stale cached copy, and cheap since this
+        // only runs on the debounced push path (not on every keystroke).
+        const { data: existing } = await supa
+          .from('app_state').select('data').eq('key', appKey).maybeSingle();
+        const remoteSnapshot = (existing && existing.data) || lastKnownRemoteData;
+        const merged = mergeOwnKeysInto(remoteSnapshot, state);
         const { error } = await supa.from('app_state').upsert(
-          { key: appKey, data: state, updated_at: new Date().toISOString() },
+          { key: appKey, data: merged, updated_at: new Date().toISOString() },
           { onConflict: 'key' }
         );
-        if (!error) rememberPushed(json);
+        if (!error) { rememberPushed(json); lastKnownRemoteData = merged; }
       } catch (e) {}
     }
     function schedulePush() {
@@ -265,6 +299,13 @@
       const json = JSON.stringify(state);
       if (json === lastSyncedJson) return;
       try {
+        // Can't await a fresh GET in an unload handler, so this merges
+        // into the last-known remote snapshot (kept current on every
+        // pull — see applyRemote/init/the realtime subscription) rather
+        // than blindly overwriting the whole row with just this page's
+        // own keys. Slightly stale if another device pushed since our
+        // last pull, but far safer than a guaranteed-wrong full replace.
+        const merged = mergeOwnKeysInto(lastKnownRemoteData, state);
         fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
           method: 'POST',
           headers: {
@@ -273,12 +314,13 @@
             'Content-Type': 'application/json',
             'Prefer': 'resolution=merge-duplicates',
           },
-          body: JSON.stringify({ key: appKey, data: state, updated_at: new Date().toISOString() }),
+          body: JSON.stringify({ key: appKey, data: merged, updated_at: new Date().toISOString() }),
           keepalive: true,
         }).catch(() => {});
         // Best-effort — the request is fire-and-forget (can't await in
         // an unload handler), so this optimistically assumes it lands.
         rememberPushed(json);
+        lastKnownRemoteData = merged;
       } catch (e) {}
     }
 
@@ -295,6 +337,7 @@
         const hasUnsyncedLocalChanges = lastSyncedJson != null && currentLocalJson !== lastSyncedJson;
         const { data, error } = await supa
           .from('app_state').select('data').eq('key', appKey).maybeSingle();
+        if (!error && data && data.data) lastKnownRemoteData = data.data;
         if (!error && data && data.data && Object.keys(data.data).length > 0) {
           // Remote already has real data. The ONLY reason to push local
           // over it is hasUnsyncedLocalChanges — a genuine prior push
