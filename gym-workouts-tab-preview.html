@@ -1736,8 +1736,29 @@ button { font-family: inherit; }
     }).join('');
     document.querySelectorAll('[data-sets]').forEach(function (c) { c.addEventListener('click', function () { logCtx.sets = +c.dataset.sets; renderLogFields(); }); });
   }
-  document.getElementById('wMinus').addEventListener('click', function () { var ex = EX_INDEX[logCtx.name]; if (!ex.bw) { logCtx.weight = Math.max(0, logCtx.weight - ex.step); renderLogFields(); } });
-  document.getElementById('wPlus').addEventListener('click', function () { var ex = EX_INDEX[logCtx.name]; if (!ex.bw) { logCtx.weight = logCtx.weight + ex.step; renderLogFields(); } });
+  // The manual +/- stepper now follows the same equipment-aware ladder
+  // as the auto-progression suggestions (nextLoad/prevLoad, defined
+  // above) instead of a flat per-exercise step — e.g. dumbbell moves
+  // step by 1kg below 10kg, then 2.5kg from 10kg up (10, 12.5, 15,
+  // 17.5, 20, 22.5...), matching how dumbbells are actually racked.
+  // Falls back to the flat ex.step for any equipmentClass the ladder
+  // doesn't recognise (nextLoad/prevLoad's default case is a no-op),
+  // so nothing regresses for an exercise with an unexpected/missing
+  // equipmentClass.
+  document.getElementById('wMinus').addEventListener('click', function () {
+    var ex = EX_INDEX[logCtx.name];
+    if (ex.bw) return;
+    var stepped = prevLoad(ex.equipmentClass, logCtx.weight, 0);
+    logCtx.weight = (stepped === logCtx.weight) ? Math.max(0, logCtx.weight - ex.step) : stepped;
+    renderLogFields();
+  });
+  document.getElementById('wPlus').addEventListener('click', function () {
+    var ex = EX_INDEX[logCtx.name];
+    if (ex.bw) return;
+    var stepped = nextLoad(ex.equipmentClass, logCtx.weight);
+    logCtx.weight = (stepped === logCtx.weight) ? logCtx.weight + ex.step : stepped;
+    renderLogFields();
+  });
   document.getElementById('logClose').addEventListener('click', function () { document.getElementById('logModal').hidden = true; });
   document.getElementById('logSetBtn').addEventListener('click', function () {
     writeRealLog(activeDay, [{ name: logCtx.name, setsCount: logCtx.sets, reps: logCtx.reps, weight: logCtx.weight }]);
