@@ -654,11 +654,11 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   background: rgba(255, 255, 255, 0.025);
   border-radius: 12px;
   box-sizing: border-box;
-  /* Ring + legend side by side (legend left, ring right) instead of
+  /* Ring + legend side by side (ring left, legend right) instead of
      stacked — cuts the card's overall height a lot. Header spans both
      columns on its own row; ring and legend share the row underneath. */
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
   column-gap: 18px;
 }
@@ -668,7 +668,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   width: 118px;
   height: 118px;
   margin: 4px 0;
-  grid-column: 2;
+  grid-column: 1;
 }
 .nw-donut-svg {
   width: 118px; height: 118px;
@@ -722,7 +722,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 }
 .nw-donut-empty.hidden { display: none; }
 .nw-donut-legend {
-  grid-column: 1;
+  grid-column: 2;
   display: flex; flex-direction: column; gap: 8px;
 }
 .nw-leg {
@@ -1744,13 +1744,11 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
       row.appendChild(top);
 
       row.appendChild(name);
-      if (tickerEl || chg) {
-        const metaRow = document.createElement('div');
-        metaRow.className = 'holding-metarow';
-        if (tickerEl) metaRow.appendChild(tickerEl);
-        if (chg) metaRow.appendChild(chg);
-        row.appendChild(metaRow);
-      }
+      // Ticker and today's live % deliberately don't render on the
+      // resting card anymore — just name, value, all-time gain. The
+      // ticker is still fully editable, just relocated to show up
+      // inside the tap-to-edit value popup (see beginNwUnitsEdit)
+      // instead of sitting on the card at rest.
       row.appendChild(amt);
       if (gainPill) row.appendChild(gainPill);
       list.appendChild(row);
@@ -1938,6 +1936,20 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
     investedInput.placeholder = 'Invested';
     investedInput.title = 'Total invested / cost basis (' + symbol + ') — what you actually paid in, used to work out gain. Leave blank if unknown.';
     investedInput.style.cssText = 'width:72px;min-width:0;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    // Ticker only ever shows up here, inside the edit popup — hidden
+    // on the resting card by design (see renderNetWorthCategory), but
+    // still fully editable in place via the existing tag-click flow.
+    if (items[idx].ticker) {
+      const tickerTag = document.createElement('span');
+      tickerTag.className = 'nw-ticker-tag';
+      tickerTag.textContent = items[idx].ticker;
+      tickerTag.title = 'Tap to change ticker';
+      tickerTag.addEventListener('click', (e) => {
+        e.stopPropagation();
+        beginNwTickerEdit(tickerTag, items, idx, catKey);
+      });
+      wrap.appendChild(tickerTag);
+    }
     wrap.appendChild(unitsInput);
     wrap.appendChild(valueInput);
     wrap.appendChild(investedInput);
