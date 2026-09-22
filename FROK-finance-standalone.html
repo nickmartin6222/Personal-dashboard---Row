@@ -446,7 +446,11 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   padding: 5px 0; gap: 8px; min-width: 0;
 }
 /* The units+value inline editor (tap a ticker holding's amount) */
-.nw-inline-edit-2col { display: inline-flex; gap: 4px; align-items: center; flex-shrink: 0; }
+/* Now hosts up to 3 inputs (units/value/invested) inside a holding-card
+   that can be as narrow as ~140px — must wrap onto a second line
+   instead of overflowing into the next card over. */
+.nw-inline-edit-2col { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; max-width: 100%; }
+.nw-inline-edit-2col input { max-width: 100%; }
 .nw-color-swatch {
   -webkit-appearance: none; appearance: none;
   width: 14px; height: 14px; flex-shrink: 0;
@@ -917,6 +921,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 }
 .holding-pill.up { color: var(--success); background: color-mix(in srgb, var(--success) 16%, transparent); }
 .holding-pill.down { color: var(--trend-down); background: color-mix(in srgb, var(--trend-down) 16%, transparent); }
+.holding-pill-gain { display: inline-flex; margin-top: 7px; }
 .fin-add-trigger {
   display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); background: transparent;
   color: var(--text-secondary); font-family: var(--font); font-size: 11px; font-weight: 700;
@@ -1292,6 +1297,14 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
         <input type="number" placeholder="Value" id="stocksAmount" step="0.01" />
         <button class="quick-add-btn" id="stocksAddBtn">+</button>
       </div>
+
+      <div style="font-size:9.5px;font-weight:800;letter-spacing:0.10em;text-transform:uppercase;color:var(--text-tertiary);margin-top:12px">Invested (optional)</div>
+      <div class="quick-add" style="margin-top:6px">
+        <input type="number" placeholder="What you actually paid — defaults to Value above" id="stocksInvested" step="0.01" />
+      </div>
+      <div style="font-size:10.5px;color:var(--text-tertiary);margin-top:6px;line-height:1.4">
+        Sets the cost basis this holding's gain is measured against. Leave blank to skip gain-tracking for now — add it later by tapping the holding.
+      </div>
     </div>
   </div>
 </div>
@@ -1631,6 +1644,27 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
         const up = it.lastChangePercent >= 0;
         chg.textContent = (up ? '+' : '') + it.lastChangePercent.toFixed(2) + '%';
         chg.className = 'holding-pill ' + (up ? 'up' : 'down');
+        chg.title = 'Live price change today';
+      }
+      // All-time invested-vs-earned — only shown once a cost basis is
+      // known (set via the value/units editor below, the Add modal, or
+      // Pearler auto-import accumulating it on every real purchase).
+      // Nothing here is guessed: no investedAmount means no gain shown.
+      let investedLine = null;
+      let gainPill = null;
+      if (it.ticker && it.investedAmount > 0) {
+        const investedDisplay = it.investedAmount * (exchangeRates[symbolNow] || 1);
+        investedLine = document.createElement('div');
+        investedLine.className = 'holding-meta';
+        investedLine.textContent = 'Invested ' + fmtMoneyRaw(investedDisplay);
+        const gainCHF = (Number(it.amount) || 0) - it.investedAmount;
+        const gainDisplay = gainCHF * (exchangeRates[symbolNow] || 1);
+        const gainPct = (gainCHF / it.investedAmount) * 100;
+        const gainUp = gainCHF >= 0;
+        gainPill = document.createElement('span');
+        gainPill.className = 'holding-pill holding-pill-gain ' + (gainUp ? 'up' : 'down');
+        gainPill.textContent = (gainUp ? '+' : '') + fmtMoneyRaw(Math.abs(gainDisplay)) + ' (' + (gainUp ? '+' : '') + gainPct.toFixed(1) + '%)';
+        gainPill.title = 'All-time gain vs. what you invested';
       }
       const amt = document.createElement('span');
       amt.className = 'nw-amt nw-amt-edit holding-value';
@@ -1697,7 +1731,9 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
         if (chg) metaRow.appendChild(chg);
         row.appendChild(metaRow);
       }
+      if (investedLine) row.appendChild(investedLine);
       row.appendChild(amt);
+      if (gainPill) row.appendChild(gainPill);
       list.appendChild(row);
       // Visible (not just tooltip — tooltips don't work on mobile touch)
       // reason a ticker is stuck on "Pending price…", so it's actually
@@ -1863,6 +1899,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
     const symbol = currencyEl ? currencyEl.value : 'CHF';
     const rate = exchangeRates[symbol] || 1;
     const curValueDisplay = (Number(items[idx].amount) || 0) * rate;
+    const curInvestedDisplay = (Number(items[idx].investedAmount) || 0) * rate;
 
     const wrap = document.createElement('span');
     wrap.className = 'nw-inline-edit-2col';
@@ -1876,8 +1913,15 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
     valueInput.value = String(curValueDisplay.toFixed(curValueDisplay % 1 === 0 ? 0 : 2));
     valueInput.title = 'Value (' + symbol + ') — manual override, replaced by the next successful live price';
     valueInput.style.cssText = 'width:72px;min-width:0;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
+    const investedInput = document.createElement('input');
+    investedInput.type = 'text'; investedInput.inputMode = 'decimal';
+    investedInput.value = curInvestedDisplay > 0 ? String(curInvestedDisplay.toFixed(curInvestedDisplay % 1 === 0 ? 0 : 2)) : '';
+    investedInput.placeholder = 'Invested';
+    investedInput.title = 'Total invested / cost basis (' + symbol + ') — what you actually paid in, used to work out gain. Leave blank if unknown.';
+    investedInput.style.cssText = 'width:72px;min-width:0;padding:4px 6px;font-family:var(--font-mono);font-size:11px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-primary);border-radius:6px;text-align:right;font-variant-numeric:tabular-nums;outline:none;';
     wrap.appendChild(unitsInput);
     wrap.appendChild(valueInput);
+    wrap.appendChild(investedInput);
     amtEl.textContent = '';
     amtEl.appendChild(wrap);
     setTimeout(() => { unitsInput.focus(); unitsInput.select(); }, 0);
@@ -1887,10 +1931,17 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
       if (saved) return; saved = true;
       const newUnits = parseFloat(unitsInput.value);
       const newValueDisplay = parseFloat(valueInput.value);
+      const newInvestedDisplay = parseFloat(investedInput.value);
       let changed = false;
       if (newUnits > 0 && newUnits !== curUnits) { items[idx].units = newUnits; changed = true; }
       if (!isNaN(newValueDisplay) && Math.abs(newValueDisplay - curValueDisplay) > 0.005) {
         items[idx].amount = newValueDisplay / rate;
+        changed = true;
+      }
+      if (investedInput.value.trim() === '') {
+        if (items[idx].investedAmount != null) { delete items[idx].investedAmount; changed = true; }
+      } else if (!isNaN(newInvestedDisplay) && Math.abs(newInvestedDisplay - curInvestedDisplay) > 0.005) {
+        items[idx].investedAmount = newInvestedDisplay / rate;
         changed = true;
       }
       if (changed) {
@@ -1900,7 +1951,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
       renderAllNetWorth();
     }
     function cancel() { saved = true; renderAllNetWorth(); }
-    [unitsInput, valueInput].forEach(inp => {
+    [unitsInput, valueInput, investedInput].forEach(inp => {
       inp.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); save(); }
         else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
@@ -1941,12 +1992,18 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   // lastChangePercent; Savings gets no delta at all, since a manually
   // typed bank balance has no real daily-change figure to attach.
   // ============================================================
-  function weightedStockChangePct() {
-    const items = (storeGet('nw:stocks') || []).filter(it => it.ticker && typeof it.lastChangePercent === 'number' && it.amount > 0);
+  // Aggregate invested-vs-earned across every stock that has a known
+  // cost basis (investedAmount) — holdings without one (never set, e.g.
+  // an old entry from before this existed) are simply excluded rather
+  // than guessed at. Real per-holding basis is set via the value/units
+  // editor, the Add modal, or accumulated automatically by the Pearler
+  // import as each real purchase comes in.
+  function stockGainSummary() {
+    const items = (storeGet('nw:stocks') || []).filter(it => it.investedAmount > 0);
     if (!items.length) return null;
-    const totalCHF = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
-    if (!(totalCHF > 0)) return null;
-    return items.reduce((s, it) => s + it.lastChangePercent * it.amount, 0) / totalCHF;
+    const invested = items.reduce((s, it) => s + it.investedAmount, 0);
+    const current = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+    return { investedCHF: invested, gainCHF: current - invested, pct: ((current - invested) / invested) * 100 };
   }
   function renderHeroTiles(grand, sliceTotals) {
     const netFig = document.getElementById('heroNetFigure');
@@ -1973,13 +2030,16 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 
     const invDeltaEl = document.getElementById('heroInvestDelta');
     if (invDeltaEl) {
-      const pct = weightedStockChangePct();
-      if (pct == null) {
+      const gain = stockGainSummary();
+      if (gain == null) {
         invDeltaEl.hidden = true;
       } else {
-        const up = pct >= 0;
+        const up = gain.gainCHF >= 0;
+        const symbol = currencyEl ? currencyEl.value : 'CHF';
+        const rate = exchangeRates[symbol] || 1;
         invDeltaEl.hidden = false;
-        invDeltaEl.textContent = (up ? '+' : '') + pct.toFixed(2) + '% today';
+        invDeltaEl.textContent = 'Invested ' + fmtMoneyRaw(gain.investedCHF * rate) + ' · '
+          + (up ? '+' : '') + fmtMoneyRaw(Math.abs(gain.gainCHF) * rate) + ' (' + (up ? '+' : '') + gain.pct.toFixed(1) + '%)';
         invDeltaEl.classList.toggle('up', up);
         invDeltaEl.classList.toggle('down', !up);
       }
@@ -2423,6 +2483,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
     const amtInput = document.getElementById(cat.amtId);
     const tickerInput = cat.key === 'stocks' ? document.getElementById('stocksTicker') : null;
     const unitsInput  = cat.key === 'stocks' ? document.getElementById('stocksUnits')  : null;
+    const investedInput = cat.key === 'stocks' ? document.getElementById('stocksInvested') : null;
     if (!addBtn) return;
     // Once you're using a ticker, the Value field does nothing — grey it
     // out so it's obvious rather than inviting exactly the confusion of
@@ -2467,7 +2528,20 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
       const amountCHF = hasUnits ? 0 : a / rate;
       const items = storeGet('nw:' + cat.key) || [];
       const item = { name: n, amount: amountCHF, dateAdded: todayLocalDateKey() };
-      if (hasTicker) { item.ticker = ticker; if (hasUnits) item.units = units; }
+      if (hasTicker) {
+        item.ticker = ticker;
+        if (hasUnits) item.units = units;
+        // Cost basis for gain-tracking — an explicit Invested figure wins;
+        // otherwise, if a Value was actually typed (not a units-only
+        // bootstrap with amount still unknown), default to it as a 0%-
+        // gain starting point rather than leaving gain untracked.
+        const investedRaw = investedInput ? parseFloat(investedInput.value) : NaN;
+        if (!isNaN(investedRaw) && investedRaw > 0) {
+          item.investedAmount = investedRaw / rate;
+        } else if (!hasUnits && !isNaN(a)) {
+          item.investedAmount = amountCHF;
+        }
+      }
       // Freeze the conversion rate for anything that isn't a live-priced
       // ticker, so this number reads back exactly what was typed instead
       // of drifting with tomorrow's exchange rate (see fmtMoneyFrozen).
@@ -2478,6 +2552,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
       nameInput.value = ''; amtInput.value = '';
       if (tickerInput) tickerInput.value = '';
       if (unitsInput) unitsInput.value = '';
+      if (investedInput) investedInput.value = '';
       renderAllNetWorth();
       if (hasTicker && typeof refreshStockPrices === 'function') refreshStockPrices(true);
     }

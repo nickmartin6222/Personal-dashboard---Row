@@ -24,7 +24,14 @@
 // price lookup fails for any reason, the dollar amount is added to
 // the holding's `amount` instead — the app's own refreshStockPrices()
 // will convert that into units next time it runs successfully, same
-// as the manual "type a value, no units yet" bootstrap flow.
+// as the manual "type a value, no units yet" bootstrap flow. Either
+// way, the purchase amount is ALSO added to the holding's
+// `investedAmount` (cost basis) — real money actually paid in, so it
+// accumulates regardless of whether the price lookup above succeeded.
+// This is what the Finance page's invested-vs-earned display (current
+// value vs. investedAmount) is measured against, so a running gain
+// figure builds up automatically as more purchases land, no manual
+// re-entry needed.
 //
 // Non-ticker path: adds straight into nw:other as a plain running
 // dollar total, using fx:rates already cached from Supabase to
@@ -121,6 +128,13 @@ export default async function handler(req, res) {
         }
         result = { path: 'ticker-price-lookup-failed', ticker };
       }
+      // Cost basis — every real Pearler purchase is money actually paid
+      // in, so it always accumulates here regardless of whether the live
+      // price lookup above happened to succeed. This is what the Finance
+      // page's gain tracking (current value vs. investedAmount) is
+      // measured against, so it stays accurate automatically as more
+      // purchases come in, with no manual re-entry.
+      holding.investedAmount = (Number(holding.investedAmount) || 0) + amountCHF;
       state['nw:stocks'] = stocks;
     } else {
       const others = state['nw:other'] || [];
