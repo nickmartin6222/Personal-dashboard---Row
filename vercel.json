@@ -1,4 +1,7 @@
 {
+  "crons": [
+    { "path": "/api/backup-snapshot?key=dashboard-backup-2026", "schedule": "0 16 * * *" }
+  ],
   "headers": [
     {
       "source": "/(.*).html",
