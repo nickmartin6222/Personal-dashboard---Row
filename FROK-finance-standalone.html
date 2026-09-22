@@ -653,20 +653,22 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   padding: 14px 16px 12px;
   background: rgba(255, 255, 255, 0.025);
   border-radius: 12px;
-  display: flex;
-  flex-direction: column;
   box-sizing: border-box;
-  /* The grid row stretches this card to match the chart card's height
-     (align-items: stretch on .nw-overview-grid) — without this, the
-     ring+legend content just sat at the top, leaving all the extra
-     space as one lump at the bottom instead of even top/bottom gaps. */
-  justify-content: center;
+  /* Ring + legend side by side (legend left, ring right) instead of
+     stacked — cuts the card's overall height a lot. Header spans both
+     columns on its own row; ring and legend share the row underneath. */
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 18px;
 }
+.nw-donut-wrap .nw-chart-head { grid-column: 1 / -1; width: 100%; justify-self: stretch; }
 .nw-donut-stage {
   position: relative;
   width: 118px;
   height: 118px;
-  margin: 4px auto 6px;
+  margin: 4px 0;
+  grid-column: 2;
 }
 .nw-donut-svg {
   width: 118px; height: 118px;
@@ -712,6 +714,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   margin-top: 4px;
 }
 .nw-donut-empty {
+  grid-column: 1 / -1;
   text-align: center;
   font-size: 11px; color: var(--text-tertiary);
   padding: 8px 0;
@@ -719,8 +722,8 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 }
 .nw-donut-empty.hidden { display: none; }
 .nw-donut-legend {
-  margin-top: 8px;
-  display: flex; flex-direction: column; gap: 4px;
+  grid-column: 1;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .nw-leg {
   display: grid; grid-template-columns: 8px 1fr auto;
@@ -883,6 +886,14 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 .fin-portfolio-col > .card-grid { flex: 1; display: grid; grid-template-rows: auto 1fr; }
 .fin-portfolio-col > .card-grid > .nw-subcard:last-child { justify-content: flex-start; }
 .fin-chart-col > .nw-overview-grid { flex: 1; display: grid; grid-template-rows: auto 1fr; }
+/* [data-theme="light"] .nw-chart-wrap (below, further down the sheet)
+   sets a real 14px top margin — same specificity as the zeroing rule
+   above it, so being LATER in source order it was winning in light
+   theme, pushing the chart card down out of alignment with the
+   portfolio column's top edge. Kill it for real, here, scoped to this
+   layout (nw-chart-wrap is only ever used inside .fin-chart-col on
+   this page). */
+.fin-chart-col .nw-chart-wrap { margin: 0 !important; }
 @media (max-width: 900px) {
   .fin-portfolio-chart-row { grid-template-columns: 1fr; }
   /* Chart first, portfolio underneath, on mobile only — desktop keeps
