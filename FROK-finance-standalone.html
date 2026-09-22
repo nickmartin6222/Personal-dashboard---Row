@@ -271,7 +271,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text-primary);
-  margin-bottom: 18px;
+  margin: 0 0 14px;
 }
 
 /* Card */
@@ -874,7 +874,13 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 /* ===== Portfolio (left) + chart/donut (right), flush ===== */
 .fin-portfolio-chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin: 14px 0 18px; }
 .fin-portfolio-col, .fin-chart-col { display: flex; flex-direction: column; }
-@media (max-width: 900px) { .fin-portfolio-chart-row { grid-template-columns: 1fr; } }
+@media (max-width: 900px) {
+  .fin-portfolio-chart-row { grid-template-columns: 1fr; }
+  /* Chart first, portfolio underneath, on mobile only — desktop keeps
+     portfolio-left/chart-right via normal source order. */
+  .fin-chart-col { order: 1; }
+  .fin-portfolio-col { order: 2; }
+}
 
 /* ===== Hero tiles (Net worth / Savings / Investment portfolio) =====
    Everything here reads var(--accent)/var(--success)/var(--trend-down)/
@@ -1074,7 +1080,8 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
    ============================================================ */
 [data-theme="light"] .nw-chart-wrap,
 [data-theme="light"] .nw-donut-wrap,
-[data-theme="light"] .nw-activity {
+[data-theme="light"] .nw-activity,
+[data-theme="light"] .fin-tile:not(.hero) {
   background: #FFFFFF;
   border: 1.5px solid var(--accent);
 }
@@ -1098,9 +1105,6 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 
 <!-- ===== NET WORTH ===== -->
 <div class="section" data-section="net">
-  <div class="section-title">
-    <span class="section-title-text">NET WORTH</span>
-  </div>
   <div class="card" style="background:transparent;border:none !important;box-shadow:none;padding:0;overflow:visible">
     <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
       <select id="netWorthCurrency" style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:inherit;cursor:pointer">
@@ -1646,17 +1650,13 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
         chg.className = 'holding-pill ' + (up ? 'up' : 'down');
         chg.title = 'Live price change today';
       }
-      // All-time invested-vs-earned — only shown once a cost basis is
-      // known (set via the value/units editor below, the Add modal, or
-      // Pearler auto-import accumulating it on every real purchase).
-      // Nothing here is guessed: no investedAmount means no gain shown.
-      let investedLine = null;
+      // All-time gain — only shown once a cost basis is known (set via
+      // the value/units editor below, the Add modal, or Pearler
+      // auto-import accumulating it on every real purchase). Nothing
+      // here is guessed: no investedAmount means no gain shown. Just
+      // the gain itself is displayed, not the underlying invested figure.
       let gainPill = null;
       if (it.ticker && it.investedAmount > 0) {
-        const investedDisplay = it.investedAmount * (exchangeRates[symbolNow] || 1);
-        investedLine = document.createElement('div');
-        investedLine.className = 'holding-meta';
-        investedLine.textContent = 'Invested ' + fmtMoneyRaw(investedDisplay);
         const gainCHF = (Number(it.amount) || 0) - it.investedAmount;
         const gainDisplay = gainCHF * (exchangeRates[symbolNow] || 1);
         const gainPct = (gainCHF / it.investedAmount) * 100;
@@ -1731,7 +1731,6 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
         if (chg) metaRow.appendChild(chg);
         row.appendChild(metaRow);
       }
-      if (investedLine) row.appendChild(investedLine);
       row.appendChild(amt);
       if (gainPill) row.appendChild(gainPill);
       list.appendChild(row);
@@ -2038,8 +2037,7 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
         const symbol = currencyEl ? currencyEl.value : 'CHF';
         const rate = exchangeRates[symbol] || 1;
         invDeltaEl.hidden = false;
-        invDeltaEl.textContent = 'Invested ' + fmtMoneyRaw(gain.investedCHF * rate) + ' · '
-          + (up ? '+' : '') + fmtMoneyRaw(Math.abs(gain.gainCHF) * rate) + ' (' + (up ? '+' : '') + gain.pct.toFixed(1) + '%)';
+        invDeltaEl.textContent = (up ? '+' : '-') + fmtMoneyRaw(Math.abs(gain.gainCHF) * rate) + ' (' + (up ? '+' : '-') + Math.abs(gain.pct).toFixed(1) + '%) earned';
         invDeltaEl.classList.toggle('up', up);
         invDeltaEl.classList.toggle('down', !up);
       }
