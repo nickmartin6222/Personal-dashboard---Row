@@ -1118,7 +1118,18 @@ button { font-family: inherit; }
     // toggled, so the picks list IS the current intent, always). Back
     // to a straight union: your picks (ticked if logged, unticked if
     // not) plus anything logged that isn't even in picks.
-    var names = getPicks(day).slice();
+    //
+    // That reasoning only holds for TODAY, though — today the picks list
+    // is a live plan you're actively ticking off. A PAST date is a
+    // historical record, not a plan: showing the full template padded
+    // with exercises you never actually did that day just reads as "you
+    // skipped these", which isn't true, they were never picked for that
+    // specific session. For a past date, start from only the picks that
+    // actually have a real logged set that day — the union below still
+    // adds back anything logged outside of picks either way.
+    var names = isLoggingToday()
+      ? getPicks(day).slice()
+      : getPicks(day).filter(function (name) { return activeDateRealLogsForName(name).length > 0; });
     if (day === activeDay) {
       REAL_EXERCISES.forEach(function (ex) {
         if (activeDateRealLogsForName(ex.name).length > 0 && names.indexOf(ex.name) === -1) names.push(ex.name);
