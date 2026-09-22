@@ -564,9 +564,9 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
 .nw-chart-svg {
   display: block;
   width: 100%;
-  height: 200px;
+  height: 260px;
   flex: 1 1 auto;
-  min-height: 200px;
+  min-height: 260px;
   color: var(--text-tertiary);
   overflow: visible;
   transition: color 0.4s ease;
@@ -871,9 +871,18 @@ html, body { scrollbar-width: none; -ms-overflow-style: none; }
   .nw-inline-edit-2col input { flex: 1; width: auto !important; min-width: 0 !important; }
 }
 
-/* ===== Portfolio (left) + chart/donut (right), flush ===== */
-.fin-portfolio-chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: stretch; margin: 14px 0 18px; }
+/* ===== Portfolio (left) + chart/donut (right), flush =====
+   Both columns stretch to match the taller one (align-items:stretch),
+   but rather than leaving the leftover space as a blank void below the
+   shorter column's cards, the LAST card in each column absorbs it —
+   grid-template-rows: auto 1fr makes only the second row (Stocks /
+   Donut) grow, so the extra height shows up as roomier padding inside
+   a bordered, labeled card instead of empty page space underneath it. */
+.fin-portfolio-chart-row { display: grid; grid-template-columns: 1fr 1.12fr; gap: 12px; align-items: stretch; margin: 14px 0 18px; }
 .fin-portfolio-col, .fin-chart-col { display: flex; flex-direction: column; }
+.fin-portfolio-col > .card-grid { flex: 1; display: grid; grid-template-rows: auto 1fr; }
+.fin-portfolio-col > .card-grid > .nw-subcard:last-child { justify-content: flex-start; }
+.fin-chart-col > .nw-overview-grid { flex: 1; display: grid; grid-template-rows: auto 1fr; }
 @media (max-width: 900px) {
   .fin-portfolio-chart-row { grid-template-columns: 1fr; }
   /* Chart first, portfolio underneath, on mobile only — desktop keeps
