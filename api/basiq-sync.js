@@ -59,8 +59,18 @@ export default async function handler(req, res) {
   try {
     const getUrl = SUPABASE_URL + '/rest/v1/app_state?key=eq.finance-nw&select=data';
     const getResp = await fetch(getUrl, { headers: restHeaders });
-    const rows = await getResp.json().catch(() => []);
-    const state = (Array.isArray(rows) && rows[0] && rows[0].data) || {};
+    // Same GET-merge-PUT safety fix as pearler-import.js — never treat a
+    // failed/unexpected GET as "no existing data" when the PUT below
+    // replaces the FULL row.
+    if (!getResp.ok) {
+      const errText = await getResp.text().catch(() => '');
+      return res.status(502).json({ error: 'refusing to sync: could not read existing data (' + getResp.status + '): ' + errText });
+    }
+    const rows = await getResp.json().catch(() => null);
+    if (!Array.isArray(rows)) {
+      return res.status(502).json({ error: 'refusing to sync: unexpected response reading existing data' });
+    }
+    const state = (rows[0] && rows[0].data) || {};
 
     const userId = state['basiq:userId'];
     if (!userId) return res.status(400).json({ error: 'No Basiq user yet — run /api/basiq-connect first and complete the Macquarie login.' });

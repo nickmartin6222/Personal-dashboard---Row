@@ -80,8 +80,27 @@ export default async function handler(req, res) {
   try {
     const getUrl = SUPABASE_URL + '/rest/v1/app_state?key=eq.finance-nw&select=data';
     const getResp = await fetch(getUrl, { headers: restHeaders });
-    const rows = await getResp.json().catch(() => []);
-    const state = (Array.isArray(rows) && rows[0] && rows[0].data) || {};
+    // CRITICAL: this endpoint does a GET-merge-PUT — the PUT below writes
+    // back the FULL row (a Supabase upsert replaces the whole `data`
+    // column, it doesn't merge server-side). If the GET above fails or
+    // returns something unexpected for ANY reason (network blip, a
+    // transient Supabase error, rate limiting, a cold-start timeout) and
+    // that's silently treated as "no existing data", the code below
+    // would merrily build a near-empty state (just this one purchase)
+    // and PUT it straight over the real row, deleting every other
+    // holding, the activity log, and the net-worth history in one shot.
+    // This is exactly the bug that wiped real account data — caught by
+    // reproducing it after a live Apps Script run. Bail out loudly
+    // instead of guessing "empty" on any failure.
+    if (!getResp.ok) {
+      const errText = await getResp.text().catch(() => '');
+      return res.status(502).json({ error: 'refusing to import: could not read existing data (' + getResp.status + '): ' + errText });
+    }
+    const rows = await getResp.json().catch(() => null);
+    if (!Array.isArray(rows)) {
+      return res.status(502).json({ error: 'refusing to import: unexpected response reading existing data' });
+    }
+    const state = (rows[0] && rows[0].data) || {};
 
     // fx:rates is CHF-per-1-unit-of-currency (same shape the Finance
     // page itself caches) — fall back to a rough AUD/CHF guess if it's

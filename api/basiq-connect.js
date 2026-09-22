@@ -71,8 +71,20 @@ export default async function handler(req, res) {
   try {
     const getUrl = SUPABASE_URL + '/rest/v1/app_state?key=eq.finance-nw&select=data';
     const getResp = await fetch(getUrl, { headers: restHeaders });
-    const rows = await getResp.json().catch(() => []);
-    const state = (Array.isArray(rows) && rows[0] && rows[0].data) || {};
+    // Same GET-merge-PUT safety fix as pearler-import.js — a failed or
+    // unexpected GET here must never be treated as "no existing data",
+    // since the PUT below (see the basiq:userId write) replaces the
+    // FULL row. Silently degrading to state={} on a GET hiccup would
+    // wipe every real holding the same way that already happened once.
+    if (!getResp.ok) {
+      const errText = await getResp.text().catch(() => '');
+      return res.status(502).json({ error: 'refusing to continue: could not read existing data (' + getResp.status + '): ' + errText });
+    }
+    const rows = await getResp.json().catch(() => null);
+    if (!Array.isArray(rows)) {
+      return res.status(502).json({ error: 'refusing to continue: unexpected response reading existing data' });
+    }
+    const state = (rows[0] && rows[0].data) || {};
 
     const serverToken = await getServerToken(apiKey);
     let userId = state['basiq:userId'];
