@@ -71,6 +71,74 @@
     let initialSyncDone = false;
     let pendingPushAfterInit = false;
 
+    // ---- Per-page undo/redo journal (in-memory only — see the plan doc
+    // for why this deliberately does NOT persist across reloads or cross
+    // to other pages/tabs/devices). Multiple writes happening in the same
+    // tick (e.g. one user action that touches 3 keys) batch into a single
+    // undo step via the zero-delay batchTimer below. ----
+    let undoStack = [];
+    let redoStack = [];
+    let pendingBatch = null;
+    let batchTimer = null;
+    const HISTORY_MAX = 40;
+    function queueUndoEntry(k, before, after) {
+      // Same reasoning as the initialSyncDone push-gate above: a write
+      // that lands before the initial pull has resolved (the exchange-
+      // rate cache refresh, an eager first render) isn't a real user
+      // action — journaling it makes the very first Back click on a
+      // freshly loaded page revert an invisible system write instead of
+      // doing nothing, which reads as "I didn't touch anything, why did
+      // that change?" Once the real sync handshake has completed,
+      // everything after is a genuine local edit worth journaling.
+      if (!initialSyncDone) return;
+      if (!pendingBatch) pendingBatch = { ts: Date.now(), entries: [] };
+      pendingBatch.entries.push({ k: k, before: before, after: after });
+      clearTimeout(batchTimer);
+      batchTimer = setTimeout(function () {
+        if (pendingBatch && pendingBatch.entries.length) {
+          undoStack.push(pendingBatch);
+          if (undoStack.length > HISTORY_MAX) undoStack.shift();
+          // A genuine new write makes any pending "redo" stale.
+          redoStack.length = 0;
+        }
+        pendingBatch = null;
+      }, 0);
+    }
+    // Restores one batch's `before` (undo) or `after` (redo) values.
+    // Uses origSet/origRemove directly (like applyRemote) so restoring
+    // isn't itself captured as a new undoable action, then pushes for
+    // real afterward — an undo/redo is a genuine local change and must
+    // sync exactly like any other edit.
+    function applyHistoryBatch(batch, direction) {
+      suppressSync = true;
+      try {
+        batch.entries.forEach(function (e) {
+          const val = e[direction];
+          try { if (val == null) origRemove(e.k); else origSet(e.k, val); } catch (err) {}
+        });
+      } finally { suppressSync = false; }
+      schedulePush();
+      if (typeof onApplied === 'function') { try { onApplied(); } catch (err) {} }
+    }
+    function undo() {
+      if (!undoStack.length) return false;
+      const batch = undoStack.pop();
+      redoStack.push(batch);
+      if (redoStack.length > HISTORY_MAX) redoStack.shift();
+      applyHistoryBatch(batch, 'before');
+      return true;
+    }
+    function redo() {
+      if (!redoStack.length) return false;
+      const batch = redoStack.pop();
+      undoStack.push(batch);
+      if (undoStack.length > HISTORY_MAX) undoStack.shift();
+      applyHistoryBatch(batch, 'after');
+      return true;
+    }
+    function canUndo() { return undoStack.length > 0; }
+    function canRedo() { return redoStack.length > 0; }
+
     // Write-eligible: this page may push local changes to these keys.
     function writeMatches(k) {
       if (!k) return false;
@@ -107,12 +175,18 @@
     const origSet = localStorage.setItem.bind(localStorage);
     const origRemove = localStorage.removeItem.bind(localStorage);
     localStorage.setItem = function (k, v) {
+      const before = writeMatches(k) ? localStorage.getItem(k) : null;
       origSet(k, v);
-      try { if (!suppressSync && writeMatches(k)) { schedulePush(); } } catch (e) {}
+      try {
+        if (!suppressSync && writeMatches(k)) { queueUndoEntry(k, before, v); schedulePush(); }
+      } catch (e) {}
     };
     localStorage.removeItem = function (k) {
+      const before = writeMatches(k) ? localStorage.getItem(k) : null;
       origRemove(k);
-      try { if (!suppressSync && writeMatches(k)) { schedulePush(); } } catch (e) {}
+      try {
+        if (!suppressSync && writeMatches(k)) { queueUndoEntry(k, before, null); schedulePush(); }
+      } catch (e) {}
     };
 
     function applyRemote(remote) {
@@ -274,6 +348,23 @@
       if (e.key && writeMatches(e.key)) schedulePush();
     });
 
-    return { flush: flushNow };
+    // Page-scoped registry so a single shared Back/Forward control (see
+    // topbar.js) can find "whichever synced data on THIS page has the
+    // most recent undoable change" without knowing appKeys in advance —
+    // a page can call initCloudSync more than once (e.g. health.html
+    // syncs both health-metrics and po-coach). Deliberately just an
+    // in-page array on window, not anything persisted or cross-tab.
+    if (!window.__dashUndoRegistry) window.__dashUndoRegistry = [];
+    window.__dashUndoRegistry.push({
+      appKey: appKey,
+      undo: undo,
+      redo: redo,
+      canUndo: canUndo,
+      canRedo: canRedo,
+      lastUndoTs: function () { return undoStack.length ? undoStack[undoStack.length - 1].ts : 0; },
+      lastRedoTs: function () { return redoStack.length ? redoStack[redoStack.length - 1].ts : 0; },
+    });
+
+    return { flush: flushNow, undo: undo, redo: redo, canUndo: canUndo, canRedo: canRedo };
   };
 })();

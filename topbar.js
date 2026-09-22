@@ -59,6 +59,24 @@
   transition: transform 0.25s ease, background 0.2s ease;
 }
 .theme-btn.is-light .theme-btn-dot { transform: translateX(22px); background: #5F7A63; }
+/* Site-wide undo/redo — same visual language as .home-btn, smaller
+   since there are two of them sitting side by side. Reverts your last
+   change(s) on THIS page only (see sync.js — the journal is per-page,
+   in-memory, never cross-page/tab/device). */
+.undo-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px;
+  color: #6EE3A4;
+  border: 1px solid rgba(110, 227, 164, 0.3);
+  background: rgba(110, 227, 164, 0.08);
+  border-radius: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, opacity 0.15s;
+}
+.undo-btn:hover:not(:disabled) { background: rgba(110, 227, 164, 0.14); }
+.undo-btn svg { width: 16px; height: 16px; display: block; }
+.undo-btn:disabled { opacity: 0.3; cursor: default; }
 /* Fixed top-right chrome for pages that suppress the normal topbar
    (currently just finance) — a persistent way home without relying on
    scroll position or a browser back gesture. */
@@ -124,6 +142,7 @@ body.has-bottombar {
 @media (max-width: 480px) {
   .topbar { padding-left: 10px; padding-right: 10px; gap: 6px; }
   .home-btn { width: 40px; height: 38px; }
+  .undo-btn { width: 34px; height: 34px; }
   .theme-btn { width: 48px; height: 28px; }
   .theme-btn .theme-btn-dot { width: 20px; height: 20px; }
   .theme-btn.is-light .theme-btn-dot { transform: translateX(20px); }
@@ -151,6 +170,15 @@ body.has-bottombar {
   box-shadow: 0 2px 10px rgba(20,18,15,0.06);
 }
 [data-theme="light"] .home-btn:hover {
+  background: rgba(0,59,47,0.06);
+}
+[data-theme="light"] .undo-btn {
+  color: #003B2F;
+  background: #FFFFFF;
+  border-color: rgba(0,59,47,0.3);
+  box-shadow: 0 2px 10px rgba(20,18,15,0.06);
+}
+[data-theme="light"] .undo-btn:hover:not(:disabled) {
   background: rgba(0,59,47,0.06);
 }
 [data-theme="light"] .theme-btn {
@@ -460,6 +488,77 @@ body.topbar-modal-open {
     if (e.key === THEME_KEY) applyStoredTheme();
   });
 
+  // -------- Undo / redo --------
+  // Reverts your last change(s) on THIS page only — sync.js keeps a
+  // per-page, in-memory undo journal per initCloudSync() call (a page
+  // can call it more than once, e.g. health.html syncs both
+  // health-metrics and po-coach) and registers each into
+  // window.__dashUndoRegistry. This just picks whichever registered
+  // instance has the most recent undoable/redoable change and defers to
+  // it — no knowledge here of what any given page's data even is.
+  // Deliberately does NOT persist across reloads and never touches any
+  // other page/tab/device's own undo state — only the resulting DATA
+  // change (pushed through the exact same sync path any real edit uses)
+  // crosses to other devices, same as it always would.
+  function pickUndoable() {
+    const reg = window.__dashUndoRegistry || [];
+    let best = null, bestTs = -1;
+    reg.forEach((inst) => {
+      if (inst.canUndo() && inst.lastUndoTs() > bestTs) { bestTs = inst.lastUndoTs(); best = inst; }
+    });
+    return best;
+  }
+  function pickRedoable() {
+    const reg = window.__dashUndoRegistry || [];
+    let best = null, bestTs = -1;
+    reg.forEach((inst) => {
+      if (inst.canRedo() && inst.lastRedoTs() > bestTs) { bestTs = inst.lastRedoTs(); best = inst; }
+    });
+    return best;
+  }
+  function injectUndoRedo() {
+    if (isEmbedded()) return;
+    if (document.getElementById('dashUndoBtn')) return;
+    const topbarInner = document.getElementById('topbarInner');
+    if (!topbarInner) return;
+
+    const backBtn = document.createElement('button');
+    backBtn.type = 'button';
+    backBtn.id = 'dashUndoBtn';
+    backBtn.className = 'undo-btn';
+    backBtn.setAttribute('aria-label', 'Undo last change on this page');
+    backBtn.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 4 10l5 5"/><path d="M4 10h8a4 4 0 0 1 0 8h-1"/></svg>';
+
+    const fwdBtn = document.createElement('button');
+    fwdBtn.type = 'button';
+    fwdBtn.id = 'dashRedoBtn';
+    fwdBtn.className = 'undo-btn';
+    fwdBtn.setAttribute('aria-label', 'Redo');
+    fwdBtn.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5l5 5-5 5"/><path d="M16 10H8a4 4 0 0 0 0 8h1"/></svg>';
+
+    function refresh() {
+      backBtn.disabled = !pickUndoable();
+      fwdBtn.disabled = !pickRedoable();
+    }
+    backBtn.addEventListener('click', () => {
+      const inst = pickUndoable();
+      if (inst) { inst.undo(); refresh(); }
+    });
+    fwdBtn.addEventListener('click', () => {
+      const inst = pickRedoable();
+      if (inst) { inst.redo(); refresh(); }
+    });
+
+    topbarInner.appendChild(backBtn);
+    topbarInner.appendChild(fwdBtn);
+    refresh();
+    // Registry state changes as a side effect of normal use (a fresh
+    // edit, a remote sync landing) with no event of its own to hook —
+    // a light poll is far simpler than adding pub/sub to every page's
+    // sync instance just for a button's enabled/disabled state.
+    setInterval(refresh, 800);
+  }
+
   // -------- Mobile lockdown helpers --------
   // Belt-and-suspenders zoom prevention — iOS Safari sometimes ignores
   // user-scalable=no, so we also kill the gesture events directly.
@@ -518,6 +617,7 @@ body.topbar-modal-open {
     injectHomeButton();
     ensureLucideIcons();
     injectThemeToggle();
+    injectUndoRedo();
     lockGestures();
     startModalLock();
     alignChromeToContent();
