@@ -1347,10 +1347,18 @@ button { font-family: inherit; }
     // trusting a stale currentLoad here silently diverged from what
     // was really lifted — e.g. suggesting "stay at 20kg" right after a
     // real 65kg set was logged.
-    var curLoad = realEx.bw ? 0 : lastSessionSets[lastSessionSets.length - 1].weight;
-    var allAtMax = lastSessionSets.every(function (s) { return s.reps >= repMax; });
-    var anyShort = lastSessionSets.some(function (s) { return s.reps < repMin; });
-    var lastReps = lastSessionSets[lastSessionSets.length - 1].reps;
+    //
+    // Progression tracks the day's TOP weight only. A finisher/backoff
+    // set logged at a lighter weight (e.g. 75kg main work, then a 60kg
+    // finisher) must never become "what you're on right now" just
+    // because it was logged last — filter down to the heaviest weight
+    // logged this session and judge the rep target against that alone.
+    var topWeight = realEx.bw ? 0 : Math.max.apply(null, lastSessionSets.map(function (s) { return s.weight; }));
+    var topSets = realEx.bw ? lastSessionSets : lastSessionSets.filter(function (s) { return s.weight === topWeight; });
+    var curLoad = realEx.bw ? 0 : topWeight;
+    var allAtMax = topSets.every(function (s) { return s.reps >= repMax; });
+    var anyShort = topSets.some(function (s) { return s.reps < repMin; });
+    var lastReps = topSets[topSets.length - 1].reps;
 
     if (realEx.bw) {
       if (allAtMax) return { currentLoad: 0, currentRepTarget: lastReps + 1, sessionsAtCurrentLoad: 0, maxedStreak: 0, type: 'up', tag: 'Push for more', reason: lastReps + ' ' + unitWord + ' — strong. Push for ' + (lastReps + 1) + ' next time.' };
@@ -2522,8 +2530,14 @@ button { font-family: inherit; }
         // prescription next time instead of just repeating today's
         // numbers forever.
         if (!deloadNow) {
-          var justLogged = [];
-          for (var j = 0; j < s.setsCount; j++) justLogged.push({ weight: s.weight, reps: s.reps });
+          // Every set logged today for this exercise, not just the ones
+          // from this particular write call — a finisher logged in a
+          // separate pass (e.g. main work at 75kg, then re-opening it
+          // to log a 60kg backoff set) must still be judged alongside
+          // the earlier sets, so computeNextRx can find the day's real
+          // top weight instead of only seeing whichever call ran last.
+          var todayKey = wtDateKey(new Date());
+          var justLogged = arr.filter(function (l) { return !l.deload && (l.date || '').slice(0, 10) === todayKey; }).map(function (l) { return { weight: l.weight, reps: l.reps }; });
           var rx = computeNextRx(ex, justLogged);
           ex.currentLoad = rx.currentLoad;
           ex.currentRepTarget = rx.currentRepTarget;
