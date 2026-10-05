@@ -1064,6 +1064,30 @@ button { font-family: inherit; }
     if (!ex) return [];
     return (REAL_LOGS[ex.id] || []).slice().sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
   }
+  // The heaviest set in a list of entries (tie-broken by reps) —
+  // deload sets are deliberately lighter and excluded unless every
+  // entry is a deload (then there's nothing else to show).
+  function bestSetOf(entries) {
+    var pool = entries.filter(function (l) { return !l.deload; });
+    if (!pool.length) pool = entries;
+    return pool.reduce(function (best, l) {
+      if (!best) return l;
+      if (l.weight > best.weight) return l;
+      if (l.weight === best.weight && l.reps > best.reps) return l;
+      return best;
+    }, null);
+  }
+  // "Last time" should mean the best set you actually hit last
+  // session, not literally the last set typed in — a backoff/drop set
+  // logged after the real working weight must never make "Last time"
+  // (or the modal's preselected weight) look like a big dip.
+  function topSetOfLastSession(realLogs) {
+    if (!realLogs.length) return null;
+    var lastDateKey = '';
+    realLogs.forEach(function (l) { if (!l.deload) { var dk = (l.date || '').slice(0, 10); if (dk > lastDateKey) lastDateKey = dk; } });
+    if (!lastDateKey) lastDateKey = (realLogs[realLogs.length - 1].date || '').slice(0, 10);
+    return bestSetOf(realLogs.filter(function (l) { return (l.date || '').slice(0, 10) === lastDateKey; }));
+  }
   // ===== Which date logging currently targets — defaults to today, but
   // tapping a past day on the calendar lets you fill in a workout you
   // forgot to log at the time. Day-type (Push/Pull/etc) and log-date
@@ -1092,7 +1116,7 @@ button { font-family: inherit; }
       rxWeight = realEx.currentLoad; rxReps = realEx.currentRepTarget;
     } else {
       var logs = realLogsForName(name);
-      var lastEntry = logs.length ? logs[logs.length - 1] : null;
+      var lastEntry = topSetOfLastSession(logs);
       rxWeight = ex.bw ? 0 : (lastEntry ? lastEntry.weight : ex.startWeight || 0);
       rxReps = lastEntry ? lastEntry.reps : ex.repMin;
     }
@@ -1478,7 +1502,8 @@ button { font-family: inherit; }
       // fallen out of the catalog entirely (see exConfig/exercisesForDay).
       var metaStr = areaDef ? (areaDef.sets + ' × ' + ex.repMin + '-' + ex.repMax) : (ex.repMin + '-' + ex.repMax + ' reps');
       if (done) {
-        metaStr = logged.length + '×' + logged[logged.length - 1].reps + (ex.bw ? '' : ' @ ' + logged[logged.length - 1].weight + 'kg');
+        var topToday = bestSetOf(logged);
+        metaStr = logged.length + '×' + topToday.reps + (ex.bw ? '' : ' @ ' + topToday.weight + 'kg');
       }
       return '<div class="ex-card' + (done ? ' is-done' : '') + '" data-name="' + ex.name + '" style="--check-accent:var(' + meta.accent + ')">' +
         '<button type="button" class="ex-check' + (done ? ' is-done' : '') + '" data-check="' + ex.name + '" style="--check-accent:var(' + meta.accent + ')">' + (done ? '✓' : '') + '</button>' +
@@ -1736,7 +1761,7 @@ button { font-family: inherit; }
     }
     var realLogs = realLogsForName(ex.name);
     if (!realLogs.length) return { weight: ex.startWeight, reps: ex.repMin, tag: 'Starting point', txt: 'No history yet for this one — starting weight from the catalog.' };
-    var last = realLogs[realLogs.length - 1];
+    var last = topSetOfLastSession(realLogs);
     var upgradeAt = Math.min(8, ex.repMax);
     if (ex.bw) {
       if (last.reps >= upgradeAt) return { weight: 0, reps: last.reps + 1, tag: 'Push for more', txt: last.reps + ' reps — strong. Push for ' + (last.reps + 1) + ' next time.' };
@@ -1753,10 +1778,11 @@ button { font-family: inherit; }
     var sug = suggestionFor(ex);
     var areaDef = areaDefFor(activeDay, name);
     var realLogs = realLogsForName(name);
-    var last = realLogs.length ? realLogs[realLogs.length - 1] : null;
-    // Preselected stepper values are what you actually did LAST time,
-    // not the engine's next-session suggestion — the suggestion still
-    // shows below as "Next up" context, but defaulting the fields to it
+    var last = topSetOfLastSession(realLogs);
+    // Preselected stepper values are the BEST set you actually hit last
+    // session (not literally the last set typed in, and not the
+    // engine's next-session suggestion) — the suggestion still shows
+    // below as "Next up" context, but defaulting the fields to it
     // meant confirming without checking silently logged the prescribed
     // number instead of what was really lifted.
     logCtx = { name: name, weight: last ? last.weight : sug.weight, reps: last ? last.reps : sug.reps, sets: areaDef ? Math.min(6, areaDef.sets) : 3 };
