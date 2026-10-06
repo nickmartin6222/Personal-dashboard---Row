@@ -237,13 +237,11 @@
     // and every key this page doesn't own passes through untouched.
     // This is what makes it safe for a page that only owns PART of a
     // shared row to push at all.
+    // Overlay only. A key missing from this device's localStorage must
+    // never delete the cloud copy — a device with cleared or stale
+    // storage would otherwise wipe newer data it never saw.
     function mergeOwnKeysInto(remoteSnapshot, localState) {
-      const merged = Object.assign({}, remoteSnapshot || {});
-      for (const k of Object.keys(merged)) {
-        if (writeMatches(k) && !(k in localState)) delete merged[k];
-      }
-      Object.assign(merged, localState);
-      return merged;
+      return Object.assign({}, remoteSnapshot || {}, localState);
     }
     async function pushNow() {
       if (!supa) return;
