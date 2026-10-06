@@ -243,6 +243,18 @@
     function mergeOwnKeysInto(remoteSnapshot, localState) {
       return Object.assign({}, remoteSnapshot || {}, localState);
     }
+    // Refuses any write that would shrink the cloud copy by more than a
+    // quarter. A device with stale or partial data loses to the cloud
+    // instead of overwriting it; a real large deletion is rare enough to
+    // handle by hand (the daily backup row is always there to restore).
+    function wouldShrinkCloud(remoteSnapshot, merged) {
+      if (!remoteSnapshot || !Object.keys(remoteSnapshot).length) return false;
+      const before = JSON.stringify(remoteSnapshot).length;
+      const after = JSON.stringify(merged).length;
+      if (after >= before * 0.75) return false;
+      console.warn('[sync] push refused: would shrink cloud row from', before, 'to', after, 'bytes');
+      return true;
+    }
     async function pushNow() {
       if (!supa) return;
       if (!initialSyncDone) {
@@ -263,6 +275,7 @@
           .from('app_state').select('data').eq('key', appKey).maybeSingle();
         const remoteSnapshot = (existing && existing.data) || lastKnownRemoteData;
         const merged = mergeOwnKeysInto(remoteSnapshot, state);
+        if (wouldShrinkCloud(remoteSnapshot, merged)) return;
         const { error } = await supa.from('app_state').upsert(
           { key: appKey, data: merged, updated_at: new Date().toISOString() },
           { onConflict: 'key' }
@@ -304,6 +317,7 @@
         // own keys. Slightly stale if another device pushed since our
         // last pull, but far safer than a guaranteed-wrong full replace.
         const merged = mergeOwnKeysInto(lastKnownRemoteData, state);
+        if (wouldShrinkCloud(lastKnownRemoteData, merged)) return;
         fetch(SUPABASE_URL + '/rest/v1/app_state?on_conflict=key', {
           method: 'POST',
           headers: {
