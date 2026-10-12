@@ -52,6 +52,7 @@
   --day-lowera: #6EE3A4; --day-lowera-dim: rgba(110,227,164,0.16);
   --day-lowerb: #B794F4; --day-lowerb-dim: rgba(183,148,244,0.16);
   --day-fullbody: #F97066; --day-fullbody-dim: rgba(249,112,102,0.16);
+  --day-mobility: #4DD6C4; --day-mobility-dim: rgba(77,214,196,0.16);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-heading: 'Fraunces', Georgia, serif;
   --font-mono: ui-monospace, SF Mono, Menlo, Consolas, monospace;
@@ -83,6 +84,7 @@
   --day-lowera: #2F6B52; --day-lowera-dim: rgba(47,107,82,0.14);
   --day-lowerb: #6B4A54; --day-lowerb-dim: rgba(107,74,84,0.14);
   --day-fullbody: #B3392F; --day-fullbody-dim: rgba(179,57,47,0.14);
+  --day-mobility: #2F6B6B; --day-mobility-dim: rgba(47,107,107,0.14);
   color-scheme: light;
 }
 * { box-sizing: border-box; }
@@ -678,10 +680,53 @@ button { font-family: inherit; }
         { area: 'Forearms', sets: 3, order: 95, options: [{ name: "Reverse Cable Curl", muscle: "Forearms", repMin: 10, repMax: 15, step: 2.5, startWeight: 12.5, equipmentClass: 'cable' }, { name: "Single-Arm Wrist Curl", muscle: "Forearms", repMin: 8, repMax: 12, step: 1, startWeight: 10, perSide: true, equipmentClass: 'dumbbell' }] },
         { area: 'Core', sets: 3, order: 90, options: [{ name: "Pallof Press", muscle: "Core", repMin: 10, repMax: 12, step: 2.5, startWeight: 10, perSide: true, equipmentClass: 'cable' }] },
       ]
+    },
+    // A recovery day — spine, hip mobility, isometric "mobility
+    // strength" holds and a back-strength finisher, 50-55 min. Mostly
+    // bodyweight/stretch work (bw:true), but a few moves genuinely take
+    // added load (Jefferson Curl, the weighted hip flexor stretch,
+    // Suitcase Carry) so those use a real equipmentClass starting at
+    // 0/light instead of being forced bodyweight-only. One option per
+    // area — these are specific drills, not interchangeable
+    // alternatives — so every move is picked by default the moment
+    // Mobility is selected. Hold-based moves use holdSeconds (reps =
+    // seconds, same convention as Copenhagen Plank below). Block A
+    // (easy bike/walk raise) and Block F (90/90 breathing) are time-only
+    // with no real set/rep structure, so they live in warmup/the final
+    // area respectively rather than as a prescribed lift.
+    'Mobility': {
+      accent: '--day-mobility', accentDim: '--day-mobility-dim',
+      img: 'assets/rdl-cutout-v2.png',
+      muscles: ['Hips', 'Lower Back', 'Glutes', 'Core', 'Adductors'],
+      warmup: ['Bike or incline walk — 5 min, easy pace'],
+      areas: [
+        { area: 'Cat', sets: 1, order: 10, options: [{ name: "Cat", muscle: "Lower Back", repMin: 6, repMax: 10, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Seated Forward Bend', sets: 2, order: 11, options: [{ name: "Seated Forward Bend", muscle: "Hamstrings", repMin: 45, repMax: 75, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Thread the Needle', sets: 1, order: 12, options: [{ name: "Thread the Needle (per side)", muscle: "Back", repMin: 6, repMax: 10, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Foam Roller Thoracic Extension', sets: 1, order: 13, options: [{ name: "Foam Roller Thoracic Extension", muscle: "Back", repMin: 8, repMax: 12, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Jefferson Curl', sets: 2, order: 14, options: [{ name: "Jefferson Curl", muscle: "Lower Back", repMin: 4, repMax: 6, step: 1, startWeight: 0, equipmentClass: 'dumbbell' }] },
+        { area: 'Long-Axis Hip Distraction', sets: 1, order: 20, options: [{ name: "Long-Axis Hip Distraction (per side)", muscle: "Hips", repMin: 45, repMax: 75, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Banded Hip Mobilisation in Extension', sets: 1, order: 21, options: [{ name: "Banded Hip Mobilisation in Extension (per side)", muscle: "Hips", repMin: 45, repMax: 75, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' }] },
+        { area: '90/90 Stretch', sets: 2, order: 22, options: [{ name: "90/90 Stretch", muscle: "Hips", repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Weighted Half-Kneeling Hip Flexor Stretch', sets: 2, order: 23, options: [{ name: "Weighted Half-Kneeling Hip Flexor Stretch (per side)", muscle: "Hips", repMin: 20, repMax: 40, step: 1, startWeight: 0, holdSeconds: true, equipmentClass: 'dumbbell' }] },
+        { area: 'Knee-to-Wall Ankle Mobility', sets: 1, order: 24, options: [{ name: "Knee-to-Wall Ankle Mobility (per side)", muscle: "Calves", repMin: 8, repMax: 12, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Seated Hip Rotations', sets: 1, order: 25, options: [{ name: "Seated Hip Rotations (per side)", muscle: "Hips", repMin: 8, repMax: 12, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Split Squat Iso', sets: 3, order: 30, options: [{ name: "Split Squat Iso (per side)", muscle: "Quads", repMin: 20, repMax: 30, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Glute Bridge Iso', sets: 2, order: 31, options: [{ name: "Glute Bridge Iso", muscle: "Glutes", repMin: 35, repMax: 55, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Side Lunge to Box', sets: 2, order: 32, options: [{ name: "Side Lunge to Box (per side)", muscle: "Adductors", repMin: 5, repMax: 8, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Seated Hip Flexor Lift-off', sets: 3, order: 33, options: [{ name: "Seated Hip Flexor Lift-off (test)", muscle: "Hips", repMin: 4, repMax: 6, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Hip Airplane', sets: 2, order: 34, options: [{ name: "Hip Airplane (supported, per side)", muscle: "Hips", repMin: 4, repMax: 6, step: 1, startWeight: 0, bw: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Copenhagen', sets: 3, order: 35, options: [{ name: "Copenhagen Plank", muscle: "Adductors", repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight', progressionType: 'ladder' }] },
+        { area: 'Back Extension Iso Hold', sets: 3, order: 40, options: [{ name: "Back Extension Iso Hold (test)", muscle: "Lower Back", repMin: 20, repMax: 30, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Core', sets: 2, order: 41, options: [{ name: "Pallof Press", muscle: "Core", repMin: 10, repMax: 12, step: 2.5, startWeight: 10, perSide: true, equipmentClass: 'cable' }] },
+        { area: 'Suitcase Carry', sets: 3, order: 42, options: [{ name: "Suitcase Carry (20m per side)", muscle: "Core", repMin: 15, repMax: 25, step: 2.5, startWeight: 20, equipmentClass: 'dumbbell' }] },
+        { area: 'Dead Hang', sets: 2, order: 43, options: [{ name: "Dead Hang", muscle: "Back", repMin: 20, repMax: 40, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' }] },
+        { area: 'Cool-Down', sets: 1, order: 60, options: [{ name: "90/90 Breathing", muscle: "Core", repMin: 150, repMax: 210, step: 1, startWeight: 0, bw: true, holdSeconds: true, equipmentClass: 'bodyweight' }] },
+      ]
     }
   };
-  var DAY_ORDER = ['Push', 'Pull', 'Lower A', 'Lower B', 'Full Body'];
-  var DAY_TAG_TEXT = { 'Push': 'Push Day', 'Pull': 'Pull Day', 'Lower A': 'Lower Body — A', 'Lower B': 'Lower Body — B', 'Full Body': 'Full Body Day' };
+  var DAY_ORDER = ['Push', 'Pull', 'Lower A', 'Lower B', 'Full Body', 'Mobility'];
+  var DAY_TAG_TEXT = { 'Push': 'Push Day', 'Pull': 'Pull Day', 'Lower A': 'Lower Body — A', 'Lower B': 'Lower Body — B', 'Full Body': 'Full Body Day', 'Mobility': 'Mobility Day' };
 
   // ===== Custom exercises — user-added, layered on top of the built-in
   // catalog above. Stored under their own key so they ride the same
@@ -767,7 +812,7 @@ button { font-family: inherit; }
   // gym-preview.html; never let this copy drift from that one. =====
   var LIVE_STATE_KEY = 'po_coach_v1';
   var UNITS = 'kg';
-  var REAL_NAME_TO_DAY_ID = { 'Push': 'push', 'Pull': 'pull', 'Lower A': 'lowerA', 'Lower B': 'lowerB', 'Full Body': 'fullBody' };
+  var REAL_NAME_TO_DAY_ID = { 'Push': 'push', 'Pull': 'pull', 'Lower A': 'lowerA', 'Lower B': 'lowerB', 'Full Body': 'fullBody', 'Mobility': 'mobility' };
   function unit() { return UNITS; }
   function wtDateKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function localTimestampFor(d) {
